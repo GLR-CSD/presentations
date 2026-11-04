@@ -51,9 +51,12 @@ for (const deck of decks) {
   // gedeelde map. Daarom mounten we de hele repo-root op /slides, zodat die
   // verwijzing binnen de container klopt.
   const relPath = path.relative(root, deck).split(path.sep).join('/');
+  // --allow-file-access-from-files: Markdown-decks laden `slides.md` via XHR,
+  // wat Chromium op file:// anders blokkeert (resultaat: lege PDF).
+  const chromeArg = '--chrome-arg=--allow-file-access-from-files';
   const args = useLocal
-    ? ['--size', '1920x1080', 'index.html', 'presentation.pdf']
-    : ['run', '--rm', '-v', `${root}:/slides`, 'astefanutti/decktape',
+    ? [chromeArg, '--size', '1920x1080', 'index.html', 'presentation.pdf']
+    : ['run', '--rm', '-v', `${root}:/slides`, 'astefanutti/decktape:3.12.0', chromeArg,
        '--size', '1920x1080', `/slides/${relPath}/index.html`, `/slides/${relPath}/presentation.pdf`];
   const command = useLocal ? 'decktape' : 'docker';
 
