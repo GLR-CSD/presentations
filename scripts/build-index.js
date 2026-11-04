@@ -251,12 +251,36 @@ const clientJs = `
     stats.textContent = matches === 1 ? '1 resultaat' : matches + ' resultaten';
   }
 
-  input.addEventListener('input', apply);
+  // Zoekterm in de URL (?q=…) zodat een zoekopdracht deelbaar en herlaadbaar is.
+  var canSync = !!(window.history && history.replaceState && window.URL && window.URLSearchParams);
+
+  function syncUrl() {
+    if (!canSync) return;
+    var url = new URL(location.href);
+    var term = input.value.trim();
+    if (term) url.searchParams.set('q', term);
+    else url.searchParams.delete('q');
+    if (url.href !== location.href) history.replaceState(history.state, '', url.href);
+  }
+
+  function loadFromUrl() {
+    if (!canSync) return;
+    input.value = new URLSearchParams(location.search).get('q') || '';
+    apply();
+  }
+
+  input.addEventListener('input', function () {
+    apply();
+    syncUrl();
+  });
   clearBtn.addEventListener('click', function () {
     input.value = '';
-    restore();
+    apply();
+    syncUrl();
     input.focus();
   });
+  window.addEventListener('popstate', loadFromUrl);
+  loadFromUrl();
   Array.prototype.forEach.call(document.querySelectorAll('[data-action]'), function (btn) {
     btn.addEventListener('click', function () {
       var open = btn.getAttribute('data-action') === 'expand';

@@ -392,14 +392,14 @@ Note: **Gagné 5: uitgewerkt voorbeeld (± 4 min).** Dit is dezelfde opbouw als 
 <div class="row" style="margin-top:22px">
   <div class="col stack-y">
     <ol class="steps">
-      <li><span>Bedenk <strong>wie</strong> er in jouw webshop koopt: naam en leeftijd.</span></li>
-      <li><span>Vul <strong>alle vakjes</strong> rond het poppetje in: hobby's, wensen, ergernissen.</span></li>
-      <li><span>Maak de <strong>tekening</strong> af. Kleding, haar, spullen: maak het jouw koper.</span></li>
-      <li><span>Schrijf erbij <strong>waarom</strong> jouw webshop straks perfect bij deze persoon past.</span></li>
+      <li><span>Geef je persona een <strong>naam</strong> (onderaan de pagina).</span></li>
+      <li><span>Vul de vakjes <strong>links</strong> in: waar baalt je persona van, waar krijgt die stress van en op welke school zit die?</span></li>
+      <li><span>Vul de vakjes <strong>rechts</strong> in: hobby's en interesses, wat vindt je persona belangrijk en hoeveel geld heeft die?</span></li>
+      <li><span>Schrijf in het <strong>hart</strong>: wat wil jouw persona écht?</span></li>
     </ol>
     <div class="panel" style="margin-top:6px">
       <span class="k">Tip: niet jezelf!</span>
-      <p>Denk aan een verzamelaar van 40, een comicfan, of een opa die een cadeau zoekt.</p>
+      <p>Je persona is een bedacht figuur die misschien een action figure bij de webshop wil kopen.</p>
     </div>
   </div>
   <div class="col" style="flex:0 0 280px">
@@ -421,7 +421,7 @@ Note: **Gagné 5: uitgewerkt voorbeeld (± 4 min).** Dit is dezelfde opbouw als 
 
 <div class="footer"><span>Mega Villains Inc. · Les 1</span><span class="num">11</span></div>
 
-Note: **Gagné 6 + 7: oefenen en feedback (± 28 min).** Start de timer en loop meteen rond. Veel leerlingen beschrijven eerst zichzelf; dat mag als start, maar daag ze uit met de tip: "Wie koopt er nog meer schurken-poppetjes?" Na 10 minuten: laat één leerling de persona tot nu toe voorlezen en geef feedback hardop voor de hele klas: "Mooi dat je ergernis 'te dure verzendkosten' hebt bedacht, wat betekent dat voor de webshop?" In de laatste 5 minuten: duo's lezen elkaars persona en checken of alle vakjes gevuld zijn. Stap 4 is de "dus in de webshop"-stap van Luna: minstens één ontwerpkeuze die uit de persona volgt. Loopt iemand vast, help dan met vragen: "Hoe oud is hij? Wat doet hij na school?" Snel klaar? Laat ze een tweede, heel andere persona maken (bijvoorbeeld een ouder die een cadeau zoekt).
+Note: **Gagné 6 + 7: oefenen en feedback (± 28 min).** De stappen volgen de persona-pagina in het werkboekje: naam onderaan, drie vakjes links, drie vakjes rechts en het hart in het midden. Start de timer en loop meteen rond. Veel leerlingen beschrijven eerst zichzelf; dat mag als start, maar wijs op de zin onderaan de pagina: "Deze persona ben JIJ niet." Vraag: "Wie koopt er nog meer schurken-poppetjes?" Na 10 minuten: laat één leerling de persona tot nu toe voorlezen en geef feedback hardop voor de hele klas: "Mooi dat je 'baalt van te dure verzendkosten' hebt bedacht, wat betekent dat voor de webshop?" Het hart (wat wil jouw persona écht?) is het belangrijkste vakje: daar haal je straks je ontwerpkeuzes uit, net als de "dus in de webshop"-regel van Luna. In de laatste 5 minuten: duo's lezen elkaars persona en checken of alle vakjes gevuld zijn. Loopt iemand vast, help dan met vragen: "Op welke school zit je persona? Hoeveel zakgeld heeft die per week?" Snel klaar? Laat ze de tekening afmaken of bedenken welke ontwerpkeuze uit het hart volgt.
 
 ---
 
@@ -434,12 +434,11 @@ Note: **Gagné 6 + 7: oefenen en feedback (± 28 min).** Start de timer en loop 
     <div class="panel">
       <span class="k">Schrijf in je eigen woorden</span>
       <p class="starter">Ik ontwerp een <u> </u> voor <u> </u> zodat <u> </u>.</p>
-      <p class="starter">Ik ontwerp voor een <u> </u>, want <u> </u>.</p>
-      <p class="small" style="margin-top:14px">Laptop, tablet of telefoon? Kies het apparaat dat past bij jouw persona.</p>
+      <p class="small" style="margin-top:14px">Wat is het onderwerp? Schrijf op <strong>wat</strong> je maakt, <strong>voor wie</strong> en <strong>waarom</strong>.</p>
     </div>
     <div class="panel">
       <span class="k">Voorbeeld met Luna</span>
-      <p>“Ik ontwerp een klikbare webshop voor <strong>Luna (13)</strong> zodat zij snel zeldzame schurken kan vinden en bestellen. Ik ontwerp voor een <strong>laptop</strong>, want daar gamet ze ook op.”</p>
+      <p>“Ik ontwerp een klikbare webshop voor <strong>Luna (13)</strong> zodat zij snel zeldzame schurken kan vinden en bestellen.”</p>
     </div>
   </div>
   <div class="col" style="flex:0 0 260px">
@@ -461,7 +460,7 @@ Note: **Gagné 6 + 7: oefenen en feedback (± 28 min).** Start de timer en loop 
 
 <div class="footer"><span>Mega Villains Inc. · Les 1</span><span class="num">12</span></div>
 
-Note: **Gagné 6 + 7: toepassen en feedback (8 min).** Het doel komt pas nu, omdat je het pas goed kunt opschrijven als je weet wat de klant wil (de briefing) én voor wie je bouwt (de persona). Laat het voorbeeld van Luna zien als model, maar zeg erbij: "Gebruik jouw eigen persona, niet Luna." Een goed doel heeft drie delen: wat (een klikbare webshop), voor wie (de persona) en waarom (wat het de koper oplevert). De apparaatkeuze moet een reden hebben die bij de persona past; "telefoon, want mijn persona shopt in de bus" is net zo goed als "laptop". Start de timer. **Feedback, laatste 2 min:** laat twee leerlingen hun doel voorlezen en vraag de klas: "Staan wat, voor wie en waarom erin? En past het apparaat bij de persona?" Het doel komt volgende week terug bij de flowchart.
+Note: **Gagné 6 + 7: toepassen en feedback (8 min).** Het doel komt pas nu, omdat je het pas goed kunt opschrijven als je weet wat de klant wil (de briefing) én voor wie je bouwt (de persona). Laat het voorbeeld van Luna zien als model, maar zeg erbij: "Gebruik jouw eigen persona, niet Luna." In het werkboekje heet de opdracht "Doel van het project (wat is het onderwerp?)". Een goed doel heeft drie delen: wat (een klikbare webshop), voor wie (de persona) en waarom (wat het de koper oplevert). Start de timer. **Feedback, laatste 2 min:** laat twee leerlingen hun doel voorlezen en vraag de klas: "Staan wat, voor wie en waarom erin?" Het doel komt volgende week terug bij de flowchart.
 
 ---
 
@@ -478,10 +477,10 @@ Note: **Gagné 6 + 7: toepassen en feedback (8 min).** Het doel komt pas nu, omd
       <li>Ga even lopen of naar buiten</li>
       <li>Drink water</li>
     </ul>
-    <p class="back-at">Terug om <span data-back-at="20">over 20 min</span></p>
+    <p class="back-at">Terug om <span data-back-at="15">over 15 min</span></p>
   </div>
   <div class="col" style="flex:0 0 320px">
-    <div class="timer timer--lg" data-timer="20:00" role="group" aria-label="Pauze-timer 20 minuten">
+    <div class="timer timer--lg" data-timer="15:00" role="group" aria-label="Pauze-timer 15 minuten">
       <div class="t-dial">
         <svg viewBox="0 0 120 120" aria-hidden="true">
           <circle class="t-track" cx="60" cy="60" r="54"></circle>
