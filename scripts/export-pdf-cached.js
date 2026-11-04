@@ -150,7 +150,10 @@ function runDecktape(deckDir, rel) {
     // file:// standaard, waardoor de deck zonder slides (= lege PDF) rendert.
     '--chrome-arg=--allow-file-access-from-files',
     '--size', EXPORT_SIZE,
-    `/slides/${relPath}/index.html`,
+    // ?showNotes=true laat reveal.js de sprekernotities in de slides renderen.
+    // DeckTape behoudt de query alleen bij een volledige URL (niet bij een
+    // kaal pad), vandaar de expliciete file://-URL.
+    `file:///slides/${relPath}/index.html?showNotes=true`,
     `/slides/${relPath}/presentation.pdf`,
   );
 

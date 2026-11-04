@@ -8,6 +8,8 @@
 <meta name="author" content="GLR Media Creative">
 <link rel="stylesheet" href="vendor/reveal/reveal.css">
 <link rel="stylesheet" href="css/glr.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/chalkboard/style.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/customcontrols/style.css">
 </head>
 <body>
 <div class="reveal">
@@ -641,6 +643,9 @@
 <script src="vendor/reveal/plugin/notes/notes.js"></script>
 <script src="vendor/reveal/plugin/search/search.js"></script>
 <script src="vendor/reveal/plugin/zoom/zoom.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/math/math.js"></script>
+<script src="../../../../../shared/vendor/chalkboard/plugin.js"></script>
+<script src="../../../../../shared/vendor/customcontrols/plugin.js"></script>
 <script src="js/timer.js"></script>
 <script src="js/wheel.js"></script>
 <script>
@@ -665,7 +670,17 @@
     keyboard: true,
     overview: true,
     touch: true,
-    plugins: [RevealNotes, RevealSearch, RevealZoom]
+    katex: { local: '../../../../../shared/vendor/katex' },
+    chalkboard: {},
+    customcontrols: {
+      collapseIcon: '▾',
+      expandIcon: '▴',
+      controls: [
+        { icon: '🖊️', title: 'Notitie-canvas (C)', action: 'RevealChalkboard.toggleNotesCanvas()' },
+        { icon: '🖍️', title: 'Chalkboard (B)', action: 'RevealChalkboard.toggleChalkboard()' }
+      ]
+    },
+    plugins: [RevealNotes, RevealSearch, RevealZoom, RevealMath.KaTeX, RevealChalkboard, RevealCustomControls]
   });
 </script>
 </body>

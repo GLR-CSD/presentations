@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "vendor": "node scripts/vendor-reveal.js",
+    "vendor": "node scripts/vendor-reveal.js && node scripts/vendor-plugins.js",
     "build:index": "node scripts/build-index.js",
     "build": "npm run vendor && npm run build:index",
     "export:pdf": "node scripts/export-pdf.js",
@@ -17,6 +17,7 @@
     "serve": "serve ."
   },
   "dependencies": {
+    "katex": "^0.19.1",
     "reveal.js": "^5.2.1"
   },
   "devDependencies": {

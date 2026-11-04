@@ -21,11 +21,12 @@ Zie voor de volledige architectuur en richtlijnen:
 │   ├── fonts/                      # Space Grotesk + Hanken Grotesk (.ttf)
 │   ├── img/glr-logo.svg            # Logo
 │   ├── js/glr-plugins.js           # Gedeelde plugins/controllers (timer, kleurenwiel)
-│   └── vendor/                     # reveal.js (gegenereerd met `npm run vendor`)
+│   └── vendor/                     # reveal.js, KaTeX + chalkboard (gegenereerd met `npm run vendor`)
 ├── scripts/
 │   ├── build-index.js              # Bouwt de portaalpagina (dist/index.html)
 │   ├── export-pdf.js               # PDF-export via DeckTape
-│   └── vendor-reveal.js            # Kopieert reveal.js uit node_modules
+│   ├── vendor-reveal.js            # Kopieert reveal.js uit node_modules
+│   └── vendor-plugins.js           # Kopieert KaTeX + haalt chalkboard/customcontrols op
 ├── package.json
 └── README.md
 ```
@@ -78,13 +79,27 @@ Open daarna een presentatie via de server, bijvoorbeeld
 
 | Commando | Wat het doet |
 |---|---|
-| `npm run vendor` | Kopieert reveal.js uit `node_modules` naar `shared/vendor/` |
+| `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/` (offline) |
 | `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie) uit de presentaties + frontmatter |
 | `npm run build` | `vendor` + `build:index` |
 | `npm run export:pdf` | Exporteert elke presentatie naar `presentation.pdf` via DeckTape (Docker) |
 | `npm run export:pdf -- --local` | Idem, maar met een lokaal geïnstalleerde `decktape` |
 | `npm run export:pdf:cached` | CI-variant met incrementele caching: rendert alleen gewijzigde presentaties, de rest komt uit de GitHub Actions-cache. `-- --dry-run` toont de cache-status zonder te bouwen |
 | `npm run serve` | Start een statische server in de repo-root |
+
+## Plugins in de presentaties
+
+Elke presentatie laadt naast de standaardplugins ook:
+
+- **Math (KaTeX)** — formules als `$…$` (inline) of `$$…$$` (los blok). KaTeX
+  wordt lokaal meegeleverd via `shared/vendor/katex`, dus dit werkt **offline**.
+- **Chalkboard + custom controls** — teken tijdens de les op de slides: `B` voor
+  het (chalk)bord, `C` voor de notitie-canvas en `Del` om te wissen. De knoppen
+  staan linksonder.
+
+De PDF-export draait met `?showNotes=true`, zodat de sprekersnotities in de PDF
+terechtkomen. Op de portaalpagina opent de knop **Presentatie** in een nieuw
+tabblad en staat een korte uitleg met een link naar de reveal.js-documentatie.
 
 ## Deployment (CI/CD)
 

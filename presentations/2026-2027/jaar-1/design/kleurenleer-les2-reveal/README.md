@@ -148,5 +148,6 @@ ook de momenten waarop je iets moet aanvullen met de afspraken van je eigen loca
   categorienaam en de voorbeelden aan je leslocatie aan (bijv. meer of minder categorieën) en
   houd de regel "Eis" op dia 16 en stap 2 op dia 18 daarmee in lijn.
 - **Andere voorbeeldbeelden**: vervang de bestanden in `media/` en werk de `alt`-tekst bij.
-- **Nieuwe plugin**: bestanden staan in `vendor/reveal/plugin/`; de `math`-plugin is verwijderd
-  omdat die extern KaTeX laadt (niet offline).
+- **Nieuwe plugin**: de reveal.js-plugins staan in `vendor/reveal/plugin/`. De `math`-plugin
+  (offline KaTeX) en de `chalkboard`-plugin laden uit `shared/vendor/`; formules schrijf je
+  als `$…$` en tekenen op slides doe je met `B` (bord) of `C` (notitie-canvas).
