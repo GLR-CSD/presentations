@@ -168,7 +168,7 @@ function renderLeaf(item) {
             <span class="leaf-title" data-title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>${metaBlock}
           </div>
           <div class="links">
-            <a class="btn" href="./${WEB_PREFIX}/${item.path}/">Presentatie</a>
+            <a class="btn" href="./${WEB_PREFIX}/${item.path}/" target="_blank" rel="noopener noreferrer">Presentatie</a>
             <a class="btn btn-secondary" href="./${WEB_PREFIX}/${item.path}/presentation.pdf" download>PDF</a>
           </div>
         </div>`;
@@ -353,6 +353,14 @@ const css = `
     .btn-secondary{background:var(--subtle);color:var(--ink-soft);border:1px solid var(--border)}
     .btn-secondary:hover{border-color:var(--green);color:var(--green-dk)}
     .empty{padding:28px 4px;color:var(--muted)}
+    .help{margin:18px 0 0;border:1px solid var(--border);border-radius:var(--radius);background:var(--white)}
+    .help>summary{cursor:pointer;padding:11px 16px;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:9px}
+    .help>summary::-webkit-details-marker{display:none}
+    .help>summary::before{content:'?';display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:18px;height:18px;border-radius:999px;background:var(--lime);color:var(--ink);font-size:12px;font-weight:700}
+    .help[open]>summary{border-bottom:1px solid var(--border)}
+    .help ul{margin:12px 16px;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--ink-soft)}
+    .help code{background:var(--subtle);border-radius:4px;padding:1px 5px;font-size:13px}
+    .help-link{margin:12px 16px 14px;font-size:13px;color:var(--muted)}
     [hidden]{display:none !important}
     @media (max-width:620px){h1{font-size:25px}.leaf{flex-direction:column;align-items:stretch;gap:10px}.links{justify-content:flex-start}}
     @media (prefers-reduced-motion:reduce){*{transition:none !important}}
@@ -385,6 +393,18 @@ ${css}  </style>
         </div>
       </div>
       <p class="stats" id="stats" data-total="${summary}" aria-live="polite">${summary}</p>
+      <details class="help">
+        <summary>Hoe gebruik je deze presentaties?</summary>
+        <ul>
+          <li>Klik op <strong>Presentatie</strong> om een les te openen; die opent in een nieuw tabblad.</li>
+          <li>Navigeer met de <strong>pijltoetsen</strong> of <strong>spatie</strong>. Met <strong>Esc</strong> krijg je een overzicht en met <strong>F</strong> volledig scherm.</li>
+          <li>Druk op <strong>S</strong> voor de sprekersnotities in een apart venster.</li>
+          <li>Druk op <strong>B</strong> om op de slides te tekenen (chalkboard), op <strong>C</strong> voor de notitie-canvas en op <strong>Del</strong> om het bord te wissen.</li>
+          <li>Formules tussen <code>$…$</code> worden automatisch als wiskunde weergegeven.</li>
+          <li>Met <strong>PDF</strong> download je een statische versie van de presentatie (inclusief sprekersnotities).</li>
+        </ul>
+        <p class="help-link">Nieuw met reveal.js? De <a href="https://revealjs.com/" target="_blank" rel="noopener noreferrer">officiële reveal.js-documentatie</a> legt alle sneltoetsen, plugins en het maken van slides uit.</p>
+      </details>
     </header>
     <main id="tree" class="tree">
 ${treeHtml || empty}

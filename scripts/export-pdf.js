@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
@@ -54,10 +54,15 @@ for (const deck of decks) {
   // --allow-file-access-from-files: Markdown-decks laden `slides.md` via XHR,
   // wat Chromium op file:// anders blokkeert (resultaat: lege PDF).
   const chromeArg = '--chrome-arg=--allow-file-access-from-files';
+  // ?showNotes=true laat reveal.js de sprekernotities in de slides renderen.
+  // DeckTape behoudt de query alleen als de invoer een volledige URL is (anders
+  // wordt de '?' als bestandsnaam gezien), vandaar de expliciete file://-URL's.
+  const localUrl = `${pathToFileURL(path.join(deck, 'index.html')).href}?showNotes=true`;
+  const dockerUrl = `file:///slides/${relPath}/index.html?showNotes=true`;
   const args = useLocal
-    ? [chromeArg, '--size', '1920x1080', 'index.html', 'presentation.pdf']
+    ? [chromeArg, '--size', '1920x1080', localUrl, 'presentation.pdf']
     : ['run', '--rm', '-v', `${root}:/slides`, 'astefanutti/decktape:3.12.0', chromeArg,
-       '--size', '1920x1080', `/slides/${relPath}/index.html`, `/slides/${relPath}/presentation.pdf`];
+       '--size', '1920x1080', dockerUrl, `/slides/${relPath}/presentation.pdf`];
   const command = useLocal ? 'decktape' : 'docker';
 
   const result = spawnSync(command, args, { cwd: deck, stdio: 'inherit' });

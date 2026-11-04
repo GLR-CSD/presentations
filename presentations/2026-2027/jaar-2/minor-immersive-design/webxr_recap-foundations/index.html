@@ -21,6 +21,8 @@
 
 <link rel="stylesheet" href="../../../../../shared/vendor/reveal/reveal.css">
 <link rel="stylesheet" href="../../../../../shared/vendor/reveal/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/chalkboard/style.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/customcontrols/style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
@@ -992,6 +994,9 @@ schelp.addEventListener('click', () => {   // 2. luisteren
 <script src="../../../../../shared/vendor/reveal/reveal.js"></script>
 <script src="../../../../../shared/vendor/reveal/plugin/highlight/highlight.js"></script>
 <script src="../../../../../shared/vendor/reveal/plugin/notes/notes.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/math/math.js"></script>
+<script src="../../../../../shared/vendor/chalkboard/plugin.js"></script>
+<script src="../../../../../shared/vendor/customcontrols/plugin.js"></script>
 
 <script>
   /* ==================================================================
@@ -1056,7 +1061,17 @@ schelp.addEventListener('click', () => {   // 2. luisteren
     slideNumber: 'c/t',
     transition: 'fade',
     keyboard: { 77: toggleGraph }, // M
-    plugins: [RevealHighlight, RevealNotes],
+    katex: { local: '../../../../../shared/vendor/katex' },
+    chalkboard: {},
+    customcontrols: {
+      collapseIcon: '▾',
+      expandIcon: '▴',
+      controls: [
+        { icon: '🖊️', title: 'Notitie-canvas (C)', action: 'RevealChalkboard.toggleNotesCanvas()' },
+        { icon: '🖍️', title: 'Chalkboard (B)', action: 'RevealChalkboard.toggleChalkboard()' }
+      ]
+    },
+    plugins: [RevealHighlight, RevealNotes, RevealMath.KaTeX, RevealChalkboard, RevealCustomControls],
   });
 </script>
 

@@ -114,8 +114,9 @@ de slide zelf houdt alleen de kernwoorden (Mayer: redundantieprincipe).
 - **Kleur of typografie**: pas de variabelen bovenin `css/glr.css` aan (`--canvas`, `--lime`, …).
 - **Slide toevoegen**: kopieer een `<section>…</section>`-blok in `index.html`; zet het
   paginanummer in de `.footer` en voeg een `<aside class="notes">` toe.
-- **Nieuwe plugin**: bestanden staan in `vendor/reveal/plugin/`; de `math`-plugin is verwijderd
-  omdat die extern KaTeX laadt (niet offline).
+- **Nieuwe plugin**: de reveal.js-plugins staan in `vendor/reveal/plugin/`. De `math`-plugin
+  (offline KaTeX) en de `chalkboard`-plugin laden uit `shared/vendor/`; formules schrijf je
+  als `$…$` en tekenen op slides doe je met `B` (bord) of `C` (notitie-canvas).
 - **Timer-duur**: pas `data-timer="20:00"` aan in de `.timer`-div op slide 17/19.
 - **Kleurenwielen**: de selectie per harmonie staat in `data-hues` (12-uurs indexen 0–11) op
   `.harm-wheel`; `data-shades="1"` tekent de monochromatische variant.

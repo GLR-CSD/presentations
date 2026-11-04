@@ -131,6 +131,20 @@ generiek is, in `shared/css/glr-theme.css`.
   student eerst moet nadenken; gebruik fragmenten per item.
 - Uitzondering: keuzemomenten (bijv. een palet) mogen in één keer zichtbaar zijn.
 
+## Wiskunde & tekenen (gedeelde plugins)
+
+De decks laden naast de standaardplugins ook:
+
+- **Math (KaTeX)** — schrijf formules als inline `$…$` of als los blok `$$…$$`.
+  KaTeX wordt lokaal meegeleverd (`shared/vendor/katex`), dus formules renderen
+  ook **offline**.
+- **Chalkboard + custom controls** — tijdens de les kun je op de slides tekenen:
+  `B` opent het (chalk)bord, `C` de notitie-canvas en `Del` wist het bord. De
+  knoppen verschijnen linksonder.
+
+Deze plugins staan al in de template (`templates/index.html`) en worden
+aangeleverd via `shared/`; je hoeft per presentatie niets extra te installeren.
+
 ## Accessibility (WCAG 2.1 AA)
 
 - Contrast ≥ 4.5:1; gebruik `.highlight` (lime op donker) en `--green-dk`
@@ -160,6 +174,7 @@ generiek is, in `shared/css/glr-theme.css`.
 - [ ] Elke 5 inhoudelijke slides een actieve verwerkingsopdracht of check-in.
 - [ ] Afsluitende slide met samenvatting + vervolgstappen.
 - [ ] Codeblokken > 4 regels hebben een taaldeclaratie én line-highlighting.
+- [ ] Formules (indien gebruikt) in `$…$`/`$$…$$` genoteerd (KaTeX, offline).
 - [ ] Gebruik van GLR-utilities in plaats van ad-hoc HTML/CSS.
 - [ ] Contrast en tekstgrootte voldoen aan WCAG 2.1 AA.
 - [ ] Alle inhoudelijke beelden hebben beschrijvende `alt`-tekst.

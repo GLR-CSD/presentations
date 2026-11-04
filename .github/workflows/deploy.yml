@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Vendor reveal.js (offline assets)
+      - name: Vendor reveal.js + plugins (offline assets)
         run: npm run vendor
 
       - name: Prepare build directory
