@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "De bouwworkflow in 5 stappen"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "Git", "GitHub", "Pull Request", "Stand-up"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Titel van de les"
-cohort: "2025-2026"
+cohort: "2026-2027"
 leerjaar: 1
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Onderwerp", "Vak", "Tag"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

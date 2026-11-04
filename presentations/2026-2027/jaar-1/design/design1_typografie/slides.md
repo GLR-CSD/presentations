@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Typografie"
 cohort: "2026-2027"
 leerjaar: 1
 periode: 1
 auteur: "GLR Media Creative"
 tags: ["Design1", "Typografie", "Serif", "Sans serif", "Hiërarchie", "Kerning", "Figma", "Museum de Pixel", "Rubric"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="bleed dark" data-background-color="#111111" -->
 

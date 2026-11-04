@@ -1,0 +1,83 @@
+# =====================================================================
+# Sveltia CMS — GLR Creative Software Developer presentatie-editor
+# Inloggen: GitHub Fine-Grained Personal Access Token (PAT) of lokale modus.
+# Er is bewust GEEN base_url: docenten loggen direct met een PAT in.
+# =====================================================================
+
+backend:
+  name: github
+  repo: GLR-CSD/presentations
+  branch: main
+
+# Editorial workflow: wijzigingen van docenten worden eerst als concept
+# (eigen branch + Pull Request) klaargezet voordat ze naar `main` gaan.
+publish_mode: editorial_workflow
+
+# Media
+# - media_folder: opslag in de repo. Let op: een LEIDENDE slash betekent
+#   repo-root-relatief (zonder slash behandelt Sveltia het als entry-relatief).
+# - public_folder: het pad waarmee het CMS de afbeelding in de Markdown zet.
+#   De site wordt op GitHub Pages onder /presentations/ geserveerd (de repo
+#   heet `presentations`), dus de URL moet met /presentations/ beginnen.
+media_folder: "/shared/img/uploads"
+public_folder: "/presentations/shared/img/uploads"
+
+collections:
+  - name: "presentations"
+    label: "Presentaties"
+    label_singular: "Presentatie"
+    description: >-
+      Bewerk de slides van een les. Kies of maak een map (cohort / leerjaar /
+      vak / les) en pas de metadata en de slides aan.
+    folder: "presentations"
+    create: true
+    extension: "md"
+    # 'frontmatter' met HTML-comment delimiters: zo valideert het YAML-schema
+    # én blijven de `---` slide-scheidingstekens van Reveal.js ongemoeid.
+    format: "frontmatter"
+    frontmatter_delimiter:
+      - "<!-- frontmatter"
+      - "-->"
+    # Sta navigeren en aanmaken van bestanden in geneste submappen toe.
+    nested:
+      depth: 5
+    # Metadata (verschijnt boven de slides) — dezelfde velden als in de
+    # bestaande presentaties. De portaalpagina (scripts/build-index.js) leest
+    # deze velden voor de indexering.
+    fields:
+      - label: "Titel"
+        name: "title"
+        widget: "string"
+        default: "Nieuwe Lespresentatie"
+      - label: "Cohort"
+        name: "cohort"
+        widget: "string"
+        default: "2026-2027"
+      - label: "Leerjaar"
+        name: "leerjaar"
+        widget: "string"
+        default: "1"
+        hint: "Bijv. 1, 2 of 3 (MBO) — of een vmbo-omschrijving zoals \"vmbo (KB/GL)\"."
+      - label: "Periode"
+        name: "periode"
+        widget: "number"
+        value_type: "int"
+        min: 1
+        max: 4
+        default: 1
+      - label: "Auteur"
+        name: "auteur"
+        widget: "string"
+        default: "Docententeam CSD"
+      - label: "Tags"
+        name: "tags"
+        widget: "list"
+        default: ["Beroeps"]
+        hint: "Losse labels, gebruikt voor zoeken op de portaalpagina."
+      - label: "Slides inhoud"
+        name: "body"
+        widget: "markdown"
+        hint: >-
+          Gebruik '---' (of de knop 'Nieuwe Slide (GLR Layout)') om slides te
+          scheiden. '--' maakt een verticale sub-slide. 'Note:' gevolgd door
+          tekst voegt een docentnotitie toe (zichtbaar met toets S).

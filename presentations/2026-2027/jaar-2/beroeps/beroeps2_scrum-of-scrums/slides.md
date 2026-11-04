@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Scrum of Scrums — Pitch Voorbereiding"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "Scrum", "Scrum of Scrums", "Fist to Five"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

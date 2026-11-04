@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Mega Villains Inc. — Les 1: briefing, persona en eisen"
 cohort: "2026-2027"
 leerjaar: "vmbo (KB/GL)"
 periode: 1
 auteur: "GLR Creative Software Developer"
 tags: ["Keuzevak", "MVI K09", "Applicatieontwikkeling", "vmbo", "Briefing", "Persona", "Prioriteitenmatrix", "Figma", "Webshop", "Klikmodel"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="bleed" -->
 

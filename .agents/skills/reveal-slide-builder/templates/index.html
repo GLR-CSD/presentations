@@ -39,10 +39,11 @@
 <div class="reveal">
   <div class="slides">
     <!--
-      De scheidingstekens eisen een lege regel voor en na de marker. Daardoor
-      wordt het YAML-frontmatter-blok bovenin slides.md (zonder lege regel rond
-      de markers) niet als slide opgevat. Die frontmatter is metadata voor de
-      portaalpagina (scripts/build-index.js); de marker erin verbergt de sectie.
+      De scheidingstekens eisen een lege regel voor en na de marker. Het
+      frontmatter-blok bovenin slides.md staat tussen `<!-- frontmatter` en
+      `-->` (een HTML-comment), zodat Reveal.js het negeert en de `---`
+      slide-scheidingstekens nooit met YAML-frontmatter verwart. De metadata
+      wordt gelezen door de portaalpagina (scripts/build-index.js).
     -->
     <section
       data-markdown="slides.md"

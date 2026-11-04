@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>GLR Creative Software Developer | Slides bewerken</title>
+  <link rel="icon" type="image/svg+xml" href="../shared/img/glr-logo.svg" />
+</head>
+<body>
+  <!--
+    Sveltia CMS — grafische, Git-backed editor voor de presentaties.
+    Inloggen met een GitHub Fine-Grained Personal Access Token (PAT) of via
+    de lokale modus. Configuratie staat in ./config.yml.
+  -->
+  <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+
+  <script type="module">
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.CMS) return;
+
+      /* 1. Nieuwe slide: voegt een Reveal.js-scheiding (---) toe, optioneel met
+            een <!-- .slide: ... -->-comment voor GLR-achtergronden/layouts.
+            Let op: de decks splitsen op "\n---\n\n", dus de scheiding heeft
+            altijd een lege regel ervoor én erna. */
+      window.CMS.registerEditorComponent({
+        id: 'glr-slide-break',
+        label: 'Nieuwe slide (GLR-layout)',
+        fields: [
+          {
+            name: 'layout',
+            label: 'Slide-indeling / achtergrond',
+            widget: 'select',
+            options: [
+              { label: 'Standaard slide', value: '' },
+              { label: 'GLR groen accent (#8fe507)', value: 'data-background-color="#8fe507"' },
+              { label: 'Donkere code-slide (#1a1a1a)', value: 'data-background-color="#1a1a1a"' },
+              { label: 'Assertion-evidence (stelling + bewijs)', value: 'class="slide-assertion-evidence"' },
+              { label: 'Sectie- / hoofdstuktitel', value: 'class="slide-section-header"' }
+            ],
+            default: ''
+          }
+        ],
+        pattern: /^---\r?\n(?:\s*<!-- \.slide: (.*?) -->)?/m,
+        fromBlock: (match) => ({ layout: match[1] || '' }),
+        toBlock: (data) => (data.layout && data.layout.trim() !== '')
+          ? `\n\n---\n\n<!-- .slide: ${data.layout} -->\n\n`
+          : `\n\n---\n\n`,
+        toPreview: (data) => {
+          const label = data.layout ? `Nieuwe slide \u2014 ${data.layout}` : 'Nieuwe slide (standaard)';
+          return `<hr style="border:2px dashed #A6E22E;margin:20px 0"><div style="background:#111;color:#A6E22E;padding:4px 10px;font-family:monospace;font-size:12px;display:inline-block;border-radius:4px">${label}</div>`;
+        }
+      });
+
+      /* 2. Twee kolommen: een tweekoloms HTML-layout die de huisstijl-klassen
+            .glr-columns / .glr-col gebruikt (zie shared/css/glr-theme.css). */
+      window.CMS.registerEditorComponent({
+        id: 'glr-two-columns',
+        label: 'GLR twee kolommen',
+        fields: [
+          { name: 'left', label: 'Linker kolom (tekst / markdown)', widget: 'markdown' },
+          { name: 'right', label: 'Rechter kolom (tekst / code / afbeelding)', widget: 'markdown' }
+        ],
+        pattern: /^<div class="glr-columns">\n<div class="glr-col">\n([\s\S]*?)\n<\/div>\n<div class="glr-col">\n([\s\S]*?)\n<\/div>\n<\/div>/m,
+        fromBlock: (match) => ({ left: match[1], right: match[2] }),
+        toBlock: (data) => `<div class="glr-columns">\n<div class="glr-col">\n${data.left || ''}\n</div>\n<div class="glr-col">\n${data.right || ''}\n</div>\n</div>`,
+        toPreview: (data) => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;border:1px solid #E5E7EB;padding:12px;border-radius:6px"><div><strong>Links</strong><br>${data.left || ''}</div><div><strong>Rechts</strong><br>${data.right || ''}</div></div>`
+      });
+
+      /* 3. Docentnotitie: een Reveal.js speaker note ("Note:"), zichtbaar met
+            de toets S in de sprekersweergave. */
+      window.CMS.registerEditorComponent({
+        id: 'glr-speaker-notes',
+        label: 'Docentnotitie (speaker note)',
+        fields: [
+          { name: 'note', label: 'Aanwijzingen (alleen zichtbaar in de sprekersweergave)', widget: 'text' }
+        ],
+        pattern: /^Note:\n([\s\S]*?)(?=\n---|\n--|$)/m,
+        fromBlock: (match) => ({ note: match[1] ? match[1].trim() : '' }),
+        toBlock: (data) => `\nNote:\n${data.note || ''}\n`,
+        toPreview: (data) => `<div style="background:#fff9db;border-left:4px solid #f59f00;padding:10px;font-style:italic"><strong>Docentnotitie:</strong><br>${data.note || ''}</div>`
+      });
+
+      /* Schoonmaak bij opslaan: verwijder een eventuele lege
+         <!-- frontmatter -->-comment aan het begin van het body-veld. */
+      window.CMS.registerEventListener({
+        name: 'preSave',
+        handler: ({ entry }) => {
+          const body = entry.getIn(['data', 'body']) || '';
+          const cleanBody = body.replace(/^\s*<!--\s*frontmatter\s*-->\s*/, '');
+          return entry.get('data').set('body', cleanBody);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

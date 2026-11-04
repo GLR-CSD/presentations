@@ -20,8 +20,6 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
 const distDir = path.join(root, 'dist');
 
-const MARKERS = ['index.html', 'slides.md'];
-
 // dist/index.html staat in de deploy naast `presentations/` en `shared/`;
 // de links beginnen daarom met `presentations/`.
 const WEB_PREFIX = 'presentations';
@@ -33,14 +31,22 @@ function escapeHtml(value) {
   ));
 }
 
-/** Leest eenvoudige `key: value`-frontmatter uit een markdownbestand. */
+/**
+ * Leest eenvoudige `key: value`-frontmatter uit een markdownbestand.
+ * Ondersteunt zowel het nieuwe `<!-- frontmatter … -->`-formaat (dat het CMS
+ * schrijft en dat de `---` slide-scheidingstekens van Reveal.js ongemoeid laat)
+ * als het oudere `--- … ---`-formaat (backwards-compatibility).
+ */
 function readFrontmatter(file) {
   try {
     const content = fs.readFileSync(file, 'utf8');
-    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    const match = content.match(
+      /^(?:<!--\s*frontmatter\r?\n([\s\S]*?)\r?\n-->|---\r?\n([\s\S]*?)\r?\n---)/
+    );
     if (!match) return {};
+    const block = match[1] ?? match[2] ?? '';
     const data = {};
-    for (const line of match[1].split(/\r?\n/)) {
+    for (const line of block.split(/\r?\n/)) {
       const kv = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
       if (!kv) continue;
       let value = kv[2].trim().replace(/^["']|["']$/g, '');
@@ -78,20 +84,159 @@ function prettifySegment(segment) {
   return prettifyName(segment) || segment;
 }
 
+/** Naam van de .html-shell die bij een .md-bestand hoort. */
+function shellNameFor(mdName) {
+  return mdName === 'slides.md' ? 'index.html' : mdName.replace(/\.md$/i, '.html');
+}
+
+/**
+ * Is dit .md-bestand een reveal-deck? `slides.md` is dat altijd; andere
+ * bestanden alleen als ze met frontmatter beginnen. Zo voorkomen we dat losse
+ * notitie-/README-bestanden onterecht een slide-shell krijgen.
+ */
+function isDeckMarkdown(file) {
+  if (path.basename(file) === 'slides.md') return true;
+  try {
+    return /^(---|<!--\s*frontmatter)/.test(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+/** De standaard GLR reveal.js HTML-shell voor een deck. */
+function buildHtmlShell({ prefix, mdFile, title }) {
+  return `<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title} — GLR CSD</title>
+<meta name="author" content="GLR CSD">
+
+<!-- Automatisch gegenereerd door scripts/build-index.js. Laadt de inhoud uit
+     ${mdFile} met de reveal.js markdown-plugin en de gedeelde GLR-huisstijl. -->
+
+<link rel="stylesheet" href="${prefix}shared/vendor/reveal/reveal.css">
+<link rel="stylesheet" href="${prefix}shared/vendor/reveal/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="${prefix}shared/css/glr-theme.css">
+<link rel="stylesheet" href="${prefix}shared/vendor/chalkboard/style.css">
+<link rel="stylesheet" href="${prefix}shared/vendor/customcontrols/style.css">
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+    <section
+      data-markdown="${mdFile}"
+      data-separator="\\n---\\n\\n"
+      data-separator-vertical="\\n--\\n\\n"
+      data-separator-notes="^Note:"
+      data-charset="utf-8"></section>
+  </div>
+</div>
+
+<script src="${prefix}shared/vendor/reveal/reveal.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/markdown/markdown.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/highlight/highlight.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/notes/notes.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/search/search.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/zoom/zoom.js"></script>
+<script src="${prefix}shared/vendor/reveal/plugin/math/math.js"></script>
+<script src="${prefix}shared/vendor/chalkboard/plugin.js"></script>
+<script src="${prefix}shared/vendor/customcontrols/plugin.js"></script>
+<script src="${prefix}shared/js/glr-plugins.js"></script>
+
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0,
+    display: 'flex',
+    center: false,
+    minScale: 0.2,
+    maxScale: 1.6,
+    hash: true,
+    progress: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: false,
+    transition: 'slide',
+    backgroundTransition: 'fade',
+    katex: { local: '${prefix}shared/vendor/katex' },
+    chalkboard: {},
+    customcontrols: {
+      collapseIcon: '▾',
+      expandIcon: '▴',
+      controls: [
+        { icon: '🖊️', title: 'Notitie-canvas (C)', action: 'RevealChalkboard.toggleNotesCanvas()' },
+        { icon: '🖍️', title: 'Chalkboard (B)', action: 'RevealChalkboard.toggleChalkboard()' }
+      ]
+    },
+    plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealSearch, RevealZoom, RevealMath.KaTeX, RevealChalkboard, RevealCustomControls],
+    markdown: { smartypants: true }
+  }).then(function () {
+    GLRPlugins.initAll();
+  });
+</script>
+
+</body>
+</html>
+`;
+}
+
+/**
+ * Genereert voor elk deck-`.md` zonder bijbehorende `.html`-shell automatisch
+ * de standaard GLR-shell (naast het .md-bestand). Geeft de paden van de nieuw
+ * gegenereerde shells terug, zodat de aanroeper ze naar `dist/` kan spiegelen.
+ */
+function generateMissingShells(dir, created) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      generateMissingShells(full, created);
+      continue;
+    }
+    if (!entry.isFile() || !/\.md$/i.test(entry.name) || !isDeckMarkdown(full)) continue;
+
+    const shellPath = path.join(dir, shellNameFor(entry.name));
+    if (fs.existsSync(shellPath)) continue;
+
+    const depth = path.relative(root, dir).split(path.sep).length;
+    const prefix = '../'.repeat(depth);
+    const fm = readFrontmatter(full);
+    const title = fm.title || prettifyName(path.basename(dir));
+    fs.writeFileSync(shellPath, buildHtmlShell({ prefix, mdFile: entry.name, title }));
+    created.push(shellPath);
+    console.log(`  ✚ shell gegenereerd: ${path.relative(root, shellPath)}`);
+  }
+}
+
 function collect(dir, found) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const fileNames = entries.filter((e) => e.isFile()).map((e) => e.name);
+  const rel = path.relative(presentationsRoot, dir).split(path.sep).join('/');
+  const hasIndex = fileNames.includes('index.html');
+  const deckMd = entries.find(
+    (e) => e.isFile() && /\.md$/i.test(e.name) && isDeckMarkdown(path.join(dir, e.name))
+  );
 
-  if (MARKERS.some((marker) => fileNames.includes(marker))) {
-    const slides = path.join(dir, 'slides.md');
-    const fm = fs.existsSync(slides) ? readFrontmatter(slides) : {};
+  if (hasIndex || deckMd) {
+    // Primaire markdown: `slides.md` heeft voorkeur, anders het deck-.md-bestand.
+    const mdName = fileNames.includes('slides.md') ? 'slides.md' : (deckMd ? deckMd.name : null);
+    const mdPath = mdName ? path.join(dir, mdName) : null;
+    const fm = mdPath && fs.existsSync(mdPath) ? readFrontmatter(mdPath) : {};
+    const shell = mdName ? shellNameFor(mdName) : 'index.html';
     found.push({
-      path: path.relative(presentationsRoot, dir).split(path.sep).join('/'),
+      path: rel,
       name: fm.title || readHtmlTitle(path.join(dir, 'index.html')) || prettifyName(path.basename(dir)),
       cohort: fm.cohort || '',
       leerjaar: fm.leerjaar ?? '',
       periode: fm.periode ?? '',
+      auteur: fm.auteur || '',
       tags: Array.isArray(fm.tags) ? fm.tags : [],
+      // Standaard decks hebben een index.html (map-link); gegenereerde shells
+      // voor losse `<naam>.md`-decks linken direct naar `<naam>.html`.
+      href: hasIndex ? `./${WEB_PREFIX}/${rel}/` : `./${WEB_PREFIX}/${rel}/${shell}`,
+      hasPdf: hasIndex,
     });
     return;
   }
@@ -154,22 +299,24 @@ const FOLDER_ICON = '<svg class="folder-icon" viewBox="0 0 24 24" fill="none" st
 const CHEVRON = '<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
 
 function renderLeaf(item) {
-  const meta = [item.cohort, item.leerjaar && `leerjaar ${item.leerjaar}`, item.periode && `periode ${item.periode}`]
+  const meta = [item.cohort, item.leerjaar && `leerjaar ${item.leerjaar}`, item.periode && `periode ${item.periode}`, item.auteur]
     .filter(Boolean)
     .map((part) => `<span class="meta-item">${escapeHtml(part)}</span>`)
     .join('');
   const tags = item.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
-  const search = [item.name, item.path, item.cohort, item.leerjaar, item.periode, ...item.tags]
+  const search = [item.name, item.path, item.cohort, item.auteur, item.leerjaar, item.periode, ...item.tags]
     .filter(Boolean).join(' ').toLowerCase();
   const metaBlock = meta || tags ? `\n            <div class="meta">${meta}${tags}</div>` : '';
+  const pdfLink = item.hasPdf
+    ? `\n            <a class="btn btn-secondary" href="./${WEB_PREFIX}/${item.path}/presentation.pdf" download>PDF</a>`
+    : '';
   return `
         <div class="leaf" data-search="${escapeHtml(search)}">
           <div class="leaf-main">
             <span class="leaf-title" data-title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>${metaBlock}
           </div>
           <div class="links">
-            <a class="btn" href="./${WEB_PREFIX}/${item.path}/" target="_blank" rel="noopener noreferrer">Presentatie</a>
-            <a class="btn btn-secondary" href="./${WEB_PREFIX}/${item.path}/presentation.pdf" download>PDF</a>
+            <a class="btn" href="${item.href}" target="_blank" rel="noopener noreferrer">Presentatie</a>${pdfLink}
           </div>
         </div>`;
 }
@@ -290,6 +437,12 @@ const clientJs = `
 })();
 `;
 
+// Genereer eerst ontbrekende .html-shells voor deck-`.md`-bestanden, zodat
+// een nieuw in het CMS aangemaakt `.md` automatisch een werkende Reveal.js-
+// presentatie wordt (en op de portaalpagina verschijnt).
+const createdShells = [];
+if (fs.existsSync(presentationsRoot)) generateMissingShells(presentationsRoot, createdShells);
+
 const presentations = [];
 if (fs.existsSync(presentationsRoot)) collect(presentationsRoot, presentations);
 presentations.sort((a, b) => a.path.localeCompare(b.path, 'nl'));
@@ -327,6 +480,8 @@ const css = `
     .actions{display:flex;gap:8px}
     .actions button{font:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:999px;border:1px solid var(--border);background:var(--white);color:var(--ink-soft);cursor:pointer}
     .actions button:hover{border-color:var(--green);color:var(--green-dk)}
+    .actions .cms-link{display:inline-flex;align-items:center;font:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:999px;border:1px solid var(--green-dk);background:var(--green-dk);color:var(--white);text-decoration:none;cursor:pointer}
+    .actions .cms-link:hover{background:var(--green);border-color:var(--green);color:var(--white)}
     .stats{margin:14px 0 0;font-size:13px;color:var(--muted)}
     .node{margin:0}
     .children{margin:2px 0 6px 13px;padding-left:14px;border-left:1px solid var(--border)}
@@ -388,6 +543,7 @@ ${css}  </style>
           <button type="button" id="clear" class="clear" aria-label="Zoekopdracht wissen">&times;</button>
         </label>
         <div class="actions">
+          <a class="cms-link" href="./admin/">Slides Bewerken (Docenten CMS)</a>
           <button type="button" data-action="expand">Alles uitvouwen</button>
           <button type="button" data-action="collapse">Alles inklappen</button>
         </div>
@@ -419,4 +575,24 @@ ${clientJs}  </script>
 fs.mkdirSync(distDir, { recursive: true });
 fs.writeFileSync(path.join(distDir, 'index.html'), html);
 
+// Zet de CMS-map en de media-uploads klaar in dist/, en spiegel de zojuist
+// gegenereerde shells (de deploy-workflow kopieert `presentations/` en
+// `shared/` al vóór deze stap, dus we vullen alleen de nieuwe bestanden aan).
+for (const shell of createdShells) {
+  const dest = path.join(distDir, WEB_PREFIX, path.relative(presentationsRoot, shell));
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(shell, dest);
+}
+
+const adminSrc = path.join(root, 'admin');
+if (fs.existsSync(adminSrc)) {
+  fs.cpSync(adminSrc, path.join(distDir, 'admin'), { recursive: true, force: true });
+}
+
+const uploadsSrc = path.join(root, 'shared', 'img', 'uploads');
+if (fs.existsSync(uploadsSrc)) {
+  fs.cpSync(uploadsSrc, path.join(distDir, 'shared', 'img', 'uploads'), { recursive: true, force: true });
+}
+
 console.log(`✔ Portaalpagina gebouwd: dist/index.html (${totalPresentations} presentatie(s), ${totalFolders} map(pen))`);
+if (createdShells.length) console.log(`  ${createdShells.length} nieuwe shell(s) gegenereerd.`);
