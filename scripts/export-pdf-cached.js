@@ -34,7 +34,7 @@ const distPresentationsRoot = path.join(distDir, 'presentations');
 const sourcePresentationsRoot = path.join(root, 'presentations');
 const sharedRoot = path.join(root, 'shared');
 
-const DECKTAPE_IMAGE = 'astefanutti/decktape:3.12.0';
+const DECKTAPE_IMAGE = 'ghcr.io/astefanutti/decktape:3.17.0';
 const EXPORT_SIZE = '1920x1080';
 // v2: v1 bevatte lege PDF's van Markdown-decks (file://-XHR geblokkeerd).
 const CACHE_VERSION = 'v2'; // bump om de volledige cache te invalidaten

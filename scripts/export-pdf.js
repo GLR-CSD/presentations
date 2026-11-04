@@ -59,10 +59,19 @@ for (const deck of decks) {
   // wordt de '?' als bestandsnaam gezien), vandaar de expliciete file://-URL's.
   const localUrl = `${pathToFileURL(path.join(deck, 'index.html')).href}?showNotes=true`;
   const dockerUrl = `file:///slides/${relPath}/index.html?showNotes=true`;
+  // DeckTape draait intern als non-root `node` (UID 1000). Draai de container als
+  // de host-gebruiker en geef Chromium een schrijfbare HOME, anders kan de
+  // container niet in de gemounte map schrijven (EACCES: permission denied).
+  const dockerArgs = ['run', '--rm'];
+  if (typeof process.getuid === 'function' && typeof process.getgid === 'function') {
+    dockerArgs.push('--user', `${process.getuid()}:${process.getgid()}`, '-e', 'HOME=/tmp');
+  }
+  dockerArgs.push('-v', `${root}:/slides`, 'ghcr.io/astefanutti/decktape:3.17.0', chromeArg,
+    '--size', '1920x1080', dockerUrl, `/slides/${relPath}/presentation.pdf`);
+
   const args = useLocal
     ? [chromeArg, '--size', '1920x1080', localUrl, 'presentation.pdf']
-    : ['run', '--rm', '-v', `${root}:/slides`, 'astefanutti/decktape:3.12.0', chromeArg,
-       '--size', '1920x1080', dockerUrl, `/slides/${relPath}/presentation.pdf`];
+    : dockerArgs;
   const command = useLocal ? 'decktape' : 'docker';
 
   const result = spawnSync(command, args, { cwd: deck, stdio: 'inherit' });
