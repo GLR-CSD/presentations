@@ -36,7 +36,10 @@ const sharedRoot = path.join(root, 'shared');
 
 const DECKTAPE_IMAGE = 'astefanutti/decktape:3.12.0';
 const EXPORT_SIZE = '1920x1080';
-const CACHE_VERSION = 'v1'; // bump om de volledige cache te invalidaten
+// v2: v1 bevatte lege PDF's van Markdown-decks (file://-XHR geblokkeerd).
+const CACHE_VERSION = 'v2'; // bump om de volledige cache te invalidaten
+// Een lege 1920x1080-pagina is ~850 B; een echte slide met fonts is veel groter.
+const MIN_PDF_BYTES = 10 * 1024;
 const dryRun = process.argv.includes('--dry-run');
 
 // --- hashing ---------------------------------------------------------------
@@ -143,6 +146,9 @@ function runDecktape(deckDir, rel) {
   args.push(
     '-v', `${distDir}:/slides`,
     DECKTAPE_IMAGE,
+    // Markdown-decks laden `slides.md` via XHR; Chromium blokkeert dat op
+    // file:// standaard, waardoor de deck zonder slides (= lege PDF) rendert.
+    '--chrome-arg=--allow-file-access-from-files',
     '--size', EXPORT_SIZE,
     `/slides/${relPath}/index.html`,
     `/slides/${relPath}/presentation.pdf`,
@@ -150,6 +156,15 @@ function runDecktape(deckDir, rel) {
 
   const result = spawnSync('docker', args, { cwd: deckDir, stdio: 'inherit' });
   return !result.error && result.status === 0;
+}
+
+/** Grootte van de PDF in bytes, of 0 als die ontbreekt. */
+function pdfSize(file) {
+  try {
+    return fs.statSync(file).size;
+  } catch {
+    return 0;
+  }
 }
 
 // --- main ------------------------------------------------------------------
@@ -205,6 +220,15 @@ for (const deckDir of decks) {
   console.log(`▸ PDF genereren voor: ${rel}`);
   if (!runDecktape(deckDir, rel)) {
     console.error(`✖ Mislukt: ${rel}`);
+    failures += 1;
+    continue;
+  }
+  // DeckTape slaagt ook als de deck geen slides heeft (bijv. markdown niet
+  // geladen). Zo'n lege PDF niet deployen en vooral niet cachen.
+  const size = pdfSize(pdfAbs);
+  if (size < MIN_PDF_BYTES) {
+    console.error(`✖ Lege PDF (${size} bytes): ${rel}`);
+    fs.rmSync(pdfAbs, { force: true });
     failures += 1;
     continue;
   }
