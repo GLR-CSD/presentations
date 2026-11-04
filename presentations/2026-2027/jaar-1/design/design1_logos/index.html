@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo's — Design1 · GLR Media Creative</title>
+<meta name="description" content="Design1 P1, les logo's: wat een logo is, waar het voor dient, de onderdelen (beeldmerk, woordmerk, combimark) en de evolutie van logo's. Met een Kahoot-check, een schetsoefening en opdracht 1: een logo voor je eigen gamebedrijf.">
+<meta name="author" content="GLR Media Creative">
+
+<!--
+  Deze wrapper laadt de inhoud uit slides.md met de reveal.js markdown-plugin
+  en de gedeelde GLR-huisstijl.
+
+  PADEN — let op:
+  Dit bestand hoort te staan in
+      presentations/<cohort>/<jaar>/<vak>/<presentatie>/
+  Dat is 5 niveaus onder de repo-root; daarom verwijst `../../../../../shared/`
+  naar de gedeelde map. Nest je een presentatie dieper of ondieper, pas dan het
+  aantal `../` aan (of hergebruik de opbouw van deze presentaties).
+
+  LOKAAL BEKIJKEN:
+  De markdown-plugin haalt slides.md op via HTTP, dus open dit bestand via een
+  servertje en niet via file:// →  `npm run serve` en ga naar /presentations/...
+-->
+
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/reveal.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="../../../../../shared/css/glr-theme.css">
+
+<style>
+  /* Presentatiespecifieke bouwstenen (niet in het gedeelde thema). */
+
+  /* Beeldvergelijking: twee of drie beelden naast elkaar, volledig zichtbaar */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px;flex:1;min-height:0}
+  .pair--3{grid-template-columns:repeat(3,1fr);gap:16px}
+  .pair figure{min-height:0}
+  .pair figure img{background:#fff;border:1px solid var(--border)}
+
+  /* Strip met bekende logo's, gecentreerd op natuurlijke breedte */
+  .strip-wrap{display:flex;justify-content:center;margin-top:22px;flex:1;min-height:0;align-items:center}
+  .strip-wrap img{max-width:660px;max-height:100%;object-fit:contain;border-radius:6px}
+
+  /* Grote vraag op een donkere slide */
+  .big-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:58px;line-height:1.05;
+    letter-spacing:-.02em;color:#fff;max-width:1060px}
+
+  /* Beeldmerk / woordmerk / combimark: klein visueel voorbeeld in een kaart */
+  .mark{display:flex;align-items:center;gap:12px;margin:2px 0 14px;min-height:62px}
+  .mark svg{width:62px;height:62px;display:block;flex:0 0 auto}
+  .mark--word{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;
+    letter-spacing:-.02em;color:var(--ink)}
+  .mark--combi svg{width:46px;height:46px}
+  .mark--combi .mark-word{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;color:var(--ink)}
+
+  /* Voorbereiding: drie vellen papier met naam + nummer */
+  .sheets{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;flex:1;min-height:0;align-content:center}
+  .sheet{background:#fff;border:1px solid var(--border);border-radius:8px;padding:18px;
+    display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 24px rgba(17,17,17,.07)}
+  .sheet .sheet-name{font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:10px}
+  .sheet .sheet-num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:80px;line-height:1;
+    color:var(--ink);margin-top:auto}
+
+  /* Oefening met timer: leeuw links, titel + timer rechts */
+  .row--exercise{margin-top:0;align-items:stretch;gap:44px}
+  .row--exercise .col--aside{flex:0 0 430px;justify-content:center;min-height:0}
+  .row--exercise .col--aside h2{font-size:34px;max-width:none;margin-top:4px}
+  .row--exercise .timer{flex:0 0 auto}
+  /* Figuren in rijen strikt begrenzen zodat ze nooit buiten hun kolom vallen */
+  .row .col{min-height:0}
+  .row figure{flex:1;min-height:0}
+
+  /* Kaartvarianten (groot) */
+  .cards--lg .glr-card{padding:26px 26px 24px}
+  .cards--lg .glr-card h3{font-size:28px;margin-bottom:10px}
+  .cards--lg .glr-card p{font-size:21px}
+
+  /* Blokvarianten */
+  .dark .defbox{background:#1E1E1E}
+  .dark .defbox .k{color:var(--lime)}
+  .defbox--sm{padding:16px 24px}
+  .defbox--sm p{font-size:20px}
+  .defbox--alert{border-left-color:#B3301B}
+  .defbox--alert .k{color:#9A2916}
+  .rows--tight{gap:14px;margin-top:20px}
+  .rows--tight .listrow{padding-top:12px}
+  .rows--tight .listrow h3{font-size:22px}
+  .rows--tight .listrow p{font-size:18px}
+  .listrow--now{background:var(--lime);border-radius:6px;padding:12px 14px !important;border-top:0 !important}
+  .listrow--now .n{color:var(--ink)}
+  .reveal .listrow--now p{color:#243a06}
+  .listrow--time{grid-template-columns:120px 1fr}
+  .listrow--time .n{font-size:22px;padding-top:2px}
+  /* Woord-labels (Wat/Hoe/Wanneer): bredere kolom zodat ze niet overlopen */
+  .listrow--label{grid-template-columns:180px 1fr}
+  .listrow--label .n{font-size:24px;letter-spacing:.03em;padding-top:4px}
+</style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+    <!--
+      De scheidingstekens eisen een lege regel voor en na de marker. Daardoor
+      wordt het YAML-frontmatter-blok bovenin slides.md (zonder lege regel rond
+      de markers) niet als slide opgevat. Die frontmatter is metadata voor de
+      portaalpagina (scripts/build-index.js); de marker erin verbergt de sectie.
+    -->
+    <section
+      data-markdown="slides.md"
+      data-separator="\n---\n\n"
+      data-separator-vertical="\n--\n\n"
+      data-separator-notes="^Note:"
+      data-charset="utf-8"></section>
+  </div>
+</div>
+
+<script src="../../../../../shared/vendor/reveal/reveal.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/markdown/markdown.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/highlight/highlight.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/notes/notes.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/search/search.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/zoom/zoom.js"></script>
+<script src="../../../../../shared/js/glr-plugins.js"></script>
+
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0,
+    display: 'flex',          /* slides zijn flex-kolommen (huisstijl-layout) */
+    center: false,
+    minScale: 0.2,
+    maxScale: 1.6,
+    hash: true,
+    progress: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: false,       /* eigen paginanummer in de footer */
+    transition: 'slide',
+    backgroundTransition: 'fade',
+    plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealSearch, RevealZoom],
+    markdown: { smartypants: true }
+  }).then(function () {
+    /* De markdown-plugin rendert de slides pas na DOMContentLoaded;
+       daarom de GLR-componenten (timers) hier opnieuw initialiseren. */
+    GLRPlugins.initAll();
+  });
+</script>
+
+</body>
+</html>
