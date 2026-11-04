@@ -66,7 +66,7 @@ Note: Korte herhaling van de vaste afspraken. Geen discussie, door naar de plann
   <div class="listrow listrow--time"><span class="n">15 min</span><div><h3>Uitleg: wat is een logo + Kahoot-check</h3></div></div>
   <div class="listrow listrow--time"><span class="n">10 min</span><div><h3>Oefening: schetsen (de leeuw)</h3></div></div>
   <div class="listrow listrow--time"><span class="n">30 min</span><div><h3>Opdracht 1: logo voor je eigen gamebedrijf</h3></div></div>
-  <div class="listrow listrow--time"><span class="n">rest</span><div><h3>Voorbereiding toets + afsluiting</h3></div></div>
+  <div class="listrow listrow--time"><span class="n">rest</span><div><h3>Start onderzoeksdocument (tot 10 min voor het einde)</h3></div></div>
 </div>
 
 <div class="footer"><span>Design1 · Logo's</span><span class="num">04</span></div>
@@ -428,34 +428,43 @@ Note: Gagné 7 — feedback. Laat studenten hun drie leeuwen met hun buur vergel
 
 ---
 
-<p class="kicker">Opdracht 1 · Individueel · Figma · tot 10 min voor het einde</p>
+<p class="kicker">Opdracht 1 · Individueel · Figma · 30 minuten</p>
 
 ## Ontwerp een logo voor je eigen gamebedrijf
 
 <div class="row" style="margin-top:8px">
-  <div class="col" style="flex:1 1 60%">
+  <div class="col" style="flex:1 1 62%">
     <div class="rows rows--tight">
       <div class="listrow"><span class="n">01</span><div><h3>Kies je bedrijfsnaam</h3><p>Gebruik je eigen naam als bedrijfsnaam.</p></div></div>
       <div class="listrow"><span class="n">02</span><div><h3>Schets minimaal 10 ideeën</h3><p>Op papier, snel en zonder oordeel — net als de leeuw.</p></div></div>
       <div class="listrow"><span class="n">03</span><div><h3>Werk je beste idee uit in Figma</h3><p>Denk aan vorm, kleur en typografie.</p></div></div>
       <div class="listrow"><span class="n">04</span><div><h3>Onderbouw je keuzes</h3><p>Leg kort uit waarom je voor deze vorm, kleur en typografie koos.</p></div></div>
     </div>
+    <div class="defbox defbox--sm" style="margin-top:16px">
+      <span class="k">Inleveren</span>
+      <p>Een <strong>foto van je 10 schetsen</strong>, je <strong>uitgewerkte logo</strong> en een <strong>korte onderbouwing</strong>.</p>
+    </div>
   </div>
-  <div class="col vcenter" style="flex:1 1 40%">
-    <div class="opcard">
-      <p class="k">Inleveren</p>
-      <ul class="check" style="margin-top:6px">
-        <li><strong>Foto van je 10 schetsen</strong></li>
-        <li><strong>Je uitgewerkte logo</strong><br><span class="small">in Figma, geëxporteerd als afbeelding</span></li>
-        <li><strong>Korte onderbouwing</strong><br><span class="small">waarom deze vorm, kleur en typografie?</span></li>
-      </ul>
+  <div class="col" style="flex:0 0 340px">
+    <div class="timer timer--lg" data-timer="30:00" role="group" aria-label="Opdracht-timer 30 minuten">
+      <div class="t-dial">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="t-track" cx="60" cy="60" r="54"></circle>
+          <circle class="t-prog" cx="60" cy="60" r="54"></circle>
+        </svg>
+        <div class="t-face"><span class="t-time">30:00</span><span class="t-label">Opdracht 1</span></div>
+      </div>
+      <div class="t-btns">
+        <button class="t-btn t-start" type="button">Start</button>
+        <button class="t-btn t-reset" type="button">Reset</button>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="footer"><span>Design1 · Logo's</span><span class="num">20</span></div>
 
-Note: Opdracht 1 (ook in de lesstof: DESIGN1 / Periode 1 / Opdracht 1). Je ontwerpt een logo voor je eigen gamebedrijf en gebruikt je eigen naam als bedrijfsnaam. Eerst minimaal 10 snelle schetsen op papier — daar zit de kracht van deze opdracht (doel 4: ideeën en keuze). Kies dan je beste idee en werk het uit in Figma, met aandacht voor vorm, kleur en typografie. Sluit af met een korte onderbouwing: waarom deze keuzes? Inleveren: foto van de 10 schetsen, het uitgewerkte logo en de onderbouwing. Studenten werken tot 10 minuten voor het einde; die tijd is voor de afsluiting en de vooruitblik. Wat niet af is, maak je thuis af.
+Note: Opdracht 1 (ook in de lesstof: DESIGN1 / Periode 1 / Opdracht 1). Je ontwerpt een logo voor je eigen gamebedrijf en gebruikt je eigen naam als bedrijfsnaam. Eerst minimaal 10 snelle schetsen op papier — daar zit de kracht van deze opdracht (doel 4: ideeën en keuze). Kies dan je beste idee en werk het uit in Figma, met aandacht voor vorm, kleur en typografie. Sluit af met een korte onderbouwing: waarom deze keuzes? Inleveren: foto van de 10 schetsen, het uitgewerkte logo en de onderbouwing. Je hebt hier 30 minuten voor: start de timer. Wat niet af is, maak je thuis af.
 
 
 ---
@@ -488,7 +497,7 @@ Note: Gagné 8 — beoordelen/vooruitkijken. In week 47 krijg je tijdens de les 
 
 <p class="kicker">Voorbereiding · Onderzoeksdocument</p>
 
-## Volgende week onderzoek je wat past bij Museum de Pixel
+## Je start vandaag al met het onderzoek voor Museum de Pixel
 
 <div class="rows rows--tight">
   <div class="listrow listrow--label"><span class="n">Wat</span><div><h3>Minimaal 2 A4</h3><p>Onderzoek welke vormen, kleuren en typografie passen bij Museum de Pixel.</p></div></div>
@@ -496,9 +505,14 @@ Note: Gagné 8 — beoordelen/vooruitkijken. In week 47 krijg je tijdens de les 
   <div class="listrow listrow--label listrow--now"><span class="n">Wanneer</span><div><h3>Deadline: zondag 15 november</h3><p>Lever je onderzoeksdocument op tijd in.</p></div></div>
 </div>
 
+<div class="defbox defbox--sm">
+  <span class="k">Vandaag</span>
+  <p>Maak alvast een <strong>start</strong> met je onderzoeksdocument, tot <strong>10 minuten voor het einde</strong> van de les. Volgende week werk je er verder aan.</p>
+</div>
+
 <div class="footer"><span>Design1 · Logo's</span><span class="num">22</span></div>
 
-Note: Voorbereiding op de eindopdracht. Je maakt een onderzoeksdocument van minimaal 2 A4 waarin je onderzoekt welke vormen, kleuren en typografie passen bij Museum de Pixel. Gebruik het aangeleverde template (Lesstof → DESIGN1 → Periode 1 → Eindopdracht Onderzoek) en de theorie uit de lessen over vorm, kleur en typografie. Deadline: zondag 15 november. Let op: het onderzoek is van jezelf — verzamel je eigen inspiratie en onderbouw je eigen keuzes.
+Note: Voorbereiding op de eindopdracht. Je maakt een onderzoeksdocument van minimaal 2 A4 waarin je onderzoekt welke vormen, kleuren en typografie passen bij Museum de Pixel. Gebruik het aangeleverde template (Lesstof → DESIGN1 → Periode 1 → Eindopdracht Onderzoek) en de theorie uit de lessen over vorm, kleur en typografie. Deze les maak je al een start: je werkt eraan tot 10 minuten voor het einde van de les; volgende week ga je er verder mee. Deadline: zondag 15 november. Let op: het onderzoek is van jezelf — verzamel je eigen inspiratie en onderbouw je eigen keuzes.
 
 
 ---
