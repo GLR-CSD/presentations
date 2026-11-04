@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Logo's"
 cohort: "2026-2027"
 leerjaar: 1
 periode: 1
 auteur: "GLR Media Creative"
 tags: ["Design1", "Logo", "Beeldmerk", "Woordmerk", "Combimark", "Huisstijl", "Schetsen", "Figma", "Museum de Pixel", "Kahoot"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="bleed dark" data-background-color="#111111" -->
 

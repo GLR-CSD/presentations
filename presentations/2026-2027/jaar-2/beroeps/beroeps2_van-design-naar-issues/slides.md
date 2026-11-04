@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Van design naar issues — en dan parallel bouwen"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 2
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "Design Thinking", "GitHub Projects", "Issues", "User Stories", "Definition of Ready", "Teamwork"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

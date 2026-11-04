@@ -44,26 +44,33 @@ Gebruik de templates in `templates/` (`slides.md` en `index.html`) als startpunt
 
 - Slides scheiden met `---` (horizontaal, voor hoofdthema's) en `--`
   (verticaal, voor verdiepingen, uitwerkingen en codevoorbeelden).
-- Elke `slides.md` opent met een YAML-frontmatter met de verplichte velden
-  `title`, `cohort`, `leerjaar`, `periode`, `auteur` en `tags`.
+- Elke `slides.md` opent met een frontmatter-blok tussen de HTML-comment-markers
+  `<!-- frontmatter` en `-->` met de verplichte velden `title`, `cohort`,
+  `leerjaar`, `periode`, `auteur` en `tags`.
 - Geen losse HTML voor opmaak; gebruik de GLR-utilities (zie hieronder).
 - Splits nooit een concept over meerdere niveaus tegelijk; maximaal één concept
   of programmeerconstructie per slide.
 
-## YAML-frontmatter (verplicht)
+## Frontmatter (verplicht)
+
+Elke `slides.md` opent met een frontmatter-blok tussen de HTML-comment-markers
+`<!-- frontmatter` en `-->`. Zo ziet Reveal.js het als een (onzichtbare)
+HTML-comment en worden de `---` slide-scheidingstekens nooit met YAML-
+frontmatter verward. De YAML tussen de markers is 100% valide.
 
 ```yaml
----
+<!-- frontmatter
 title: "Asynchrone JavaScript & Promises"
-cohort: "2025-2026"
+cohort: "2026-2027"
 leerjaar: 1
 periode: 2
 auteur: "Docententeam CSD"
 tags: ["JavaScript", "Frontend", "Async", "API"]
----
+-->
 ```
 
-De portaalpagina (`scripts/build-index.js`) leest deze velden voor de indexering.
+De portaalpagina (`scripts/build-index.js`) leest deze velden voor de
+indexering en ondersteunt (voor oudere decks) ook het `--- … ---`-formaat.
 
 ## Didactische structuur (verplicht)
 

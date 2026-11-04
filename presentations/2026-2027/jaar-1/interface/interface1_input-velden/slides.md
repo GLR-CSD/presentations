@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Input velden"
 cohort: "2026-2027"
 leerjaar: 1
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Interface1", "HTML", "Formulieren", "form", "input", "label", "textarea", "select", "GET en POST", "JavaScript", "Events"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

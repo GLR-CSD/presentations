@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Elevator Pitches & MVP kick-off"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "MVP", "GitHub Projects", "Design Thinking"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

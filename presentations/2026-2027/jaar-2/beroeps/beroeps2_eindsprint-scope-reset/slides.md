@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Eindsprint & Scope Reset"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "MVP", "PHP", "MySQL", "Pull Request", "Fist to Five", "Release Video", "Zelfevaluatie", "Scope"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

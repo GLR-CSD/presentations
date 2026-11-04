@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Mega Villains Inc. — Les 2: flowchart, wireframes en moodboard"
 cohort: "2026-2027"
 leerjaar: "vmbo (BB/KB/GL)"
 periode: 1
 auteur: "GLR Creative Software Developer"
 tags: ["Keuzevak", "MVI K09", "Applicatieontwikkeling", "vmbo", "Flowchart", "Wireframes", "Knoppen", "Moodboard", "Figma", "Villain Card"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="bleed" -->
 

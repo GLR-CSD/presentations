@@ -1,12 +1,11 @@
----
+<!-- frontmatter
 title: "Stand-up & aan de slag"
 cohort: "2026-2027"
 leerjaar: 2
 periode: 1
 auteur: "Docententeam CSD"
 tags: ["Beroeps", "Agile", "Stand-up", "Werkles"]
-<!-- .slide: data-visibility="hidden" -->
----
+-->
 
 <!-- .slide: class="dark" data-background-color="#111111" -->
 

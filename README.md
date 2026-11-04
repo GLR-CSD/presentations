@@ -14,16 +14,18 @@ Zie voor de volledige architectuur en richtlijnen:
 .
 ├── .github/workflows/deploy.yml    # CI/CD: build, PDF-export en deploy naar GitHub Pages
 ├── .agents/skills/                 # Agent Skills (educational-presentation-nl + reveal-slide-builder)
+├── admin/                          # Grafische editor (Sveltia CMS): index.html + config.yml
 ├── input/                          # Lokale staging voor brondocumenten (niet in Git)
 ├── presentations/                  # De presentaties, per cohort/jaar/vak
 ├── shared/                         # Gedeelde assets
 │   ├── css/glr-theme.css           # GLR-huisstijl (kleuren, typografie, utilities)
 │   ├── fonts/                      # Space Grotesk + Hanken Grotesk (.ttf)
 │   ├── img/glr-logo.svg            # Logo
+│   ├── img/uploads/                # Door docenten geüploade afbeeldingen (via /admin)
 │   ├── js/glr-plugins.js           # Gedeelde plugins/controllers (timer, kleurenwiel)
 │   └── vendor/                     # reveal.js, KaTeX + chalkboard (gegenereerd met `npm run vendor`)
 ├── scripts/
-│   ├── build-index.js              # Bouwt de portaalpagina (dist/index.html)
+│   ├── build-index.js              # Bouwt de portaalpagina (dist/index.html) + shells/CMS naar dist
 │   ├── export-pdf.js               # PDF-export via DeckTape
 │   ├── vendor-reveal.js            # Kopieert reveal.js uit node_modules
 │   └── vendor-plugins.js           # Kopieert KaTeX + haalt chalkboard/customcontrols op
@@ -67,20 +69,64 @@ Open daarna een presentatie via de server, bijvoorbeeld
 > **Markdown-scheidingstekens & frontmatter.** De wrapper splitst `slides.md`
 > met `data-separator="\n---\n\n"` en `data-separator-vertical="\n--\n\n"`.
 > Horizontale (`---`) en verticale (`--`) scheiders hebben dus **steeds een lege
-> regel ervoor én erna**. Dat is bewust: het YAML-frontmatter-blok bovenin
-> `slides.md` (dat geen lege regel rond de `---` heeft) wordt dan niet als slide
-> gezien. Zet in de frontmatter als laatste regel
-> `<!-- .slide: data-visibility="hidden" -->`; de markdown-plugin maakt er één
-> sectie van die reveal.js direct weer verbergt. Zo blijft de frontmatter
-> beschikbaar voor de portaalpagina (`scripts/build-index.js`) zonder als lege
-> of tekstslide in de presentatie te verschijnen.
+> regel ervoor én erna**. Het frontmatter-blok bovenin `slides.md` staat tussen de
+> HTML-comment-markers `<!-- frontmatter` en `-->`; Reveal.js ziet dat als een
+> (onzichtbare) comment, zodat de `---` scheiders nooit met YAML-frontmatter worden
+> verward. De portaalpagina (`scripts/build-index.js`) leest de YAML tussen de
+> markers (en ondersteunt voor oudere decks ook het `--- … ---`-formaat).
+
+## Slides bewerken via de Grafische Editor (/admin)
+
+Minder technische collega's kunnen de presentaties ook **visueel** bewerken met de
+grafische editor (Sveltia CMS). Die staat op GitHub Pages onder
+[`/admin/`](https://GLR-CSD.github.io/presentations/admin/). Je bewerkt er het
+`.md`-bestand van een les; de bijbehorende Reveal.js-`.html`-shell wordt bij de
+build automatisch gegenereerd (zie `scripts/build-index.js`). De editor heeft
+**geen** eigen server nodig: je logt in met een GitHub Personal Access Token.
+
+### Eenmalig: een Fine-Grained Personal Access Token (PAT) aanmaken
+
+1. Ga naar <https://github.com/settings/personal-access-tokens/new>.
+2. **Resource owner:** kies de organisatie **`GLR-CSD`** (een organisatiebeheerder
+   moet de token mogelijk eerst goedkeuren).
+3. **Repository access:** *Only select repositories* → **`presentations`**.
+4. **Repository permissions:**
+   - **Contents:** *Read and write* — presentaties en afbeeldingen lezen/schrijven.
+   - **Pull requests:** *Read and write* — voor de concept/Pull-Request-flow.
+   - *Metadata* staat standaard op *Read-only*; laat dat zo.
+5. **Expiration:** kies een redelijke geldigheidsduur en genereer de token.
+6. **Kopieer de token direct** (hij is daarna niet meer zichtbaar) en bewaar hem
+   veilig, bijvoorbeeld in een wachtwoordmanager.
+
+> Deel de token nooit in de repository of in een chatbericht: hij geeft
+> schrijftoegang tot de presentaties.
+
+### Inloggen op /admin/
+
+1. Open <https://GLR-CSD.github.io/presentations/admin/>.
+2. Kies **Sign in with GitHub** en plak de PAT.
+3. Kies links de collectie **Presentaties**, navigeer naar de juiste map
+   (cohort / leerjaar / vak / les) en bewerk de **metadata** (titel, cohort,
+   leerjaar, periode, auteur, tags) en de **slides**.
+
+### Slides maken in de editor
+
+- Scheid slides met `---`, of gebruik de knop **Nieuwe slide (GLR-layout)** met
+  opties voor GLR-achtergronden en layouts.
+- Gebruik **GLR twee kolommen** voor een tweekoloms layout en **Docentnotitie
+  (speaker note)** voor notities (zichtbaar met de toets `S`).
+- Sla je wijziging op; die komt als **Pull Request** klaar te staan (editorial
+  workflow). Een beheerder publiceert (merget) de PR naar `main`, waarna GitHub
+  Pages opnieuw deployt.
+- Afbeeldingen die je uploadt komen in `shared/img/uploads/` en worden als
+  `/presentations/shared/img/uploads/…` in de Markdown gezet.
 
 ## Scripts
 
 | Commando | Wat het doet |
 |---|---|
 | `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/` (offline) |
-| `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie) uit de presentaties + frontmatter |
+| `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie), genereert ontbrekende `.html`-shells voor losse `.md`-decks en kopieert `admin/` + `shared/img/uploads/` naar `dist/` |
 | `npm run build` | `vendor` + `build:index` |
 | `npm run export:pdf` | Exporteert elke presentatie naar `presentation.pdf` via DeckTape (Docker) |
 | `npm run export:pdf -- --local` | Idem, maar met een lokaal geïnstalleerde `decktape` |
