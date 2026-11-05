@@ -237,6 +237,10 @@ function collect(dir, found) {
       // voor losse `<naam>.md`-decks linken direct naar `<naam>.html`.
       href: hasIndex ? `./${WEB_PREFIX}/${rel}/` : `./${WEB_PREFIX}/${rel}/${shell}`,
       hasPdf: hasIndex,
+      // Voor het statische deck-manifest van de GLR Slide Studio:
+      mdFile: mdName || null,
+      htmlFile: hasIndex ? 'index.html' : (mdName ? shell : null),
+      family: mdName ? 'markdown' : 'html',
     });
     return;
   }
@@ -543,7 +547,7 @@ ${css}  </style>
           <button type="button" id="clear" class="clear" aria-label="Zoekopdracht wissen">&times;</button>
         </label>
         <div class="actions">
-          <a class="cms-link" href="./admin/">Slides Bewerken (Docenten CMS)</a>
+          <a class="cms-link" href="./admin/">Slides Bewerken (GLR Slide Studio)</a>
           <button type="button" data-action="expand">Alles uitvouwen</button>
           <button type="button" data-action="collapse">Alles inklappen</button>
         </div>
@@ -592,6 +596,31 @@ if (fs.existsSync(adminSrc)) {
 const uploadsSrc = path.join(root, 'shared', 'img', 'uploads');
 if (fs.existsSync(uploadsSrc)) {
   fs.cpSync(uploadsSrc, path.join(distDir, 'shared', 'img', 'uploads'), { recursive: true, force: true });
+}
+
+// --- Statisch deck-manifest voor de GLR Slide Studio ------------------------
+// Laat de Studio de "Deck openen"-lijst direct vullen (zonder GitHub-token of
+// mapselectie) en elk deck via fetch() laden — offline, vanaf GitHub Pages of
+// een lokale server.
+const manifest = {
+  generatedAt: new Date().toISOString(),
+  presentations: presentations.map((p) => ({
+    title: p.name,
+    md: p.mdFile ? `presentations/${p.path}/${p.mdFile}` : null,
+    html: p.htmlFile ? `presentations/${p.path}/${p.htmlFile}` : null,
+    cohort: p.cohort,
+    leerjaar: p.leerjaar,
+    periode: p.periode,
+    auteur: p.auteur,
+    tags: p.tags,
+    family: p.family,
+    href: p.href,
+  })),
+};
+const manifestJson = `${JSON.stringify(manifest, null, 2)}\n`;
+for (const dir of [distDir, adminSrc, path.join(distDir, 'admin')]) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'presentations-manifest.json'), manifestJson);
 }
 
 console.log(`✔ Portaalpagina gebouwd: dist/index.html (${totalPresentations} presentatie(s), ${totalFolders} map(pen))`);

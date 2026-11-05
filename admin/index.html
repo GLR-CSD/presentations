@@ -4,94 +4,76 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex" />
-  <title>GLR Creative Software Developer | Slides bewerken</title>
+  <title>GLR Slide Studio | Presentaties bewerken</title>
   <link rel="icon" type="image/svg+xml" href="../shared/img/glr-logo.svg" />
+  <link rel="stylesheet" href="./vendor/studio.css" />
 </head>
 <body>
-  <!--
-    Sveltia CMS — grafische, Git-backed editor voor de presentaties.
-    Inloggen met een GitHub Fine-Grained Personal Access Token (PAT) of via
-    de lokale modus. Configuratie staat in ./config.yml.
-  -->
-  <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+  <!-- Verplichte Login Gate: bedekt de Studio totdat de docent is ingelogd. -->
+  <div class="auth-gate" id="auth-gate">
+    <div class="auth-gate__glow" aria-hidden="true"></div>
+    <div class="auth-card">
+      <div class="auth-card__brand"><span class="studio-brand__dot"></span>GLR Slide Studio</div>
+      <p class="auth-card__loading">Bezig met laden…</p>
+    </div>
+  </div>
 
-  <script type="module">
-    window.addEventListener('DOMContentLoaded', () => {
-      if (!window.CMS) return;
+  <div class="studio">
+    <header class="studio-topbar">
+      <div class="studio-brand"><span class="studio-brand__dot"></span>GLR Slide Studio</div>
 
-      /* 1. Nieuwe slide: voegt een Reveal.js-scheiding (---) toe, optioneel met
-            een <!-- .slide: ... -->-comment voor GLR-achtergronden/layouts.
-            Let op: de decks splitsen op "\n---\n\n", dus de scheiding heeft
-            altijd een lege regel ervoor én erna. */
-      window.CMS.registerEditorComponent({
-        id: 'glr-slide-break',
-        label: 'Nieuwe slide (GLR-layout)',
-        fields: [
-          {
-            name: 'layout',
-            label: 'Slide-indeling / achtergrond',
-            widget: 'select',
-            options: [
-              { label: 'Standaard slide', value: '' },
-              { label: 'GLR groen accent (#8fe507)', value: 'data-background-color="#8fe507"' },
-              { label: 'Donkere code-slide (#1a1a1a)', value: 'data-background-color="#1a1a1a"' },
-              { label: 'Assertion-evidence (stelling + bewijs)', value: 'class="slide-assertion-evidence"' },
-              { label: 'Sectie- / hoofdstuktitel', value: 'class="slide-section-header"' }
-            ],
-            default: ''
-          }
-        ],
-        pattern: /^---\r?\n(?:\s*<!-- \.slide: (.*?) -->)?/m,
-        fromBlock: (match) => ({ layout: match[1] || '' }),
-        toBlock: (data) => (data.layout && data.layout.trim() !== '')
-          ? `\n\n---\n\n<!-- .slide: ${data.layout} -->\n\n`
-          : `\n\n---\n\n`,
-        toPreview: (data) => {
-          const label = data.layout ? `Nieuwe slide \u2014 ${data.layout}` : 'Nieuwe slide (standaard)';
-          return `<hr style="border:2px dashed #A6E22E;margin:20px 0"><div style="background:#111;color:#A6E22E;padding:4px 10px;font-family:monospace;font-size:12px;display:inline-block;border-radius:4px">${label}</div>`;
-        }
-      });
+      <button type="button" class="topbtn topbtn--deck" id="open-btn" title="Presentaties openen">
+        <span class="topbtn__icon" id="open-btn-icon"></span>
+        <span class="topbtn__text">
+          <span class="topbtn__title" id="deckname">Geen presentatie geopend</span>
+          <span class="topbtn__sub" id="deckpath">Kies of maak een presentatie</span>
+        </span>
+        <span class="topbtn__chev" id="open-btn-chev"></span>
+      </button>
 
-      /* 2. Twee kolommen: een tweekoloms HTML-layout die de huisstijl-klassen
-            .glr-columns / .glr-col gebruikt (zie shared/css/glr-theme.css). */
-      window.CMS.registerEditorComponent({
-        id: 'glr-two-columns',
-        label: 'GLR twee kolommen',
-        fields: [
-          { name: 'left', label: 'Linker kolom (tekst / markdown)', widget: 'markdown' },
-          { name: 'right', label: 'Rechter kolom (tekst / code / afbeelding)', widget: 'markdown' }
-        ],
-        pattern: /^<div class="glr-columns">\n<div class="glr-col">\n([\s\S]*?)\n<\/div>\n<div class="glr-col">\n([\s\S]*?)\n<\/div>\n<\/div>/m,
-        fromBlock: (match) => ({ left: match[1], right: match[2] }),
-        toBlock: (data) => `<div class="glr-columns">\n<div class="glr-col">\n${data.left || ''}\n</div>\n<div class="glr-col">\n${data.right || ''}\n</div>\n</div>`,
-        toPreview: (data) => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;border:1px solid #E5E7EB;padding:12px;border-radius:6px"><div><strong>Links</strong><br>${data.left || ''}</div><div><strong>Rechts</strong><br>${data.right || ''}</div></div>`
-      });
+      <div class="studio-modes" id="modes" role="tablist" aria-label="Weergave">
+        <button type="button" data-mode="visual" class="is-active">Visueel</button>
+        <button type="button" data-mode="split">Split</button>
+        <button type="button" data-mode="source">Source</button>
+      </div>
 
-      /* 3. Docentnotitie: een Reveal.js speaker note ("Note:"), zichtbaar met
-            de toets S in de sprekersweergave. */
-      window.CMS.registerEditorComponent({
-        id: 'glr-speaker-notes',
-        label: 'Docentnotitie (speaker note)',
-        fields: [
-          { name: 'note', label: 'Aanwijzingen (alleen zichtbaar in de sprekersweergave)', widget: 'text' }
-        ],
-        pattern: /^Note:\n([\s\S]*?)(?=\n---|\n--|$)/m,
-        fromBlock: (match) => ({ note: match[1] ? match[1].trim() : '' }),
-        toBlock: (data) => `\nNote:\n${data.note || ''}\n`,
-        toPreview: (data) => `<div style="background:#fff9db;border-left:4px solid #f59f00;padding:10px;font-style:italic"><strong>Docentnotitie:</strong><br>${data.note || ''}</div>`
-      });
+      <div class="studio-actions">
+        <button type="button" class="studio-btn" id="new-deck-btn" title="Nieuwe presentatie"></button>
+        <button type="button" class="studio-btn studio-btn--primary" id="save-btn" title="Opslaan (Ctrl+S)"></button>
+        <button type="button" class="studio-btn studio-btn--icon" id="download-btn" title="Download .md" aria-label="Download .md"></button>
+        <div class="dropdown" id="dd-account">
+          <button type="button" class="studio-btn studio-btn--icon" id="account-btn" data-toggle
+                  title="Account &amp; verbinding" aria-label="Account en verbinding"></button>
+          <div class="dropdown-menu dropdown-menu--account" id="account-menu"></div>
+        </div>
+      </div>
+    </header>
 
-      /* Schoonmaak bij opslaan: verwijder een eventuele lege
-         <!-- frontmatter -->-comment aan het begin van het body-veld. */
-      window.CMS.registerEventListener({
-        name: 'preSave',
-        handler: ({ entry }) => {
-          const body = entry.getIn(['data', 'body']) || '';
-          const cleanBody = body.replace(/^\s*<!--\s*frontmatter\s*-->\s*/, '');
-          return entry.get('data').set('body', cleanBody);
-        }
-      });
-    });
-  </script>
+    <div class="studio-body">
+      <aside class="studio-sorter" id="sorter" aria-label="Slides"></aside>
+
+      <main class="studio-center">
+        <div class="studio-toolbar" id="toolbar" role="toolbar" aria-label="Blokken"></div>
+        <div class="studio-panes" id="panes" data-mode="visual">
+          <div class="studio-pane studio-pane--editor"><div class="studio-editor" id="editor"></div></div>
+          <div class="studio-pane studio-pane--source" id="source-pane" hidden></div>
+          <div class="studio-pane studio-pane--preview">
+            <div class="preview-label">Live Reveal.js-preview</div>
+            <div class="preview-frame" id="preview"></div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="studio-inspector" id="inspector" aria-label="Inspector"></aside>
+    </div>
+
+    <footer class="studio-status" id="status"><span id="status-text">Klaar.</span></footer>
+  </div>
+
+  <div class="studio-popover" id="popover" hidden></div>
+  <div id="modal-root"></div>
+
+  <script type="module" src="./vendor/studio.js"></script>
 </body>
 </html>
+
