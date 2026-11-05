@@ -105,7 +105,7 @@ export function openPresentationsBrowser({ manifest, currentPath = '', onOpen, o
       </span>
       <span class="deck-card__meta">${badges}</span>
       ${entry.auteur ? `<span class="deck-card__author">${icon('user', 13)} ${escapeHtml(entry.auteur)}</span>` : ''}
-      <span class="deck-card__tags">${(entry.tags || []).slice(0, 6).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</span>
+      <span class="deck-card__tags">${(entry.tags || []).slice(0, 6).map((t) => `<span class="deck-tag">${escapeHtml(t)}</span>`).join('')}</span>
       ${entry.md && entry.md === currentPath ? `<span class="deck-card__current">${icon('check', 13)} Nu geopend</span>` : ''}`;
     card.addEventListener('click', () => { modal.close(); if (onOpen) onOpen(entry); });
     return card;
@@ -208,7 +208,7 @@ export function openPresentationsBrowser({ manifest, currentPath = '', onOpen, o
     for (const tag of allTags) {
       const chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = 'tag tag--chip';
+      chip.className = 'deck-tag deck-tag--chip';
       chip.textContent = tag;
       chip.classList.toggle('is-active', state.tags.has(tag));
       chip.addEventListener('click', () => {

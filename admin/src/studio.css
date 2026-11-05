@@ -19,7 +19,8 @@
   --ui-status: 26px;
 }
 
-* { box-sizing: border-box; }
+/* Niet in het slide-canvas: de presentatie zelf gebruikt het standaard (content-box) model. */
+*:not(.preview-stage *) { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -132,7 +133,8 @@ body {
 .studio-pane--source .cm-editor { height: 100%; }
 
 /* ------------------------------------------------------- editor content */
-.studio-editor .ProseMirror { min-height: 100%; padding: 28px 32px; outline: none; font-size: 16px; line-height: 1.5; }
+.studio-editor .ProseMirror { min-height: 100%; padding: 28px 32px; outline: none; font-size: 16px; line-height: 1.5; color: var(--ed-fg, var(--ui-ink)); }
+.studio-editor .ProseMirror h1, .studio-editor .ProseMirror h2, .studio-editor .ProseMirror h3 { font-family: 'Space Grotesk', sans-serif; }
 .studio-editor .ProseMirror h1 { font-size: 30px; }
 .studio-editor .ProseMirror h2 { font-size: 24px; }
 .studio-editor .ProseMirror h3 { font-size: 19px; }
@@ -341,10 +343,10 @@ body {
 .explorer__search input { flex: 1; border: 0; outline: none; font: inherit; font-size: 14px; padding: 10px 0; background: transparent; }
 .explorer__chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .explorer__chips-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ui-muted); }
-.tag { font-size: 11px; background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 999px; padding: 2px 8px; color: var(--ui-ink-soft); }
-.tag--chip { font: inherit; font-size: 11.5px; cursor: pointer; }
-.tag--chip:hover { border-color: var(--ui-lime); }
-.tag--chip.is-active { background: var(--ui-lime); border-color: var(--ui-lime); color: var(--ui-ink); }
+.deck-tag { font-size: 11px; background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 999px; padding: 2px 8px; color: var(--ui-ink-soft); }
+.deck-tag--chip { font: inherit; font-size: 11.5px; cursor: pointer; }
+.deck-tag--chip:hover { border-color: var(--ui-lime); }
+.deck-tag--chip.is-active { background: var(--ui-lime); border-color: var(--ui-lime); color: var(--ui-ink); }
 .explorer__cols { display: grid; grid-template-columns: 260px 1fr; gap: 16px; min-height: 320px; }
 .explorer__tree { border-right: 1px solid var(--ui-border); padding-right: 14px; overflow: auto; max-height: 62vh; }
 .explorer__cards { overflow: auto; max-height: 62vh; }
@@ -538,3 +540,15 @@ body {
 .pp-item__body .pp-section-title { margin-left: 0; }
 .pp-adv { margin: 18px 14px 0; border-top: 1px solid var(--ui-border); padding-top: 10px; }
 .pp-adv > summary { font-size: 12px; font-weight: 600; color: var(--ui-muted); cursor: pointer; margin-bottom: 8px; }
+
+
+/* ---- HTML-blokken in de editor: reveal-context, verkleind (deck-CSS en thema gelden) ---- */
+.glr-ed-reveal { position: static !important; width: auto !important; height: auto !important; overflow: visible !important; zoom: .45; background: transparent !important; }
+.glr-ed-reveal .slides { position: static !important; width: auto !important; height: auto !important; inset: auto !important; transform: none !important; perspective: none !important; display: block !important; }
+.glr-ed-reveal .slides > section {
+  position: relative !important; display: flex !important; flex-direction: column; width: auto !important; height: auto !important; min-height: 0;
+  top: 0 !important; left: 0 !important; transform: none !important; opacity: 1 !important; visibility: visible !important; padding: 8px 12px !important;
+}
+.glr-ed-reveal .fragment { opacity: 1 !important; visibility: visible !important; }
+.studio-pane--editor .glr-block { background: transparent; }
+.studio-pane--editor .glr-block__label { background: rgba(127, 127, 127, .16); color: inherit; opacity: .8; }

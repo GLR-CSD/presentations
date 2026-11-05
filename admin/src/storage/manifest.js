@@ -43,7 +43,8 @@ export async function fetchDeckCss(entry) {
   try {
     const res = await fetch(manifestFileUrl(entry, 'html'), { cache: 'no-store' });
     if (!res.ok) return '';
-    const html = await res.text();
+    // Commentaar eerst weg: een `<style>`-woord in een HTML-commentaar verstoort anders de extractie.
+    const html = (await res.text()).replace(/<!--[\s\S]*?-->/g, '');
     const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]);
     return styles.join('\n');
   } catch {

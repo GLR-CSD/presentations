@@ -26,7 +26,7 @@ const REVEAL_SCRIPTS = [
 ];
 
 const EDIT_CONFIG = { keyboard: false, controls: false, progress: false, touch: false, overview: false };
-const PRESENT_CONFIG = { keyboard: true, controls: true, progress: true, touch: true, overview: true };
+const PRESENT_CONFIG = { keyboard: true, controls: true, progress: true, touch: true, overview: true, controlsLayout: 'bottom-right' };
 
 /** Laadt een klassiek <script> (reveal.js is geen ESM-bundel) en resolvet. */
 function loadScript(src) {
@@ -319,10 +319,28 @@ export class LivePreviewController {
   _postRender(section) {
     // GLR-componenten (timers/kleurenwielen), highlight en KaTeX opnieuw.
     try { if (window.GLRPlugins) window.GLRPlugins.initAll(section || document); } catch { /* noop */ }
-    try { if (window.RevealHighlight) window.RevealHighlight.highlightAll(); } catch { /* noop */ }
+    // Het highlight-plugin highlight alleen bij init; hier dus elk (nieuw) codeblok zelf (incl. regel-highlights).
+    try {
+      const hl = window.Reveal.getPlugin('highlight');
+      const scope = section || this.revealEl;
+      if (hl && hl.highlightBlock) scope.querySelectorAll('pre code:not(.hljs)').forEach((b) => hl.highlightBlock(b));
+    } catch { /* noop */ }
+    this._setBackAt(section || this._currentSection());
     this.selEl = null;
     this.hoverEl = null;
     this._applySelection();
+  }
+
+  /**
+   * Pauzeslide: "Terug om" = nu + `data-back-at` minuten (zoals de index.html van de
+   * Mega Villains-decks dat doet). Zonder dit zou de preview de placeholder tonen.
+   */
+  _setBackAt(root) {
+    if (!root) return;
+    for (const el of root.querySelectorAll('[data-back-at]')) {
+      const t = new Date(Date.now() + parseInt(el.getAttribute('data-back-at'), 10) * 60000);
+      el.textContent = `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`;
+    }
   }
 
   /* ------------------------------------------------------------- events --- */
@@ -340,7 +358,7 @@ export class LivePreviewController {
     });
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(relayout).observe(this.host);
     window.Reveal.on('resize', () => this.positionBar());
-    window.Reveal.on('slidechanged', () => { this._applySelection(); });
+    window.Reveal.on('slidechanged', (e) => { this._setBackAt(e.currentSlide); this._applySelection(); });
   }
 
   _targetOf(e) {

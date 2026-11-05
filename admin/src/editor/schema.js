@@ -16,6 +16,13 @@ let assetBase = '';
 /** Basis-URL waartegen relatieve `assets/…`-paden in de blok-weergave worden opgelost. */
 export const setAssetBase = (base) => { assetBase = base || ''; };
 
+let slideClasses = '';
+/** Slide-klassen (`dark`, `bleed` …) zodat HTML-blokken in de editor het deck-thema krijgen. */
+export const setSlideClasses = (classes) => { slideClasses = String(classes || '').replace(/[^\w\s-]/g, ''); };
+
+/** Verpakt blok-HTML zoals reveal.js het ziet (`.reveal .slides section`), zodat thema- en deck-CSS gelden. */
+const inSlideContext = (html) => `<div class="reveal glr-ed-reveal"><div class="slides"><section class="present ${slideClasses}">${resolveAssets(html, assetBase)}</section></div></div>`;
+
 /** NodeView voor een beschermd blok: toont de rauwe HTML + label, klik = inspector. */
 function makeBlockView(kind, initialNode, getPos, editor) {
   let node = initialNode;
@@ -34,7 +41,7 @@ function makeBlockView(kind, initialNode, getPos, editor) {
     if (kind === 'html') {
       const firstTag = (n.attrs.html.match(/<([a-zA-Z][\w-]*)/) || [, 'html'])[1];
       label.textContent = `HTML-blok · <${firstTag}>`;
-      body.innerHTML = resolveAssets(n.attrs.html, assetBase);
+      body.innerHTML = inSlideContext(n.attrs.html);
     } else if (kind === 'comment') {
       label.textContent = 'Meta-comment';
       body.textContent = n.attrs.comment;

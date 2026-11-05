@@ -8,7 +8,7 @@
  */
 import { StudioState } from './app/state.js';
 import { SlideEditor } from './editor/editor.js';
-import { setAssetBase } from './editor/schema.js';
+import { setAssetBase, setSlideClasses } from './editor/schema.js';
 import { LivePreviewController } from './preview/live-preview.js';
 import { SlideSorter } from './sorter/sorter.js';
 import { SourceEditor } from './source/source.js';
@@ -334,6 +334,7 @@ export class Studio {
     }
     this.preview.rebuild();
     this.preview.refreshSelection();
+    this.applyEditorTheme();
     requestAnimationFrame(() => { this.updateEditorBar(); });
   }
 
@@ -430,6 +431,7 @@ export class Studio {
     this.el.deckname.textContent = (deck.frontmatter && deck.frontmatter.get('title')) || (meta && meta.path) || 'Naamloos deck';
     if (this.el.deckpath) this.el.deckpath.textContent = (meta && meta.path) || 'Nieuw concept (nog niet opgeslagen)';
     if (this.preview.ready) this.preview.loadDeck(deck, this.previewCss);
+    this.applyEditorTheme();
     this.source.setValue(this.deckMarkdown());
     this.editor.loadBody(deck.slides[0].body);
     this.panel.render();
@@ -441,9 +443,10 @@ export class Studio {
   onSlideChange(index) {
     if (!this.state.deck) return;
     this.sorter.setActive(index);
+    this.preview.gotoSlide(index);
+    this.applyEditorTheme();
     this.editor.loadBody(this.state.currentSlide.body);
     this.editor.setActiveBlock(null);
-    this.preview.gotoSlide(index);
     this.preview.setSelection(null);
     this.editorBar.hide();
     this.panel.render();
@@ -606,6 +609,29 @@ export class Studio {
     });
   }
 
+  /**
+   * Geeft de Tiptap-editor dezelfde achtergrond en tekstkleur als het slide-canvas
+   * (zodat bv. een zwarte slide ook in Split-modus zwart is).
+   */
+  applyEditorTheme() {
+    const slide = this.state.currentSlide;
+    const pane = this.el.editorPane;
+    if (!slide || !pane || !this.preview.revealEl) return;
+    const a = slide.attrsData;
+    const viewport = getComputedStyle(this.preview.revealEl);
+    const section = this.preview._currentSection();
+    const fg = section ? getComputedStyle(section).color : viewport.color;
+    if (a['data-background-color']) {
+      pane.style.backgroundImage = 'none';
+      pane.style.backgroundColor = a['data-background-color'];
+    } else {
+      pane.style.backgroundImage = viewport.backgroundImage;
+      pane.style.backgroundColor = viewport.backgroundColor;
+    }
+    pane.style.setProperty('--ed-fg', fg);
+    setSlideClasses(a.class || '');
+  }
+
   /** Slide-attributen (`<!-- .slide: … -->`) aanpassen; `mutate` krijgt een kopie van het attr-object. */
   updateSlideAttrs(mutate) {
     const slide = this.state.currentSlide;
@@ -616,6 +642,8 @@ export class Studio {
     slide.setAttrs(next);
     this.state.markDirty();
     this.preview.updateSlide(this.state.currentIndex, slide);
+    this.applyEditorTheme();
+    if (this.state.mode !== 'visual') this.editor.loadBody(slide.body);
     this.scheduleSorterThumb();
     this.renderStatus();
   }
@@ -784,7 +812,7 @@ export class Studio {
   openStandalone() {
     const entry = this.state.deckMeta && this.state.deckMeta.entry;
     if (!entry || !entry.html) return toast('Deze presentatie heeft nog geen standalone pagina (nog niet opgeslagen/gebouwd).', true);
-    const w = window.open(`../${entry.html}`, 'glr-standalone', 'popup=yes,width=1280,height=760');
+    const w = window.open(`../${entry.html.replace(/index\.html$/, '')}`, 'glr-standalone', 'popup=yes,width=1280,height=760');
     if (!w) toast('Pop-up geblokkeerd: sta pop-ups toe voor deze pagina.', true);
   }
 
