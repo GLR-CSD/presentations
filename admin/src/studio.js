@@ -76,6 +76,7 @@ export class Studio {
       panes: document.getElementById('panes'),
       inspector: document.getElementById('inspector'),
       presentBtn: document.getElementById('present-btn'),
+      standaloneBtn: document.getElementById('standalone-btn'),
       editorPane: document.getElementById('editor-pane'),
       status: document.getElementById('status-text'),
     };
@@ -110,6 +111,7 @@ export class Studio {
     if (this.el.openBtnChev) this.el.openBtnChev.innerHTML = icon('chevron-down', 14);
     if (this.el.newDeckBtn) this.el.newDeckBtn.innerHTML = `${icon('file-plus', 15)}<span>Nieuwe Presentatie</span>`;
     if (this.el.saveBtn) this.el.saveBtn.innerHTML = `${icon('save', 15)}<span>Opslaan</span>`;
+    if (this.el.standaloneBtn) this.el.standaloneBtn.innerHTML = icon('external-link', 16);
     if (this.el.presentBtn) this.el.presentBtn.innerHTML = `${icon('play', 15)}<span>Presenteer</span><kbd>F5</kbd>`;
     if (this.el.downloadBtn) this.el.downloadBtn.innerHTML = icon('download', 16);
     if (this.el.accountBtn) this.el.accountBtn.innerHTML = icon('key', 16);
@@ -279,6 +281,7 @@ export class Studio {
     if (this.el.newDeckBtn) this.el.newDeckBtn.addEventListener('click', () => this.openNewDeckWizard());
     if (this.el.saveBtn) this.el.saveBtn.addEventListener('click', () => this.save());
     if (this.el.presentBtn) this.el.presentBtn.addEventListener('click', () => this.startPresentation());
+    if (this.el.standaloneBtn) this.el.standaloneBtn.addEventListener('click', () => this.openStandalone());
     if (this.el.downloadBtn) this.el.downloadBtn.addEventListener('click', () => this.downloadDeck());
     this.renderAccountMenu();
   }
@@ -775,6 +778,14 @@ export class Studio {
     if (!this.state.deck) return toast('Open eerst een presentatie.', true);
     if (this.presenter.active) return;
     this.presenter.start(this.state.currentIndex);
+  }
+
+  /** Opent de echte, standalone Reveal.js-presentatie (index.html van het deck) in een apart venster. */
+  openStandalone() {
+    const entry = this.state.deckMeta && this.state.deckMeta.entry;
+    if (!entry || !entry.html) return toast('Deze presentatie heeft nog geen standalone pagina (nog niet opgeslagen/gebouwd).', true);
+    const w = window.open(`../${entry.html}`, 'glr-standalone', 'popup=yes,width=1280,height=760');
+    if (!w) toast('Pop-up geblokkeerd: sta pop-ups toe voor deze pagina.', true);
   }
 
   onPresentExit(flatIndex) {
