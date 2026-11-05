@@ -14,7 +14,10 @@ Zie voor de volledige architectuur en richtlijnen:
 .
 ├── .github/workflows/deploy.yml    # CI/CD: build, PDF-export en deploy naar GitHub Pages
 ├── .agents/skills/                 # Agent Skills (educational-presentation-nl + reveal-slide-builder)
-├── admin/                          # Grafische editor (Sveltia CMS): index.html + config.yml
+├── admin/                          # GLR Slide Studio (visuele editor)
+│   ├── index.html                  # Shell die de gebundelde Studio laadt
+│   ├── src/                        # Broncode (ESM-modules: parser, editor, preview, opslag)
+│   └── vendor/                     # Gebundelde Studio + libs (gegenereerd met `npm run vendor`)
 ├── input/                          # Lokale staging voor brondocumenten (niet in Git)
 ├── presentations/                  # De presentaties, per cohort/jaar/vak
 ├── shared/                         # Gedeelde assets
@@ -25,10 +28,13 @@ Zie voor de volledige architectuur en richtlijnen:
 │   ├── js/glr-plugins.js           # Gedeelde plugins/controllers (timer, kleurenwiel)
 │   └── vendor/                     # reveal.js, KaTeX + chalkboard (gegenereerd met `npm run vendor`)
 ├── scripts/
-│   ├── build-index.js              # Bouwt de portaalpagina (dist/index.html) + shells/CMS naar dist
+│   ├── build-index.js              # Portaalpagina (dist/index.html) + shells + deck-manifest naar dist
 │   ├── export-pdf.js               # PDF-export via DeckTape
 │   ├── vendor-reveal.js            # Kopieert reveal.js uit node_modules
-│   └── vendor-plugins.js           # Kopieert KaTeX + haalt chalkboard/customcontrols op
+│   ├── vendor-plugins.js           # Kopieert KaTeX + haalt chalkboard/customcontrols op
+│   ├── vendor-editor.js            # Bundelt de GLR Slide Studio (esbuild) naar admin/vendor/
+│   ├── test-roundtrip.js           # Verliesvrije parse/serialize-test op alle decks
+│   └── test-bridge.js              # Markdown ↔ ProseMirror-fidelity-test
 ├── package.json
 └── README.md
 ```
@@ -75,24 +81,42 @@ Open daarna een presentatie via de server, bijvoorbeeld
 > verward. De portaalpagina (`scripts/build-index.js`) leest de YAML tussen de
 > markers (en ondersteunt voor oudere decks ook het `--- … ---`-formaat).
 
-## Slides bewerken via de Grafische Editor (/admin)
+## Slides bewerken met de GLR Slide Studio (`/admin/`)
 
-Minder technische collega's kunnen de presentaties ook **visueel** bewerken met de
-grafische editor (Sveltia CMS). Die staat op GitHub Pages onder
-[`/admin/`](https://GLR-CSD.github.io/presentations/admin/). Je bewerkt er het
-`.md`-bestand van een les; de bijbehorende Reveal.js-`.html`-shell wordt bij de
-build automatisch gegenereerd (zie `scripts/build-index.js`). De editor heeft
-**geen** eigen server nodig: je logt in met een GitHub Personal Access Token.
+Minder technische collega's bewerken de presentaties **visueel** met de
+**GLR Slide Studio** — een offline-first visuele editor die op GitHub Pages
+draait onder [`/admin/`](https://GLR-CSD.github.io/presentations/admin/).
+De Studio werkt volledig **zonder externe CDN's**: alle libraries zijn lokaal
+gebundeld in `admin/vendor/` (zie `scripts/vendor-editor.js`).
+
+Kenmerken:
+
+- **Altijd zichtbare 1-op-1 Reveal.js-preview** naast de editor: elke wijziging
+  is direct zichtbaar, zonder pagina-refresh en zonder terug te springen naar
+  slide 1. Je kunt ook op een element in de preview klikken om het te bewerken.
+- **Visueel / Split / Source**: WYSIWYG bewerken (Tiptap/ProseMirror), een
+  CodeMirror 6-bronweergave of beide naast elkaar.
+- **Beschermde HTML-blokken (Optie A)**: grids, kaarten, timers en GLR-plugins
+  zijn niet per ongeluk kapot te typen; een klik opent een inspector voor de
+  tekst of parameters (bijv. `data-timer`, `data-hues`).
+- **Slide-navigator** links met drag-and-drop herordening (SortableJS) en een
+  **Inspector** rechts voor `<!-- .slide: … -->`-layouts, sprekersnotities en
+  deck-metadata.
+- **Opslaan**: rechtstreeks naar `main` via de GitHub API (één atomaire commit
+  per keer), lokaal wegschrijven via de File System Access API, of downloaden.
+
+De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
+(`scripts/build-index.js`); de Studio schrijft alleen de `slides.md`.
 
 ### Eenmalig: een Fine-Grained Personal Access Token (PAT) aanmaken
 
-1. Ga naar <https://github.com/settings/personal-access-tokens/new>.
+1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
 2. **Resource owner:** kies de organisatie **`GLR-CSD`** (een organisatiebeheerder
    moet de token mogelijk eerst goedkeuren).
 3. **Repository access:** *Only select repositories* → **`presentations`**.
 4. **Repository permissions:**
-   - **Contents:** *Read and write* — presentaties en afbeeldingen lezen/schrijven.
-   - **Pull requests:** *Read and write* — voor de concept/Pull-Request-flow.
+   - **Contents:** *Read and write* — presentaties en afbeeldingen lezen/schrijven
+     (de Studio commit rechtstreeks naar `main`, zonder Pull Requests).
    - *Metadata* staat standaard op *Read-only*; laat dat zo.
 5. **Expiration:** kies een redelijke geldigheidsduur en genereer de token.
 6. **Kopieer de token direct** (hij is daarna niet meer zichtbaar) en bewaar hem
@@ -101,23 +125,28 @@ build automatisch gegenereerd (zie `scripts/build-index.js`). De editor heeft
 > Deel de token nooit in de repository of in een chatbericht: hij geeft
 > schrijftoegang tot de presentaties.
 
-### Inloggen op /admin/
+### De Studio openen
 
-1. Open <https://GLR-CSD.github.io/presentations/admin/>.
-2. Kies **Sign in with GitHub** en plak de PAT.
-3. Kies links de collectie **Presentaties**, navigeer naar de juiste map
-   (cohort / leerjaar / vak / les) en bewerk de **metadata** (titel, cohort,
-   leerjaar, periode, auteur, tags) en de **slides**.
+1. Open <https://GLR-CSD.github.io/presentations/admin/> (of lokaal via
+   `npm run serve` → `/admin/`).
+2. Kies **Deck openen** en selecteer een presentatie uit de lijst (die direct uit
+   het gegenereerde `presentations-manifest.json` komt — geen token nodig).
+3. Voor **opslaan naar GitHub**: kies **Opslaan ▾ → GitHub-token instellen…** en
+   plak de PAT. Daarna schrijft **Opslaan ▾ → Naar GitHub (main)** de `slides.md`
+   in één atomaire commit naar `main`.
+4. Voor **offline werken**: kies **Opslaan ▾ → Lokaal wegschrijven…** en koppel
+   de map, of gebruik **Download .md**.
 
-### Slides maken in de editor
+### Slides maken in de Studio
 
-- Scheid slides met `---`, of gebruik de knop **Nieuwe slide (GLR-layout)** met
-  opties voor GLR-achtergronden en layouts.
-- Gebruik **GLR twee kolommen** voor een tweekoloms layout en **Docentnotitie
-  (speaker note)** voor notities (zichtbaar met de toets `S`).
-- Sla je wijziging op; die komt als **Pull Request** klaar te staan (editorial
-  workflow). Een beheerder publiceert (merget) de PR naar `main`, waarna GitHub
-  Pages opnieuw deployt.
+- Voeg slides toe met **+ Nieuwe slide** of **+ Verticale slide** (`---` resp.
+  `--`), herorden ze door te slepen in de linkernavigator, of gebruik het
+  `⋮`-menu voor dupliceren/verwijderen.
+- De **Blokken-toolbar** biedt kant-en-klare GLR-bouwstenen: kicker, lede,
+  kaarten, genummerde lijst, definitieblok, callout, checklist, opdrachtkaart,
+  twee kolommen, terminalvenster, codeblok, timer, kleurenwiel, footer en meer.
+- Bewerk slide-layout (`<!-- .slide: … -->`), sprekersnotities (`Note:`) en
+  deck-metadata via de **Inspector** rechts.
 - Afbeeldingen die je uploadt komen in `shared/img/uploads/` en worden als
   `/presentations/shared/img/uploads/…` in de Markdown gezet.
 
@@ -125,9 +154,11 @@ build automatisch gegenereerd (zie `scripts/build-index.js`). De editor heeft
 
 | Commando | Wat het doet |
 |---|---|
-| `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/` (offline) |
-| `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie), genereert ontbrekende `.html`-shells voor losse `.md`-decks en kopieert `admin/` + `shared/img/uploads/` naar `dist/` |
+| `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/`, en bundelt de GLR Slide Studio (esbuild) naar `admin/vendor/` — alles offline |
+| `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie), genereert ontbrekende `.html`-shells voor losse `.md`-decks, schrijft het deck-manifest (`presentations-manifest.json`) en kopieert `admin/` + `shared/img/uploads/` naar `dist/` |
 | `npm run build` | `vendor` + `build:index` |
+| `npm run test:roundtrip` | Verifieert dat de deck-parser elke `slides.md` byte-identiek terugschrijft (verliesvrij) |
+| `npm run test:bridge` | Meet de Markdown ↔ ProseMirror-fidelity van de visuele editor |
 | `npm run export:pdf` | Exporteert elke presentatie naar `presentation.pdf` via DeckTape (Docker) |
 | `npm run export:pdf -- --local` | Idem, maar met een lokaal geïnstalleerde `decktape` |
 | `npm run export:pdf:cached` | CI-variant met incrementele caching: rendert alleen gewijzigde presentaties, de rest komt uit de GitHub Actions-cache. `-- --dry-run` toont de cache-status zonder te bouwen |
