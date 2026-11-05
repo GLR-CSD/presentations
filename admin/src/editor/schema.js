@@ -10,6 +10,11 @@
  * niet per ongeluk kapot te typen; klikken opent een inspector.
  */
 import { Node, mergeAttributes } from '@tiptap/core';
+import { resolveAssets } from '../markdown/render.js';
+
+let assetBase = '';
+/** Basis-URL waartegen relatieve `assets/…`-paden in de blok-weergave worden opgelost. */
+export const setAssetBase = (base) => { assetBase = base || ''; };
 
 /** NodeView voor een beschermd blok: toont de rauwe HTML + label, klik = inspector. */
 function makeBlockView(kind, initialNode, getPos, editor) {
@@ -29,7 +34,7 @@ function makeBlockView(kind, initialNode, getPos, editor) {
     if (kind === 'html') {
       const firstTag = (n.attrs.html.match(/<([a-zA-Z][\w-]*)/) || [, 'html'])[1];
       label.textContent = `HTML-blok · <${firstTag}>`;
-      body.innerHTML = n.attrs.html;
+      body.innerHTML = resolveAssets(n.attrs.html, assetBase);
     } else if (kind === 'comment') {
       label.textContent = 'Meta-comment';
       body.textContent = n.attrs.comment;
@@ -117,7 +122,7 @@ export const InlineHtml = Node.create({
       dom.className = 'glr-inline-html';
       dom.contentEditable = 'false';
       dom.setAttribute('data-glr-inline-html', '');
-      dom.innerHTML = node.attrs.html;
+      dom.innerHTML = resolveAssets(node.attrs.html, assetBase);
       dom.addEventListener('click', (event) => {
         event.preventDefault();
         editor.emit('glr-block-click', { kind: 'inline-html', pos: getPos(), node });

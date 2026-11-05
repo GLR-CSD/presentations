@@ -1,20 +1,19 @@
 /**
- * LivePreviewController — een échte, altijd zichtbare 1-op-1 reveal.js-preview.
+ * LivePreviewController — het ene, grote 16:9 slide-canvas van de Studio.
  *
- * Belangrijk: dit is GEEN iframe dat `slides.md` opnieuw inlaadt. We maken één
- * reveal.js-instantie in de pagina en werken de `<section>`-DOM **in-memory**
- * bij. Daardoor:
- *   - zie je bij elke wijziging direct het resultaat (geen refresh);
- *   - blijft de positie behouden (we herbouwen Reveal nooit, dus geen sprong
- *     terug naar slide 1);
- *   - kun je op elementen in de preview klikken (data-block-index) om ze in de
- *     editor te bewerken.
+ * Dit is GEEN iframe: één reveal.js-instantie in de pagina waarvan de
+ * `<section>`-DOM in-memory wordt bijgewerkt. Daardoor:
+ *   - zie je elke wijziging direct (geen refresh, geen sprong naar slide 1);
+ *   - kun je op élk onderdeel klikken (elk element heeft `data-bi` = blokindex
+ *     en `data-bp` = pad binnen het HTML-blok, zie markdown/render.js);
+ *   - krijgt het geselecteerde onderdeel een groene selectie-rand + een
+ *     zwevende Quick-Action balk, en kun je kop/tekst direct op het canvas typen.
  *
- * De preview laadt de gedeelde `glr-theme.css`, de deck-specifieke `<style>`
- * (indien aanwezig in de bijbehorende index.html) en `glr-plugins.js`, zodat
- * timers/kleurenwielen exact zo werken als in de presentatie.
+ * De preview laadt de gedeelde `glr-theme.css`, de deck-specifieke `<style>` en
+ * `glr-plugins.js`, zodat timers/kleurenwielen exact zo werken als in de les.
  */
-import { renderSlideBody, slideAttrsToHtml } from '../markdown/render.js';
+import { renderSlideBody, slideAttrsToHtml, resolveAssets } from '../markdown/render.js';
+import { QuickBar } from '../ui/quick-actions.js';
 
 const REVEAL_SCRIPTS = [
   'vendor/reveal/reveal.js',
@@ -25,6 +24,9 @@ const REVEAL_SCRIPTS = [
   'vendor/reveal/plugin/zoom/zoom.js',
   'vendor/reveal/plugin/math/math.js',
 ];
+
+const EDIT_CONFIG = { keyboard: false, controls: false, progress: false, touch: false, overview: false };
+const PRESENT_CONFIG = { keyboard: true, controls: true, progress: true, touch: true, overview: true };
 
 /** Laadt een klassiek <script> (reveal.js is geen ESM-bundel) en resolvet. */
 function loadScript(src) {
@@ -38,9 +40,15 @@ function loadScript(src) {
   });
 }
 
+const parseBp = (el) => {
+  const raw = el.getAttribute('data-bp');
+  if (raw == null) return null;
+  return raw === '' ? [] : raw.split('.').map(Number);
+};
+
 export class LivePreviewController {
   /**
-   * @param {HTMLElement} host       element waarin de preview komt
+   * @param {HTMLElement} host       element waarin de preview komt (`.preview-frame`)
    * @param {string}      sharedBase pad naar `shared/` (bijv. '../shared/')
    */
   constructor(host, sharedBase = '../shared/') {
@@ -49,14 +57,29 @@ export class LivePreviewController {
     this.revealEl = null;
     this.ready = false;
     this.deck = null;
-    this.blockClickHandler = null;
+    this.baseUrl = '';
+    this.currentIndex = 0;
+    this.selection = null;
+    this.presenting = false;
+    this.editingEl = null;
+    this.hoverEl = null;
+    this.selEl = null;
+    this.handlers = {};
   }
+
+  /** Callbacks: onPick, onResolve, onAction, getBarState, canEditText, onTextEdit, onTextEditEnd. */
+  setHandlers(handlers) { this.handlers = { ...this.handlers, ...handlers }; }
 
   async init() {
     this.host.innerHTML = `
-      <div class="reveal studio-preview-reveal">
-        <div class="slides"><section></section></div>
+      <div class="preview-stage">
+        <div class="reveal studio-preview-reveal">
+          <div class="slides"><section></section></div>
+        </div>
       </div>`;
+    this.stage = this.host.querySelector('.preview-stage');
+    this.bar = new QuickBar(this.host, (action) => this.handlers.onAction && this.handlers.onAction(action));
+
     const styleReady = [];
     for (const href of [
       'vendor/reveal/reveal.css',
@@ -92,13 +115,11 @@ export class LivePreviewController {
     try {
       await window.Reveal.initialize({
         width: 1280, height: 720, margin: 0, display: 'flex', center: false,
-        minScale: 0.05, maxScale: 1.4, hash: false,
-        // Schoon 16:9 slide-canvas: geen Reveal-navigatie, geen voortgangsbalk,
-        // geen slidenummers, geen toetsenbord/overview in de editor-preview.
-        controls: false, progress: false, slideNumber: false,
-        keyboard: false, overview: false,
+        minScale: 0.05, maxScale: 3, hash: false,
+        // Schoon 16:9 slide-canvas: geen Reveal-navigatie in de editor.
+        slideNumber: false, ...EDIT_CONFIG,
         transition: 'slide', backgroundTransition: 'fade',
-        embedded: true, touch: false, respondToHashChanges: false,
+        embedded: true, respondToHashChanges: false,
         katex: { local: this.sharedBase + 'vendor/katex' },
         plugins,
         markdown: { smartypants: true },
@@ -108,12 +129,17 @@ export class LivePreviewController {
       console.warn('Reveal-preview kon niet volledig initialiseren:', err);
     }
     this.ready = true;
+    this._wireEvents();
   }
+
+  /** Basis-URL (t.o.v. de admin-pagina) waartegen relatieve `assets/…`-paden worden opgelost. */
+  setBaseUrl(url) { this.baseUrl = url || ''; }
 
   /** Laadt een deck in de preview en toont slide 0. */
   loadDeck(deck, extraCss = '') {
     this.deck = deck;
     this.extraCss = extraCss;
+    this.currentIndex = 0;
     if (!this.ready) return;
     const slidesEl = this.revealEl.querySelector('.slides');
     slidesEl.innerHTML = this._buildSections(deck);
@@ -129,7 +155,7 @@ export class LivePreviewController {
     const section = this._flatSections()[index];
     if (!section) return;
     const state = window.Reveal.getIndices();
-    section.innerHTML = renderSlideBody(slide.body);
+    section.innerHTML = this._renderBody(slide);
     this._syncAttrs(section, slide);
     window.Reveal.sync();
     window.Reveal.layout();
@@ -150,17 +176,86 @@ export class LivePreviewController {
   }
 
   /** Toon een specifieke slide (bijv. na klik in de sorter). */
-  gotoSlide(index) {
+  gotoSlide(index, fragment) {
+    this.currentIndex = index;
     if (!this.ready || !this.deck) return;
     const indices = this._indicesFor(index);
-    if (indices) window.Reveal.slide(indices.h, indices.v);
+    if (indices) window.Reveal.slide(indices.h, indices.v, fragment);
+    this._applySelection();
   }
 
-  onBlockClick(handler) {
-    this.blockClickHandler = handler;
+  /** Flat slide-index van de slide die nu getoond wordt (ook na navigatie in presentatiemodus). */
+  currentFlatIndex() {
+    if (!this.ready) return this.currentIndex;
+    const cur = window.Reveal.getCurrentSlide();
+    const i = this._flatSections().indexOf(cur);
+    return i >= 0 ? i : this.currentIndex;
+  }
+
+  /* ------------------------------------------------------------- selectie --- */
+
+  /** @param {{blockIndex:number, highlight:number[]}|null} sel */
+  setSelection(sel) {
+    this.selection = sel;
+    this._applySelection();
+  }
+
+  refreshSelection() { this._applySelection(); }
+
+  _currentSection() { return this._flatSections()[this.currentIndex] || null; }
+
+  _findEl(bi, highlight) {
+    const section = this._currentSection();
+    if (!section) return null;
+    const q = highlight && highlight.length
+      ? `[data-bi="${bi}"][data-bp="${highlight.join('.')}"]`
+      : `[data-bi="${bi}"]:not([data-bp])`;
+    return section.querySelector(q);
+  }
+
+  _applySelection() {
+    if (this.selEl) this.selEl.classList.remove('glr-sel');
+    this.selEl = null;
+    if (this.presenting || !this.ready) { this.bar && this.bar.hide(); return; }
+    if (this.selection) {
+      this.selEl = this._findEl(this.selection.blockIndex, this.selection.highlight);
+      if (this.selEl) this.selEl.classList.add('glr-sel');
+    }
+    this.positionBar();
+  }
+
+  positionBar() {
+    if (!this.bar) return;
+    if (!this.selEl || this.presenting || this.editingEl) { this.bar.hide(); return; }
+    this.bar.show(this.selEl.getBoundingClientRect(), this.handlers.getBarState ? this.handlers.getBarState() : {});
+  }
+
+  /* ----------------------------------------------------------- presenteren --- */
+
+  setPresenting(on) {
+    this.presenting = !!on;
+    this.host.classList.toggle('is-presenting', this.presenting);
+    if (this.hoverEl) { this.hoverEl.classList.remove('glr-hover'); this.hoverEl = null; }
+    if (this.ready) {
+      window.Reveal.configure(this.presenting ? PRESENT_CONFIG : EDIT_CONFIG);
+      window.Reveal.sync();
+    }
+    this._applySelection();
+    if (this.ready) requestAnimationFrame(() => window.Reveal.layout());
+  }
+
+  startAt(index) {
+    this.currentIndex = index;
+    const indices = this._indicesFor(index);
+    if (indices && this.ready) window.Reveal.slide(indices.h, indices.v, -1);
+    if (this.ready) window.Reveal.layout();
   }
 
   /* --------------------------------------------------------------- intern --- */
+
+  _renderBody(slide) {
+    return resolveAssets(renderSlideBody(slide.body, { annotate: true }), this.baseUrl);
+  }
 
   _buildSections(deck) {
     let flatIndex = 0;
@@ -173,10 +268,10 @@ export class LivePreviewController {
       .map((group) => {
         if (group.length === 1) {
           const s = group[0];
-          return `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${renderSlideBody(s.body)}</section>`;
+          return `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`;
         }
         const inner = group
-          .map((s) => `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${renderSlideBody(s.body)}</section>`)
+          .map((s) => `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`)
           .join('\n');
         return `<section>\n${inner}\n</section>`;
       })
@@ -185,7 +280,7 @@ export class LivePreviewController {
 
   _flatSections() {
     return [...this.revealEl.querySelectorAll('.slides section')].filter(
-      (s) => s.getAttribute('data-block-index') !== null
+      (s) => s.getAttribute('data-block-index') !== null,
     );
   }
 
@@ -225,18 +320,108 @@ export class LivePreviewController {
     // GLR-componenten (timers/kleurenwielen), highlight en KaTeX opnieuw.
     try { if (window.GLRPlugins) window.GLRPlugins.initAll(section || document); } catch { /* noop */ }
     try { if (window.RevealHighlight) window.RevealHighlight.highlightAll(); } catch { /* noop */ }
-    this._wireClicks();
+    this.selEl = null;
+    this.hoverEl = null;
+    this._applySelection();
   }
 
-  _wireClicks() {
-    if (!this.blockClickHandler) return;
-    const root = this.revealEl.querySelector('.slides');
-    root.onclick = (event) => {
-      const section = event.target.closest('section[data-block-index]');
-      if (!section) return;
-      const idx = parseInt(section.getAttribute('data-block-index'), 10);
-      this.blockClickHandler(idx, event.target);
+  /* ------------------------------------------------------------- events --- */
+
+  _wireEvents() {
+    const root = this.revealEl;
+    root.addEventListener('click', (e) => this._onClick(e));
+    root.addEventListener('dblclick', (e) => this._onDblClick(e));
+    root.addEventListener('mouseover', (e) => this._onHover(e));
+    root.addEventListener('mouseleave', () => this._clearHover());
+
+    const relayout = () => requestAnimationFrame(() => {
+      try { window.Reveal.layout(); } catch { /* noop */ }
+      this.positionBar();
+    });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(relayout).observe(this.host);
+    window.Reveal.on('resize', () => this.positionBar());
+    window.Reveal.on('slidechanged', () => { this._applySelection(); });
+  }
+
+  _targetOf(e) {
+    const section = this._currentSection();
+    const t = e.target.closest ? e.target.closest('[data-bi]') : null;
+    if (!t || !section || !section.contains(t)) return null;
+    return t;
+  }
+
+  _onClick(e) {
+    if (this.presenting) return;
+    if (e.target.closest('.quickbar')) return;
+    if (this.editingEl && this.editingEl.contains(e.target)) return;
+    const t = this._targetOf(e);
+    if (!t) { if (this.handlers.onPick) this.handlers.onPick(null); return; }
+    if (this.handlers.onPick) this.handlers.onPick({ blockIndex: Number(t.getAttribute('data-bi')), bp: parseBp(t), target: t });
+  }
+
+  _onHover(e) {
+    if (this.presenting || this.editingEl) return;
+    const t = this._targetOf(e);
+    if (!t || !this.handlers.onResolve) { this._clearHover(); return; }
+    const hl = this.handlers.onResolve(Number(t.getAttribute('data-bi')), parseBp(t));
+    const el = hl ? this._findEl(Number(t.getAttribute('data-bi')), hl) : t;
+    if (el === this.hoverEl) return;
+    this._clearHover();
+    if (el && el !== this.selEl) { el.classList.add('glr-hover'); this.hoverEl = el; }
+  }
+
+  _clearHover() {
+    if (this.hoverEl) this.hoverEl.classList.remove('glr-hover');
+    this.hoverEl = null;
+  }
+
+  _onDblClick(e) {
+    if (this.presenting || this.editingEl) return;
+    const t = this._targetOf(e);
+    if (!t || t.children.length > 0) return;
+    const bi = Number(t.getAttribute('data-bi'));
+    const bp = parseBp(t);
+    if (this.handlers.canEditText && !this.handlers.canEditText(bi, bp, t)) return;
+    this._startEdit(t, bi, bp);
+  }
+
+  _startEdit(el, bi, bp) {
+    this.editingEl = el;
+    this._clearHover();
+    el.contentEditable = 'true';
+    el.spellcheck = true;
+    el.classList.add('glr-editing');
+    this.bar.hide();
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const onInput = () => { if (this.handlers.onTextEdit) this.handlers.onTextEdit({ blockIndex: bi, bp, text: el.textContent }); };
+    const onKey = (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter' || ev.key === 'Escape') { ev.preventDefault(); el.blur(); }
     };
+    const onPaste = (ev) => {
+      ev.preventDefault();
+      const text = (ev.clipboardData || window.clipboardData).getData('text/plain').replace(/\s*\n\s*/g, ' ');
+      document.execCommand('insertText', false, text);
+    };
+    const onBlur = () => {
+      el.removeEventListener('input', onInput);
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('paste', onPaste);
+      el.removeEventListener('blur', onBlur);
+      el.contentEditable = 'false';
+      el.classList.remove('glr-editing');
+      this.editingEl = null;
+      if (this.handlers.onTextEditEnd) this.handlers.onTextEditEnd();
+    };
+    el.addEventListener('input', onInput);
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('paste', onPaste);
+    el.addEventListener('blur', onBlur);
   }
 }
-

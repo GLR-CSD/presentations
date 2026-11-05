@@ -9,6 +9,7 @@ export class StudioState {
     this.deckMeta = null; // { source: 'github'|'local'|'manifest', path, sha, baseUrl }
     this.currentIndex = 0;
     this.mode = 'visual'; // 'visual' | 'split' | 'source'
+    this.selection = null; // { blockIndex, path, highlight, openItem } | null
     this.listeners = new Map();
   }
 
@@ -26,6 +27,7 @@ export class StudioState {
     this.deck = deck;
     this.deckMeta = meta || null;
     this.currentIndex = 0;
+    this.selection = null;
     this.emit('deck', deck);
     this.emit('slide', 0);
   }
@@ -35,7 +37,14 @@ export class StudioState {
     const clamped = Math.max(0, Math.min(index, this.deck.slides.length - 1));
     if (clamped === this.currentIndex) return;
     this.currentIndex = clamped;
+    this.selection = null;
     this.emit('slide', clamped);
+  }
+
+  /** Zet (of wist met null) de geselecteerde blok/onderdeel-state. */
+  setSelection(sel) {
+    this.selection = sel;
+    this.emit('selection', sel);
   }
 
   get currentSlide() {

@@ -8,12 +8,20 @@
  */
 import { StudioState } from './app/state.js';
 import { SlideEditor } from './editor/editor.js';
+import { setAssetBase } from './editor/schema.js';
 import { LivePreviewController } from './preview/live-preview.js';
 import { SlideSorter } from './sorter/sorter.js';
 import { SourceEditor } from './source/source.js';
-import { BLOCKS, BLOCK_CATEGORIES, insertBlock, insertVariant } from './blocks/registry.js';
-import { detectComponent, componentFields, applyField } from './blocks/inspector.js';
-import { parseDeck, serializeDeck, serializeSlideAttrs, parseSlideAttrs } from './state/deck.js';
+import { BLOCKS, BLOCK_CATEGORIES, insertBlock, nodeFor } from './blocks/registry.js';
+import * as T from './blocks/html-tree.js';
+import * as B from './blocks/block-ops.js';
+import { resolveTarget } from './blocks/parsers.js';
+import { slideTemplateBody } from './blocks/templates.js';
+import { blockToMarkdown, bodyToDoc } from './markdown/bridge.js';
+import { PropertiesPanel } from './ui/properties-panel.js';
+import { QuickBar } from './ui/quick-actions.js';
+import { Presenter } from './preview/presenter.js';
+import { parseDeck, serializeDeck, serializeSlideAttrs } from './state/deck.js';
 import { loadManifest, fetchDeckMarkdown, fetchDeckCss } from './storage/manifest.js';
 import { supportsFileSystemAccess, pickDirectory, readFileFromDir, writeFileToDir, writeBlobToDir, downloadText, pickLocalFileForWrite, writeLocalFile } from './storage/local.js';
 import * as gh from './storage/github.js';
@@ -43,8 +51,6 @@ export class Studio {
     this.dirHandle = null;
     this.fileHandle = null;
     this.previewCss = '';
-    this.inspTab = 'layout';
-    this.blockPopover = null;
     this.auth = { mode: 'none', token: '', repo: '' };
   }
 
@@ -69,7 +75,8 @@ export class Studio {
       preview: document.getElementById('preview'),
       panes: document.getElementById('panes'),
       inspector: document.getElementById('inspector'),
-      popover: document.getElementById('popover'),
+      presentBtn: document.getElementById('present-btn'),
+      editorPane: document.getElementById('editor-pane'),
       status: document.getElementById('status-text'),
     };
 
@@ -84,12 +91,15 @@ export class Studio {
     this.buildEditor();
     this.buildSource();
     await this.buildPreview();
+    this.panel = new PropertiesPanel(this.el.inspector, this.panelApi());
+    this.editorBar = new QuickBar(this.el.editorPane, (a) => this.onQuickAction(a));
+    this.presenter = new Presenter(this.preview, { onExit: (i) => this.onPresentExit(i) });
     this.wireTopbar();
     this.wireState();
     this.wireShortcuts();
 
     this.manifest = await loadManifest();
-    this.renderInspector();
+    this.panel.render();
     this.renderStatus();
     await this.initAuth();
   }
@@ -100,6 +110,7 @@ export class Studio {
     if (this.el.openBtnChev) this.el.openBtnChev.innerHTML = icon('chevron-down', 14);
     if (this.el.newDeckBtn) this.el.newDeckBtn.innerHTML = `${icon('file-plus', 15)}<span>Nieuwe Presentatie</span>`;
     if (this.el.saveBtn) this.el.saveBtn.innerHTML = `${icon('save', 15)}<span>Opslaan</span>`;
+    if (this.el.presentBtn) this.el.presentBtn.innerHTML = `${icon('play', 15)}<span>Presenteer</span><kbd>F5</kbd>`;
     if (this.el.downloadBtn) this.el.downloadBtn.innerHTML = icon('download', 16);
     if (this.el.accountBtn) this.el.accountBtn.innerHTML = icon('key', 16);
   }
@@ -109,8 +120,10 @@ export class Studio {
 
   buildToolbar() {
     this.el.toolbar.innerHTML = '';
+    const visual = this.state.mode === 'visual';
     for (const cat of BLOCK_CATEGORIES) {
-      const items = BLOCKS.filter((b) => b.category === cat.id);
+      // In de Visuele modus staan er geen inline-opmaakknoppen (vet/cursief/highlight).
+      const items = BLOCKS.filter((b) => b.category === cat.id && !(visual && b.inlineOnly));
       if (!items.length) continue;
       const wrap = document.createElement('div');
       wrap.className = 'tool-group';
@@ -141,7 +154,7 @@ export class Studio {
     } else if (block.upload) {
       btn.addEventListener('click', () => this.openImageDialog());
     } else {
-      btn.addEventListener('click', () => { if (this.editor) insertBlock(this.editor, block); });
+      btn.addEventListener('click', () => this.insertBlockDef(block));
     }
     return btn;
   }
@@ -158,7 +171,7 @@ export class Studio {
       b.innerHTML = `<span class="tool-menu__ic">${icon(variant.icon || block.icon, 15)}</span><span>${variant.label}</span>`;
       b.addEventListener('click', () => {
         menu.remove();
-        if (this.editor) insertVariant(this.editor, variant);
+        this.insertBlockDef(variant);
       });
       menu.appendChild(b);
     }
@@ -213,7 +226,8 @@ export class Studio {
   buildEditor() {
     this.editor = new SlideEditor(this.el.editor, {
       onChange: () => this.onEditorChange(),
-      onBlockClick: (payload) => this.openBlockPopover(payload),
+      onBlockClick: (payload) => { if (payload.blockIndex != null) this.selectBlockDefault(payload.blockIndex); },
+      onCaretBlock: (i) => { if (!this.state.selection || this.state.selection.blockIndex !== i) this.selectBlockDefault(i); },
     });
   }
 
@@ -231,7 +245,15 @@ export class Studio {
       // De preview is een hulpmiddel: een fout mag de Studio nooit blokkeren.
       console.warn('Preview-init mislukt:', err);
     }
-    this.preview.onBlockClick((flatIndex) => this.state.setCurrentIndex(flatIndex));
+    this.preview.setHandlers({
+      onPick: (pick) => this.onCanvasPick(pick),
+      onResolve: (bi, bp) => this.resolveHover(bi, bp),
+      onAction: (a) => this.onQuickAction(a),
+      getBarState: () => this.barState(),
+      canEditText: (bi, bp, el) => this.canEditText(bi, bp, el),
+      onTextEdit: (p) => this.onCanvasText(p),
+      onTextEditEnd: () => this.onCanvasTextEnd(),
+    });
   }
 
   /* -------------------------------------------------------------- topbar */
@@ -256,16 +278,32 @@ export class Studio {
     if (this.el.openBtn) this.el.openBtn.addEventListener('click', () => this.openPresentationsBrowser());
     if (this.el.newDeckBtn) this.el.newDeckBtn.addEventListener('click', () => this.openNewDeckWizard());
     if (this.el.saveBtn) this.el.saveBtn.addEventListener('click', () => this.save());
+    if (this.el.presentBtn) this.el.presentBtn.addEventListener('click', () => this.startPresentation());
     if (this.el.downloadBtn) this.el.downloadBtn.addEventListener('click', () => this.downloadDeck());
     this.renderAccountMenu();
   }
 
   wireShortcuts() {
     document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      if (this.presenter && this.presenter.active) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         this.save();
+        return;
       }
+      if (e.key === 'F5') {
+        e.preventDefault();
+        this.startPresentation();
+        return;
+      }
+      const t = e.target;
+      const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || (t.closest && t.closest('.cm-editor, .ProseMirror')));
+      if (typing || document.querySelector('.modal-backdrop')) return;
+      if (e.key === 'Escape' && this.state.selection) { this.state.setSelection(null); return; }
+      if (!this.state.selection) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.onQuickAction('delete'); }
+      else if (mod && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); this.onQuickAction('duplicate'); }
     });
   }
 
@@ -274,6 +312,7 @@ export class Studio {
     this.state.on('slide', (i) => this.onSlideChange(i));
     this.state.on('mode', (m) => this.applyMode(m));
     this.state.on('dirty', () => this.renderStatus());
+    this.state.on('selection', (sel) => this.onSelectionChange(sel));
   }
 
   setMode(mode) {
@@ -282,18 +321,17 @@ export class Studio {
 
   applyMode(mode) {
     this.el.panes.dataset.mode = mode;
-    this.el.sourcePane.hidden = mode === 'visual';
     for (const btn of this.el.modes.querySelectorAll('button')) {
       btn.classList.toggle('is-active', btn.dataset.mode === mode);
     }
-    if (mode !== 'visual' && this.state.deck) {
-      this.source.setValue(this.deckMarkdown());
-    }
-    if (mode !== 'source' && this.state.deck) {
-      // Herstel de visuele editor met de (mogelijk) gewijzigde body.
-      this.editor.loadBody(this.state.currentSlide.body);
+    this.buildToolbar();
+    if (this.state.deck) {
+      if (mode === 'source') this.source.setValue(this.deckMarkdown());
+      if (mode !== 'visual') this.editor.loadBody(this.state.currentSlide.body);
     }
     this.preview.rebuild();
+    this.preview.refreshSelection();
+    requestAnimationFrame(() => { this.updateEditorBar(); });
   }
 
   /* ------------------------------------------------------------ deck laden */
@@ -380,13 +418,18 @@ export class Studio {
   }
 
   loadDeck(deck, meta) {
+    // Basis-URL eerst: sorter en preview lossen relatieve `assets/…`-paden daartegen op.
+    const dir = meta && meta.path && meta.path.includes('/') ? meta.path.slice(0, meta.path.lastIndexOf('/') + 1) : '';
+    this.preview.setBaseUrl(dir ? `../${dir}` : '');
+    this.sorter.baseUrl = dir ? `../${dir}` : '';
+    setAssetBase(dir ? `../${dir}` : '');
     this.state.setDeck(deck, meta);
     this.el.deckname.textContent = (deck.frontmatter && deck.frontmatter.get('title')) || (meta && meta.path) || 'Naamloos deck';
     if (this.el.deckpath) this.el.deckpath.textContent = (meta && meta.path) || 'Nieuw concept (nog niet opgeslagen)';
     if (this.preview.ready) this.preview.loadDeck(deck, this.previewCss);
     this.source.setValue(this.deckMarkdown());
     this.editor.loadBody(deck.slides[0].body);
-    this.renderInspector();
+    this.panel.render();
     this.renderStatus();
   }
 
@@ -396,8 +439,11 @@ export class Studio {
     if (!this.state.deck) return;
     this.sorter.setActive(index);
     this.editor.loadBody(this.state.currentSlide.body);
+    this.editor.setActiveBlock(null);
     this.preview.gotoSlide(index);
-    this.renderInspector();
+    this.preview.setSelection(null);
+    this.editorBar.hide();
+    this.panel.render();
     this.renderStatus();
   }
 
@@ -409,6 +455,10 @@ export class Studio {
     this.schedulePreviewUpdate();
     this.scheduleSorterThumb();
     this.renderStatus();
+    const sel = this.state.selection;
+    if (sel && sel.blockIndex >= B.blockCount(slide.body)) this.state.setSelection(null);
+    clearTimeout(this._panelTimer);
+    this._panelTimer = setTimeout(() => { if (this.state.selection) this.panel.render(); }, 250);
   }
 
   onSourceChange(text) {
@@ -424,6 +474,9 @@ export class Studio {
       this.preview.deck = deck;
       this.preview.rebuild();
       this.editor.loadBody(deck.slides[this.state.currentIndex].body);
+      this.state.selection = null;
+      this.preview.setSelection(null);
+      this.panel.render();
       this.renderStatus();
     }, 250);
   }
@@ -446,8 +499,8 @@ export class Studio {
       for (const [k, v] of Object.entries(slide.attrsData || {})) section.setAttribute(k, v);
       section.innerHTML = this.preview.ready ? '' : '';
       // Mini-thumbnail opnieuw opbouwen via de renderer.
-      import('./markdown/render.js').then(({ renderSlideBody }) => {
-        section.innerHTML = renderSlideBody(slide.body);
+      import('./markdown/render.js').then(({ renderSlideBody, resolveAssets }) => {
+        section.innerHTML = resolveAssets(renderSlideBody(slide.body), this.sorter.baseUrl);
         inner.innerHTML = '';
         inner.appendChild(section);
       });
@@ -476,7 +529,7 @@ export class Studio {
     if (!this.state.deck) return;
     const at = index == null ? this.state.currentIndex + 1 : Math.max(0, Math.min(index, this.state.deck.slides.length));
     const vertical = kind === 'sub';
-    const body = slideBodyFor(kind, at + 1);
+    const body = slideTemplateBody(kind, { number: at + 1, footerText: this.deckFooterText() });
     this.state.deck.insertSlide(at, { vertical, body });
     this.state.markDirty();
     this.renderSorter();
@@ -489,195 +542,246 @@ export class Studio {
     return this.state.deck ? serializeDeck(this.state.deck) : '';
   }
 
-  /* ----------------------------------------------------------- inspector */
+  /* ----------------------------------- selectie, Properties Panel & canvas */
 
-  renderInspector() {
-    const box = this.el.inspector;
-    box.innerHTML = '';
-    if (!this.state.deck) {
-      box.innerHTML = '<p class="insp-help">Open een presentatie om te beginnen.</p>';
-      return;
-    }
-    const tabs = document.createElement('div');
-    tabs.className = 'insp-tabs';
-    for (const [id, label] of [['layout', 'Layout'], ['notes', 'Notes'], ['frontmatter', 'Deck']]) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.classList.toggle('is-active', this.inspTab === id);
-      b.addEventListener('click', () => {
-        this.inspTab = id;
-        this.renderInspector();
-      });
-      tabs.appendChild(b);
-    }
-    box.appendChild(tabs);
-    if (this.inspTab === 'layout') this.renderLayoutInspector(box);
-    else if (this.inspTab === 'notes') this.renderNotesInspector(box);
-    else this.renderFrontmatterInspector(box);
-  }
-
-  renderLayoutInspector(box) {
-    const slide = this.state.currentSlide;
-    const a = slide.attrsData;
-    const title = document.createElement('div');
-    title.className = 'insp-section-title';
-    title.textContent = 'Slide-layout (.slide)';
-    box.appendChild(title);
-
-    const update = (key, value) => {
-      const obj = { ...slide.attrsData };
-      if (value === '' || value == null) delete obj[key];
-      else obj[key] = value;
-      slide.setAttrs(serializeSlideAttrs(obj));
-      this.state.markDirty();
-      this.preview.updateSlide(this.state.currentIndex, slide);
-      this.renderStatus();
-    };
-
-    box.appendChild(field('Klassen', a.class || '', (v) => update('class', v)));
-    box.appendChild(field('Achtergrondkleur', a['data-background-color'] || '', (v) => update('data-background-color', v)));
-    box.appendChild(field('State (data-state)', a['data-state'] || '', (v) => update('data-state', v)));
-    box.appendChild(field('Zichtbaarheid', a['data-visibility'] || '', (v) => update('data-visibility', v)));
-
-    const presetTitle = document.createElement('div');
-    presetTitle.className = 'insp-section-title';
-    presetTitle.textContent = 'Presets';
-    box.appendChild(presetTitle);
-    const presets = document.createElement('div');
-    presets.className = 'insp-tabs';
-    for (const [label, obj] of [
-      ['Standaard', {}],
-      ['Donker', { class: 'dark', 'data-background-color': '#111111' }],
-      ['Hero (bleed)', { class: 'bleed dark', 'data-background-color': '#111111' }],
-      ['Sectiekop', { class: 'dark', 'data-background-color': '#111111', 'data-state': 'sectie' }],
-    ]) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.addEventListener('click', () => {
-        slide.setAttrs(serializeSlideAttrs(obj));
+  /** De functies die het Properties Panel nodig heeft (geen directe Studio-afhankelijkheid). */
+  panelApi() {
+    return {
+      state: this.state,
+      getBody: () => this.state.currentSlide.body,
+      commitBody: (body, opts) => this.commitBody(body, opts),
+      setSelection: (sel) => this.state.setSelection(sel),
+      selectPath: (bi, path) => this.selectPath(bi, path),
+      selectExact: (bi, path) => this.state.setSelection({ blockIndex: bi, path, highlight: path, openItem: -1 }),
+      toggleFragment: () => this.onQuickAction('fragment'),
+      upload: (file) => this.uploadImageFile(file),
+      updateSlideAttrs: (fn) => this.updateSlideAttrs(fn),
+      setNote: (v) => {
+        this.state.currentSlide.setNote(v);
         this.state.markDirty();
-        this.preview.updateSlide(this.state.currentIndex, slide);
-        this.renderInspector();
         this.renderStatus();
-      });
-      presets.appendChild(b);
-    }
-    box.appendChild(presets);
-  }
-
-  renderNotesInspector(box) {
-    const slide = this.state.currentSlide;
-    const title = document.createElement('div');
-    title.className = 'insp-section-title';
-    title.textContent = 'Docentnotitie (Note:)';
-    box.appendChild(title);
-    box.appendChild(field('Notitie', slide.noteText, (v) => {
-      slide.setNote(v);
-      this.state.markDirty();
-      this.renderStatus();
-    }, { textarea: true }));
-    const help = document.createElement('p');
-    help.className = 'insp-help';
-    help.textContent = 'Zichtbaar in de sprekersweergave (toets S in de presentatie).';
-    box.appendChild(help);
-  }
-
-  renderFrontmatterInspector(box) {
-    const fm = this.state.deck.frontmatter;
-    if (!fm) {
-      box.innerHTML = '<p class="insp-help">Dit deck heeft geen frontmatter.</p>';
-      return;
-    }
-    const title = document.createElement('div');
-    title.className = 'insp-section-title';
-    title.textContent = 'Deck-metadata';
-    box.appendChild(title);
-
-    const set = (key, value, numeric = false) => {
-      fm.set(key, numeric && value !== '' ? Number(value) : value);
-      this.state.markDirty();
-      this.el.deckname.textContent = fm.get('title') || 'Naamloos deck';
-      this.renderStatus();
+      },
+      setFrontmatter: (key, value) => {
+        const fm = this.state.deck.frontmatter;
+        if (!fm) return;
+        fm.set(key, value);
+        this.state.markDirty();
+        this.el.deckname.textContent = fm.get('title') || 'Naamloos deck';
+        this.renderStatus();
+      },
+      addFooter: () => this.addFooter(),
     };
-
-    box.appendChild(field('Titel', fm.get('title') || '', (v) => set('title', v)));
-    box.appendChild(field('Cohort', fm.get('cohort') || '', (v) => set('cohort', v)));
-    box.appendChild(field('Leerjaar', String(fm.get('leerjaar') ?? ''), (v) => set('leerjaar', v, /^\d+$/.test(v))));
-    box.appendChild(field('Periode', String(fm.get('periode') ?? ''), (v) => set('periode', v, /^\d+$/.test(v))));
-    box.appendChild(field('Auteur', fm.get('auteur') || '', (v) => set('auteur', v)));
-    const tags = fm.get('tags');
-    box.appendChild(field('Tags (komma)', Array.isArray(tags) ? tags.join(', ') : String(tags || ''), (v) => {
-      set('tags', v.split(',').map((s) => s.trim()).filter(Boolean));
-    }));
   }
 
-  /* -------------------------------------------------------- blok-popover */
-
-  openBlockPopover({ kind, pos, node }) {
-    const pop = this.el.popover;
-    pop.innerHTML = '';
-    pop.hidden = false;
-    const editorRect = this.el.editor.getBoundingClientRect();
-    pop.style.top = `${Math.max(70, Math.min(editorRect.top + 70, window.innerHeight - 430))}px`;
-    pop.style.left = `${Math.max(12, editorRect.left + editorRect.width / 2 - 190)}px`;
-
-    let json = node.toJSON ? node.toJSON() : node;
-
-    const head = document.createElement('div');
-    head.className = 'studio-popover__head';
-    const titleEl = document.createElement('div');
-    titleEl.className = 'studio-popover__title';
-    const badge = document.createElement('span');
-    badge.className = 'studio-popover__badge';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'studio-popover__close';
-    close.textContent = '×';
-    close.addEventListener('click', () => { pop.hidden = true; });
-    head.append(titleEl, badge, close);
-    pop.appendChild(head);
-
-    const commit = () => this.editor.updateNodeAt(pos, json);
-
-    if (kind === 'html' || kind === 'inline-html') {
-      const detected = detectComponent(json.attrs.html);
-      titleEl.textContent = detected.label;
-      badge.textContent = kind === 'inline-html' ? 'inline HTML' : 'HTML-blok';
-      for (const f of componentFields(json.attrs.html)) {
-        pop.appendChild(field(f.label, f.value, (v) => {
-          json = { ...json, attrs: { ...json.attrs, html: applyField(json.attrs.html, f.key, v) } };
-          commit();
-        }, { checkbox: typeof f.value === 'boolean' }));
-      }
-      pop.appendChild(field('Ruwe HTML', json.attrs.html, (v) => {
-        json = { ...json, attrs: { ...json.attrs, html: v } };
-        commit();
-      }, { textarea: true }));
-      const help = document.createElement('p');
-      help.className = 'insp-help';
-      help.textContent = 'Dit blok is beschermd: de HTML-structuur kan niet per ongeluk kapot worden getypt.';
-      pop.appendChild(help);
-    } else if (kind === 'comment') {
-      titleEl.textContent = 'Meta-comment';
-      badge.textContent = 'comment';
-      pop.appendChild(field('Comment', json.attrs.comment, (v) => {
-        json = { ...json, attrs: { ...json.attrs, comment: v } };
-        commit();
-      }, { textarea: true }));
-    } else if (kind === 'code') {
-      titleEl.textContent = 'Codeblok';
-      badge.textContent = 'code';
-      pop.appendChild(field('Taal', json.attrs.lang, (v) => {
-        json = { ...json, attrs: { ...json.attrs, lang: v } };
-        commit();
-      }));
-      pop.appendChild(field('Line-highlighting [1-3|5]', json.attrs.highlight, (v) => {
-        json = { ...json, attrs: { ...json.attrs, highlight: v } };
-        commit();
-      }));
+  /**
+   * Eén doorgang voor elke wijziging van de slide-inhoud (paneel, canvas,
+   * quick actions, toolbar). `selection`: undefined = ongemoeid, null = wissen.
+   */
+  commitBody(body, { origin = 'panel', selection } = {}) {
+    const slide = this.state.currentSlide;
+    if (!slide) return;
+    if (body !== slide.body) {
+      slide.setBody(body);
+      this.state.markDirty();
+      const cur = this.state.selection;
+      if (selection === undefined && cur && cur.blockIndex >= B.blockCount(body)) selection = null;
+      if (origin !== 'canvas-text') this.schedulePreviewNow();
+      if (origin !== 'editor' && this.state.mode !== 'visual') this.editor.loadBody(body);
+      if (this.state.mode === 'source' && origin !== 'source') this.source.setValue(this.deckMarkdown());
+      this.scheduleSorterThumb();
+      this.renderStatus();
     }
+    if (selection !== undefined) this.state.setSelection(selection);
+    requestAnimationFrame(() => this.updateEditorBar());
+  }
+
+  schedulePreviewNow() {
+    if (this._pvRaf) return;
+    this._pvRaf = requestAnimationFrame(() => {
+      this._pvRaf = 0;
+      if (this.state.currentSlide) this.preview.updateSlide(this.state.currentIndex, this.state.currentSlide);
+    });
+  }
+
+  /** Slide-attributen (`<!-- .slide: … -->`) aanpassen; `mutate` krijgt een kopie van het attr-object. */
+  updateSlideAttrs(mutate) {
+    const slide = this.state.currentSlide;
+    const obj = { ...slide.attrsData };
+    mutate(obj);
+    const next = serializeSlideAttrs(obj);
+    if (!slide.attrs && next && slide.gap1 === '') slide.gap1 = '\n\n';
+    slide.setAttrs(next);
+    this.state.markDirty();
+    this.preview.updateSlide(this.state.currentIndex, slide);
+    this.scheduleSorterThumb();
+    this.renderStatus();
+  }
+
+  deckFooterText() {
+    for (const s of this.state.deck ? this.state.deck.slides : []) {
+      const m = /<div class="footer"><span>([^<]*)<\/span>/.exec(s.body);
+      if (m) return T.decodeEntities(m[1]);
+    }
+    return 'Vak · Onderwerp';
+  }
+
+  addFooter() {
+    const n = String(this.state.currentIndex + 1).padStart(2, '0');
+    const html = `<div class="footer"><span>${escapeHtml(this.deckFooterText())}</span><span class="num">${n}</span></div>`;
+    const r = B.insertAfterSelection(this.state.currentSlide.body, { blockIndex: B.blockCount(this.state.currentSlide.body) - 1 }, { type: 'htmlBlock', attrs: { html } });
+    this.commitBody(r.body, { origin: 'panel' });
+  }
+
+  /** Selecteer de component rond element-pad `path` van html-blok `bi` (zoals een klik op het canvas). */
+  selectPath(bi, path) {
+    const html = B.htmlAt(this.state.currentSlide.body, bi);
+    if (html == null) return this.state.setSelection({ blockIndex: bi, path: [], highlight: [], openItem: -1 });
+    const r = resolveTarget(html, path);
+    return this.state.setSelection({ blockIndex: bi, path: r.path, highlight: r.highlight, openItem: r.openItem });
+  }
+
+  /** Selecteer een heel blok (klik in de editor). */
+  selectBlockDefault(i) {
+    const body = this.state.currentSlide.body;
+    if (B.htmlAt(body, i) == null) this.state.setSelection({ blockIndex: i, path: [], highlight: [], openItem: -1 });
+    else this.selectPath(i, [0]);
+  }
+
+  onCanvasPick(pick) {
+    if (!pick) { if (this.state.selection) this.state.setSelection(null); return; }
+    const html = B.htmlAt(this.state.currentSlide.body, pick.blockIndex);
+    if (html == null || pick.bp == null) this.state.setSelection({ blockIndex: pick.blockIndex, path: [], highlight: [], openItem: -1 });
+    else this.selectPath(pick.blockIndex, pick.bp);
+  }
+
+  resolveHover(bi, bp) {
+    const html = B.htmlAt(this.state.currentSlide.body, bi);
+    if (html == null || bp == null) return [];
+    return resolveTarget(html, bp).highlight;
+  }
+
+  onSelectionChange(sel) {
+    this.preview.setSelection(sel);
+    this.editor.setActiveBlock(sel ? sel.blockIndex : null);
+    this.panel.render();
+    this.updateEditorBar(true);
+  }
+
+  barState() {
+    const sel = this.state.selection;
+    if (!sel || !this.state.currentSlide) return {};
+    const body = this.state.currentSlide.body;
+    return {
+      fragmentOn: B.isFragment(body, sel),
+      fragmentEnabled: B.canFragment(body, sel),
+      canMoveUp: B.canMove(body, sel, -1),
+      canMoveDown: B.canMove(body, sel, 1),
+    };
+  }
+
+  /** Quick-Action balk boven het geselecteerde blok in de Tiptap-editor (Split/Broncode). */
+  updateEditorBar(scrollIntoView = false) {
+    const sel = this.state.selection;
+    if (!this.editorBar) return;
+    if (this.state.mode === 'visual' || !sel) return this.editorBar.hide();
+    const dom = this.editor.blockDom(sel.blockIndex);
+    if (!dom) return this.editorBar.hide();
+    if (scrollIntoView) dom.scrollIntoView({ block: 'nearest' });
+    this.editorBar.show(dom.getBoundingClientRect(), this.barState());
+  }
+
+  onQuickAction(action) {
+    const sel = this.state.selection;
+    if (!sel || !this.state.currentSlide) return;
+    const body = this.state.currentSlide.body;
+    if (action === 'up' || action === 'down') {
+      const r = B.moveSelection(body, sel, action === 'up' ? -1 : 1);
+      if (r.changed) this.commitBody(r.body, { origin: 'action', selection: r.selection });
+    } else if (action === 'fragment') {
+      if (!B.canFragment(body, sel)) return toast('Dit onderdeel ondersteunt geen animatiestap.', true);
+      this.commitBody(B.toggleFragmentSelection(body, sel), { origin: 'action', selection: { ...sel } });
+    } else if (action === 'duplicate') {
+      const r = B.duplicateSelection(body, sel);
+      this.commitBody(r.body, { origin: 'action', selection: r.selection });
+    } else if (action === 'delete') {
+      const r = B.removeSelection(body, sel);
+      this.commitBody(r.body, { origin: 'action', selection: r.selection });
+    }
+  }
+
+  /* ---- tekst direct op het canvas typen ---- */
+
+  /** Markdown-tekst van een kop/alinea zonder `#` en zonder `.element:`-comment. */
+  mdParts(block) {
+    const md = blockToMarkdown(block);
+    const m = /\s*(<!--\s*\.element:[^>]*-->)\s*$/.exec(md);
+    let text = m ? md.slice(0, m.index) : md;
+    if (block.type === 'heading') text = text.replace(/^#{1,6}\s+/, '');
+    return { text, comment: m ? m[1] : '' };
+  }
+
+  canEditText(bi, bp, el) {
+    const block = B.blockAt(this.state.currentSlide.body, bi);
+    if (!block) return false;
+    if (block.type === 'htmlBlock') {
+      if (bp == null) return false;
+      const html = block.attrs.html;
+      const node = T.nodeAt(T.parse(html), bp);
+      return !!node && T.isLeaf(node) && !node.voidEl && !['script', 'style', 'svg', 'button'].includes(node.tag) && T.rawTextOf(html, node).trim() === el.textContent.trim();
+    }
+    if (block.type === 'heading' || block.type === 'paragraph') return this.mdParts(block).text === el.textContent;
+    return false;
+  }
+
+  onCanvasText({ blockIndex, bp, text }) {
+    const body = this.state.currentSlide.body;
+    const block = B.blockAt(body, blockIndex);
+    if (!block) return;
+    if (block.type === 'htmlBlock') {
+      const node = T.nodeAt(T.parse(block.attrs.html), bp);
+      if (!node) return;
+      this.commitBody(B.setHtmlAt(body, blockIndex, T.setText(block.attrs.html, node, text)), { origin: 'canvas-text' });
+    } else {
+      const { comment } = this.mdParts(block);
+      const prefix = block.type === 'heading' ? `${'#'.repeat(block.attrs.level)} ` : '';
+      const nodes = bodyToDoc(`${prefix}${text}${comment ? ` ${comment}` : ''}`).content;
+      this.commitBody(B.replaceBlock(body, blockIndex, nodes.length ? nodes : [block]), { origin: 'canvas-text' });
+    }
+  }
+
+  onCanvasTextEnd() {
+    this.schedulePreviewNow();
+    this.panel.render();
+  }
+
+  /* ---- blokken toevoegen vanuit de toolbar ---- */
+
+  insertBlockDef(def) {
+    if (!this.state.deck) return toast('Open eerst een presentatie.', true);
+    if (this.state.mode !== 'visual') { insertBlock(this.editor, def); return; }
+    const node = nodeFor(def);
+    if (node) this.insertNodes(node);
+  }
+
+  insertNodes(nodes) {
+    const r = B.insertAfterSelection(this.state.currentSlide.body, this.state.selection, nodes);
+    this.commitBody(r.body, { origin: 'toolbar' });
+    this.selectBlockDefault(r.index);
+  }
+
+  /* ---- presenteren ---- */
+
+  startPresentation() {
+    if (!this.state.deck) return toast('Open eerst een presentatie.', true);
+    if (this.presenter.active) return;
+    this.presenter.start(this.state.currentIndex);
+  }
+
+  onPresentExit(flatIndex) {
+    this.state.setCurrentIndex(flatIndex);
+    this.preview.gotoSlide(this.state.currentIndex);
+    this.preview.refreshSelection();
+    this.updateEditorBar();
   }
 
   getToken() {
@@ -770,8 +874,11 @@ export class Studio {
     const html = `<figure><img src="${safeSrc}" alt="${safeCaption}">`
       + (caption ? `<figcaption>${safeCaption}</figcaption>` : '')
       + '</figure>';
-    this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html } }));
-    this.onEditorChange();
+    if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } });
+    else {
+      this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html } }));
+      this.onEditorChange();
+    }
     toast('Afbeelding toegevoegd.');
   }
 
@@ -898,54 +1005,6 @@ export class Studio {
 
 /* --------------------------------------------------------------- helpers --- */
 
-/** Bouwt de slide-body voor de "+ Nieuwe Slide"-snelkeuze. */
-function slideBodyFor(kind, num) {
-  const n = String(num).padStart(2, '0');
-  const footer = `<div class="footer"><span>Vak · Onderwerp</span><span class="num">${n}</span></div>`;
-  switch (kind) {
-    case 'title':
-      return [
-        '<!-- .slide: class="bleed dark" data-background-color="#111111" -->',
-        '',
-        '<div class="bar" style="margin-top:28px"></div>',
-        '<p class="kicker kicker--lime">Kicker · Onderwerp</p>',
-        '<h1 class="title" style="color:#fff;font-size:72px">Titel van de les</h1>',
-        '<p class="lede" style="color:#EDEDED;font-size:27px;max-width:1000px">Korte inleidende regel.</p>',
-        footer,
-      ].join('\n');
-    case 'columns':
-      return [
-        '## Titel',
-        '',
-        '<div class="glr-columns">',
-        '<div class="glr-col">',
-        '',
-        'Linkerkolom',
-        '',
-        '</div>',
-        '<div class="glr-col">',
-        '',
-        'Rechterkolom',
-        '',
-        '</div>',
-        '</div>',
-        '',
-        footer,
-      ].join('\n');
-    case 'sub':
-      return ['## Sub-slide', '', 'Inhoud van deze sub-slide.', '', footer].join('\n');
-    case 'standard':
-    default:
-      return [
-        '<!-- .slide: class="dark" data-background-color="#111111" -->',
-        '',
-        '## Nieuwe slide',
-        '',
-        footer,
-      ].join('\n');
-  }
-}
-
 /** Bouwt de complete `slides.md`-inhoud voor een nieuw deck uit de wizard. */
 function buildNewDeckMarkdown(data) {
   const q = (s) => String(s == null ? '' : s).replace(/"/g, '\\"');
@@ -978,30 +1037,6 @@ function buildNewDeckMarkdown(data) {
     `<div class="footer"><span>${escapeHtml(subject)}</span><span class="num">02</span></div>`,
   ].join('\n');
   return `${fm}\n\n${titleSlide}\n\n---\n\n${contentSlide}\n`;
-}
-
-function field(label, value, onChange, { textarea = false, checkbox = false } = {}) {
-  const wrap = document.createElement('div');
-  wrap.className = 'insp-field';
-  if (checkbox) {
-    wrap.className = 'insp-field insp-field--row';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = !!value;
-    input.addEventListener('change', () => onChange(input.checked));
-    const lab = document.createElement('label');
-    lab.textContent = label;
-    wrap.append(input, lab);
-    return wrap;
-  }
-  const lab = document.createElement('label');
-  lab.textContent = label;
-  const input = textarea ? document.createElement('textarea') : document.createElement('input');
-  if (!textarea) input.type = 'text';
-  input.value = value == null ? '' : String(value);
-  input.addEventListener('change', () => onChange(input.value));
-  wrap.append(lab, input);
-  return wrap;
 }
 
 /* --------------------------------------------------------------- bootstrap */

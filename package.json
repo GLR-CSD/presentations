@@ -16,7 +16,8 @@
     "export:pdf:cached": "node scripts/export-pdf-cached.js",
     "test:roundtrip": "node scripts/test-roundtrip.js",
     "test:bridge": "node scripts/test-bridge.js",
-    "serve": "serve ."
+    "serve": "serve .",
+    "test:parsers": "node scripts/test-parsers.js"
   },
   "dependencies": {
     "katex": "^0.19.1",

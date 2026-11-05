@@ -183,7 +183,7 @@ export function docToBody(doc) {
   return (doc.content || []).map(blockToMarkdown).join('\n\n');
 }
 
-function blockToMarkdown(node) {
+export function blockToMarkdown(node) {
   switch (node.type) {
     case 'heading':
       return `${'#'.repeat(node.attrs.level)} ${inlineNodesToMarkdown(node.content)}`;

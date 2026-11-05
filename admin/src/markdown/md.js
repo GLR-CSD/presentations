@@ -50,5 +50,6 @@ md.renderer.rules.fence = (tokens, idx) => {
   const { lang, highlight } = parseFenceInfo(token.info);
   const cls = lang ? ` class="language-${escapeHtml(lang)}"` : '';
   const ln = highlight ? ` data-line-numbers="${escapeHtml(highlight)}"` : '';
-  return `<pre><code${ln}${cls}>${escapeHtml(token.content)}</code></pre>\n`;
+  const bi = token.meta && token.meta.bi != null ? ` data-bi="${token.meta.bi}"` : '';
+  return `<pre${bi}><code${ln}${cls}>${escapeHtml(token.content)}</code></pre>\n`;
 };

@@ -32,12 +32,13 @@
       </button>
 
       <div class="studio-modes" id="modes" role="tablist" aria-label="Weergave">
-        <button type="button" data-mode="visual" class="is-active">Visueel</button>
-        <button type="button" data-mode="split">Split</button>
-        <button type="button" data-mode="source">Source</button>
+        <button type="button" data-mode="visual" class="is-active" title="Werk direct op de echte 16:9 slide">Visueel (16:9 Slide)</button>
+        <button type="button" data-mode="split" title="Tekststructuur naast de slide">Split (Structuur + Slide)</button>
+        <button type="button" data-mode="source" title="Ruwe Markdown/HTML (voor developers)">&lt;/&gt; Broncode</button>
       </div>
 
       <div class="studio-actions">
+        <button type="button" class="studio-btn studio-btn--present" id="present-btn" title="Presenteer vanaf de huidige slide (F5)"></button>
         <button type="button" class="studio-btn" id="new-deck-btn" title="Nieuwe presentatie"></button>
         <button type="button" class="studio-btn studio-btn--primary" id="save-btn" title="Opslaan (Ctrl+S)"></button>
         <button type="button" class="studio-btn studio-btn--icon" id="download-btn" title="Download .md" aria-label="Download .md"></button>
@@ -55,10 +56,10 @@
       <main class="studio-center">
         <div class="studio-toolbar" id="toolbar" role="toolbar" aria-label="Blokken"></div>
         <div class="studio-panes" id="panes" data-mode="visual">
-          <div class="studio-pane studio-pane--editor"><div class="studio-editor" id="editor"></div></div>
-          <div class="studio-pane studio-pane--source" id="source-pane" hidden></div>
+          <div class="studio-pane studio-pane--editor" id="editor-pane"><div class="studio-editor" id="editor"></div></div>
+          <div class="studio-pane studio-pane--source" id="source-pane"></div>
           <div class="studio-pane studio-pane--preview">
-            <div class="preview-label">Live Reveal.js-preview</div>
+            <div class="preview-label">Slide · 16:9 canvas — klik op een onderdeel om het te bewerken</div>
             <div class="preview-frame" id="preview"></div>
           </div>
         </div>
@@ -70,7 +71,6 @@
     <footer class="studio-status" id="status"><span id="status-text">Klaar.</span></footer>
   </div>
 
-  <div class="studio-popover" id="popover" hidden></div>
   <div id="modal-root"></div>
 
   <script type="module" src="./vendor/studio.js"></script>

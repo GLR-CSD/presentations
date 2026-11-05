@@ -4,16 +4,10 @@
  * ingesprongen weergegeven.
  */
 import Sortable from 'sortablejs';
-import { renderSlideBody, slideAttrsToHtml } from '../markdown/render.js';
+import { renderSlideBody, slideAttrsToHtml, resolveAssets } from '../markdown/render.js';
 import { icon } from '../ui/icons.js';
 
-/** Snelkeuze voor nieuwe slides in de Slide Sorter. */
-const SLIDE_TYPES = [
-  { kind: 'standard', label: 'Standaard Slide', hint: '---' },
-  { kind: 'title', label: 'Titelslide', hint: 'class="bleed dark"' },
-  { kind: 'columns', label: 'Twee Kolommen Slide', hint: '.glr-columns' },
-  { kind: 'sub', label: 'Sub-slide eronder', hint: '--' },
-];
+import { SLIDE_TEMPLATES } from '../blocks/templates.js';
 
 export class SlideSorter {
   constructor(container, { onSelect, onReorder, onAdd, onDelete, onDuplicate }) {
@@ -24,6 +18,7 @@ export class SlideSorter {
     this.onDelete = onDelete;
     this.onDuplicate = onDuplicate;
     this.deck = null;
+    this.baseUrl = '';
     this.currentIndex = 0;
 
     // Kop met prominente "+ Nieuwe Slide"-knop.
@@ -85,7 +80,7 @@ export class SlideSorter {
       const inner = document.createElement('div');
       inner.className = 'sorter-thumb__inner';
       inner.setAttribute('style', 'width:1280px;height:720px;transform-origin:top left;');
-      inner.innerHTML = `<section ${slideAttrsToHtml(slide)}>${renderSlideBody(slide.body)}</section>`;
+      inner.innerHTML = resolveAssets(`<section ${slideAttrsToHtml(slide)}>${renderSlideBody(slide.body)}</section>`, this.baseUrl);
       thumb.appendChild(inner);
 
       const actions = document.createElement('div');
@@ -120,32 +115,43 @@ export class SlideSorter {
     return b;
   }
 
-  /** Snelkeuze-menu met de vier slide-types, verankerd aan `anchor`. */
+  /** Template-kiezer: 6 didactische slide-types als tegels met icoon. */
   _openTypeMenu(anchor, insertIndex) {
+    document.querySelectorAll('.sorter-context--types').forEach((m) => m.remove());
     const menu = document.createElement('div');
     menu.className = 'sorter-context sorter-context--types';
     const head = document.createElement('div');
     head.className = 'sorter-context__head';
-    head.textContent = 'Nieuw slide-type';
+    head.textContent = 'Kies een slide-type';
     menu.appendChild(head);
-    const iconFor = { standard: 'file-text', title: 'heading', columns: 'columns', sub: 'corner-down-right' };
-    for (const type of SLIDE_TYPES) {
+    const grid = document.createElement('div');
+    grid.className = 'tpl-grid';
+    for (const tpl of SLIDE_TEMPLATES) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'sorter-context__item';
-      b.innerHTML = `<span class="sorter-context__ic">${icon(iconFor[type.kind] || 'file-text', 15)}</span>`
-        + `<span class="sorter-context__label">${type.label}</span>`
-        + `<span class="sorter-context__hint">${type.hint}</span>`;
+      b.className = 'tpl-tile';
+      b.innerHTML = `<span class="tpl-tile__ic">${icon(tpl.icon, 22)}</span>`
+        + `<span class="tpl-tile__label">${tpl.label}</span>`
+        + `<span class="tpl-tile__hint">${tpl.hint}</span>`;
       b.addEventListener('click', () => {
         menu.remove();
-        if (this.onAdd) this.onAdd(insertIndex, type.kind);
+        if (this.onAdd) this.onAdd(insertIndex, tpl.kind);
       });
-      menu.appendChild(b);
+      grid.appendChild(b);
     }
+    menu.appendChild(grid);
+    const sub = document.createElement('button');
+    sub.type = 'button';
+    sub.className = 'tpl-sub';
+    sub.innerHTML = `${icon('corner-down-right', 14)}<span>Sub-slide eronder (verticaal)</span>`;
+    sub.addEventListener('click', () => { menu.remove(); if (this.onAdd) this.onAdd(insertIndex, 'sub'); });
+    menu.appendChild(sub);
     document.body.appendChild(menu);
     const r = anchor.getBoundingClientRect();
-    menu.style.top = `${Math.min(r.bottom + 4, window.innerHeight - 220)}px`;
-    menu.style.left = `${Math.min(r.left, window.innerWidth - 260)}px`;
+    const mw = menu.offsetWidth || 400;
+    const mh = menu.offsetHeight || 360;
+    menu.style.top = `${Math.max(8, Math.min(r.bottom + 4, window.innerHeight - mh - 8))}px`;
+    menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mw - 8))}px`;
     const close = (ev) => {
       if (!menu.contains(ev.target)) {
         menu.remove();
