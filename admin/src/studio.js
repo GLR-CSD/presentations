@@ -35,7 +35,7 @@ import { openImageDialog as showImageDialog } from './ui/image-dialog.js';
 import { escapeHtml, slugify, SUBJECT_PREFIXES } from './ui/util.js';
 import { mountDeployIndicator } from './ui/deploy-poller.js';
 import { openAiAssistant as showAiAssistant } from './ui/ai-assistant.js';
-import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig } from './storage/oauth.js';
+import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig, checkOAuthHealth } from './storage/oauth.js';
 
 const SHARED_BASE = '../shared/';
 const TOKEN_KEY = 'glr-gh-token';
@@ -95,6 +95,9 @@ export class Studio {
     });
     this.studioConfig = await loadStudioConfig();
     this.authGate.setOAuthEnabled(!!this.studioConfig.oauthUrl);
+    // PAT-foldout blijft dicht, tenzij OAuth niet werkt (geen URL, onbereikbaar of niet geconfigureerd).
+    if (!this.studioConfig.oauthUrl) this.authGate.openAdvanced();
+    else checkOAuthHealth(this.studioConfig.oauthUrl).then((healthy) => { if (!healthy) this.authGate.openAdvanced(); });
     window.addEventListener('message', (event) => this.onOAuthMessage(event));
 
     this.buildToolbar();

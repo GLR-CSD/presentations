@@ -114,6 +114,11 @@ export class AuthGate {
     this.host.dataset.oauth = enabled ? 'on' : 'off';
   }
 
+  /** Klapt de PAT-foldout open (alleen bedoeld als OAuth niet werkt). */
+  openAdvanced() {
+    this.foldout.open = true;
+  }
+
   show() { this.host.hidden = false; }
   hide() { this.host.hidden = true; }
 
