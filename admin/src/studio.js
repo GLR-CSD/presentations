@@ -35,6 +35,7 @@ import { openImageDialog as showImageDialog } from './ui/image-dialog.js';
 import { escapeHtml, slugify, SUBJECT_PREFIXES } from './ui/util.js';
 import { mountDeployIndicator } from './ui/deploy-poller.js';
 import { openAiAssistant as showAiAssistant } from './ui/ai-assistant.js';
+import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig } from './storage/oauth.js';
 
 const SHARED_BASE = '../shared/';
 const TOKEN_KEY = 'glr-gh-token';
@@ -90,7 +91,11 @@ export class Studio {
     this.authGate = new AuthGate(this.el.authGate, {
       onSubmitToken: (token, remember) => this.handleLogin(token, remember),
       onOffline: () => this.handleOffline(),
+      onGitHubLogin: () => this.startGitHubLogin(),
     });
+    this.studioConfig = await loadStudioConfig();
+    this.authGate.setOAuthEnabled(!!this.studioConfig.oauthUrl);
+    window.addEventListener('message', (event) => this.onOAuthMessage(event));
 
     this.buildToolbar();
     this.buildSorter();
@@ -1032,6 +1037,15 @@ export class Studio {
 
   /** Valideert een opgeslagen token (localStorage) en opent de Studio. */
   async initAuth() {
+    // OAuth-fallback: Worker stuurde ons terug met #oauth_token=… — direct uit de URL wissen.
+    const oauth = parseOAuthHash(location.hash);
+    if (oauth.token || oauth.error) {
+      history.replaceState(null, '', location.pathname + location.search + (oauth.rest ? `#${oauth.rest}` : ''));
+      if (oauth.token) return this.handleOAuthToken(oauth.token);
+      this.authGate.setError(`GitHub-login mislukt: ${oauth.error}`);
+      this.authGate.show();
+      return;
+    }
     const token = this.getToken();
     if (token) {
       this.authGate.setToken(token);
@@ -1061,18 +1075,60 @@ export class Studio {
     try {
       const repo = await gh.validateToken(clean);
       if (remember) this.setToken(clean); else this.clearToken();
-      this.auth = { mode: 'github', token: clean, repo: repo.full_name };
-      this.authGate.hide();
-      this.renderAccountMenu();
-      this.setStatus(`Verbonden met GitHub (${repo.full_name}).`);
-      if (repo.permissions && repo.permissions.push === false) {
-        toast('Token heeft alleen leesrechten — opslaan naar GitHub zal niet werken.', true);
-      } else {
-        toast(`Ingelogd op GitHub (${repo.full_name}).`);
-      }
+      this.completeLogin(clean, repo);
     } catch (err) {
       this.authGate.setLoading(false);
       this.authGate.setError(err.message || 'Inloggen mislukt. Controleer het token en de repo-toegang.');
+    }
+  }
+
+  /** Gedeeld succespad voor PAT- en OAuth-login. */
+  completeLogin(token, repo) {
+    this.auth = { mode: 'github', token, repo: repo.full_name };
+    this.authGate.hide();
+    this.renderAccountMenu();
+    this.setStatus(`Verbonden met GitHub (${repo.full_name}).`);
+    if (repo.permissions && repo.permissions.push === false) {
+      toast('Token heeft alleen leesrechten — opslaan naar GitHub zal niet werken.', true);
+    } else {
+      toast(`Ingelogd op GitHub (${repo.full_name}).`);
+    }
+  }
+
+  /** Opent de OAuth-popup; bij een geblokkeerde popup volgt een volledige redirect. */
+  startGitHubLogin() {
+    const url = this.studioConfig && this.studioConfig.oauthUrl;
+    if (!url) return this.authGate.setError('GitHub-login is niet geconfigureerd. Gebruik een handmatig token.');
+    this.authGate.setError('');
+    const popup = window.open(loginUrl(url), 'glr-oauth', 'width=600,height=720');
+    if (!popup) location.assign(loginUrl(url));
+  }
+
+  onOAuthMessage(event) {
+    const url = this.studioConfig && this.studioConfig.oauthUrl;
+    if (!isOAuthMessage(event, url)) return;
+    if (event.data.type === 'glr-oauth-token') this.handleOAuthToken(event.data.token);
+    else {
+      this.authGate.setLoading(false);
+      this.authGate.setError(`GitHub-login mislukt: ${event.data.error || 'onbekende fout'}`);
+      this.authGate.show();
+    }
+  }
+
+  async handleOAuthToken(token) {
+    this.authGate.setLoading(true);
+    this.authGate.setError('');
+    this.authGate.show();
+    try {
+      const repo = await gh.validateToken(token);
+      if (repo.permissions?.push === false) {
+        throw new Error('Je GitHub-account heeft geen schrijfrechten op GLR-CSD/presentations.');
+      }
+      this.setToken(token);
+      this.completeLogin(token, repo);
+    } catch (err) {
+      this.authGate.setLoading(false);
+      this.authGate.setError(err.message || 'Inloggen met GitHub mislukt.');
     }
   }
 

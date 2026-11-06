@@ -562,5 +562,13 @@ for (const dir of [distDir, adminSrc, path.join(distDir, 'admin')]) {
   fs.writeFileSync(path.join(dir, 'presentations-manifest.json'), manifestJson);
 }
 
+// Studio-config (build-time): de Worker-URL voor "Inloggen met GitHub" komt uit
+// env GLR_OAUTH_URL, zodat hij niet in de code hoeft te staan. Geen geheim.
+const studioConfigJson = `${JSON.stringify({ oauthUrl: (process.env.GLR_OAUTH_URL || '').trim().replace(/\/+$/, '') || null }, null, 2)}\n`;
+for (const dir of [adminSrc, path.join(distDir, 'admin')]) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'studio-config.json'), studioConfigJson);
+}
+
 console.log(`✔ Portaalpagina gebouwd: dist/index.html (${totalPresentations} presentatie(s), ${totalFolders} map(pen))`);
 if (createdShells.length) console.log(`  ${createdShells.length} nieuwe shell(s) gegenereerd.`);

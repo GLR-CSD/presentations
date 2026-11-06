@@ -312,6 +312,16 @@ body {
 .auth-btn--primary:hover { background: #98d02a; }
 .auth-btn--ghost { background: #fff; border-color: var(--ui-border); color: var(--ui-ink); }
 .auth-btn--ghost:hover { background: var(--ui-bg); }
+.auth-btn--github { background: var(--ui-green); color: #fff; font-size: 16px; padding: 14px 16px; margin-bottom: 14px; }
+.auth-btn--github:hover:not(:disabled) { background: #35560a; }
+.auth-btn--github[hidden] { display: none; }
+.auth-btn--github .auth-btn__spin { border-color: rgba(255, 255, 255, .35); border-top-color: #fff; }
+.auth-gate.is-loading .auth-btn--github .auth-btn__spin { display: block; }
+.auth-gate.is-loading .auth-btn--github .auth-btn__ic { display: none; }
+.auth-advanced-foldout { margin-top: 18px; border-top: 1px solid var(--ui-border); padding-top: 12px; }
+.auth-advanced-foldout > summary { cursor: pointer; font-size: 12px; color: var(--ui-muted); }
+.auth-advanced-foldout > summary:hover { color: var(--ui-ink); }
+.auth-advanced-foldout[open] > summary { margin-bottom: 12px; }
 .auth-btn:disabled { opacity: .6; cursor: default; }
 .auth-btn__spin { width: 15px; height: 15px; border: 2px solid rgba(17, 17, 17, .25); border-top-color: var(--ui-ink); border-radius: 50%; display: none; animation: authspin .7s linear infinite; }
 .auth-gate.is-loading .auth-btn--primary .auth-btn__spin { display: block; }
