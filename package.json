@@ -13,14 +13,14 @@
     "build:index": "node scripts/build-index.js",
     "build": "npm run vendor && npm run build:index",
     "export:pdf": "node scripts/export-pdf.js",
-    "export:pdf:cached": "node scripts/export-pdf-cached.js",
     "test:roundtrip": "node scripts/test-roundtrip.js",
     "test:bridge": "node scripts/test-bridge.js",
     "serve": "serve .",
     "test:parsers": "node scripts/test-parsers.js",
     "mcp": "node scripts/mcp-server.js",
     "test:mcp": "node scripts/test-mcp.js",
-    "test:deploy": "node scripts/test-deploy-poller.js"
+    "test:deploy": "node scripts/test-deploy-poller.js",
+    "export:pdf:release": "node scripts/export-pdf-release.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -31,7 +31,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@actions/cache": "^6.3.0",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/lang-html": "^6.4.12",
     "@codemirror/lang-markdown": "^6.5.2",

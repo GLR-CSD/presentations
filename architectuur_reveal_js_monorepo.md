@@ -250,7 +250,9 @@ fs.writeFileSync(path.join(distDir, 'index.html'), htmlTemplate);
 ```
 
 ### 6.2 GitHub Actions Pipeline (`.github/workflows/deploy.yml`)
-De pipeline bouwt bij elke push naar de `main` branch de volledige static website, exporteert de presentaties naar PDF via **DeckTape** en publiceert naar GitHub Pages.
+> **Update:** de pipeline is gesplitst. `deploy.yml` bouwt en deployt alleen de site (met `paths`-filters); `pdfs.yml` rendert verouderde decks via **DeckTape** en uploadt ze naar de GitHub Release `pdfs`. Zie de README ("Deployment (CI/CD)"). Het voorbeeld hieronder is de oorspronkelijke, gecombineerde opzet.
+
+De oorspronkelijke pipeline bouwde bij elke push naar `main` de volledige static website, exporteerde de presentaties naar PDF via **DeckTape** en publiceerde naar GitHub Pages.
 
 ```yaml
 name: Deploy Presentations to GitHub Pages
