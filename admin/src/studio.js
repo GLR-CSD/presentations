@@ -16,7 +16,7 @@ import { BLOCKS, BLOCK_CATEGORIES, insertBlock, nodeFor } from './blocks/registr
 import * as T from './blocks/html-tree.js';
 import * as B from './blocks/block-ops.js';
 import { resolveTarget } from './blocks/parsers.js';
-import { slideTemplateBody } from './blocks/templates.js';
+import { slideTemplateBody, deckFooterText } from './blocks/templates.js';
 import { buildDeckMarkdown, frameworkById } from './pedagogy/frameworks.js';
 import { blockToMarkdown, bodyToDoc } from './markdown/bridge.js';
 import { PropertiesPanel } from './ui/properties-panel.js';
@@ -24,7 +24,7 @@ import { QuickBar } from './ui/quick-actions.js';
 import { Presenter } from './preview/presenter.js';
 import { parseDeck, serializeDeck, serializeSlideAttrs } from './state/deck.js';
 import { loadManifest, fetchDeckMarkdown, fetchDeckCss } from './storage/manifest.js';
-import { supportsFileSystemAccess, pickDirectory, readFileFromDir, writeFileToDir, writeBlobToDir, downloadText, pickLocalFileForWrite, writeLocalFile } from './storage/local.js';
+import { supportsFileSystemAccess, pickDirectory, readFileFromDir, writeFileToDir, writeBlobToDir, downloadText, pickLocalFileForWrite, writeLocalFile, listInputFiles, readInputText } from './storage/local.js';
 import * as gh from './storage/github.js';
 import { icon } from './ui/icons.js';
 import { AuthGate } from './ui/auth-gate.js';
@@ -32,7 +32,9 @@ import { openModal } from './ui/modal.js';
 import { openPresentationsBrowser as browsePresentations } from './ui/presentations-browser.js';
 import { openNewDeckWizard as showNewDeckWizard } from './ui/new-deck-wizard.js';
 import { openImageDialog as showImageDialog } from './ui/image-dialog.js';
-import { escapeHtml, SUBJECT_PREFIXES } from './ui/util.js';
+import { escapeHtml, slugify, SUBJECT_PREFIXES } from './ui/util.js';
+import { mountDeployIndicator } from './ui/deploy-poller.js';
+import { openAiAssistant as showAiAssistant } from './ui/ai-assistant.js';
 
 const SHARED_BASE = '../shared/';
 const TOKEN_KEY = 'glr-gh-token';
@@ -80,6 +82,8 @@ export class Studio {
       standaloneBtn: document.getElementById('standalone-btn'),
       editorPane: document.getElementById('editor-pane'),
       status: document.getElementById('status-text'),
+      aiBtn: document.getElementById('ai-btn'),
+      deployStatus: document.getElementById('deploy-status'),
     };
 
     this.decorateTopbar();
@@ -96,6 +100,10 @@ export class Studio {
     this.panel = new PropertiesPanel(this.el.inspector, this.panelApi());
     this.editorBar = new QuickBar(this.el.editorPane, (a) => this.onQuickAction(a));
     this.presenter = new Presenter(this.preview, { onExit: (i) => this.onPresentExit(i) });
+    this.deployPoller = mountDeployIndicator(this.el.deployStatus, {
+      fetchRun: (sha) => gh.getWorkflowRunForCommit(sha),
+      actionsUrl: gh.actionsUrl(),
+    });
     this.wireTopbar();
     this.wireState();
     this.wireShortcuts();
@@ -110,6 +118,7 @@ export class Studio {
   decorateTopbar() {
     if (this.el.openBtnIcon) this.el.openBtnIcon.innerHTML = icon('folder-open', 18);
     if (this.el.openBtnChev) this.el.openBtnChev.innerHTML = icon('chevron-down', 14);
+    if (this.el.aiBtn) this.el.aiBtn.innerHTML = `${icon('sparkles', 15)}<span>AI Assistent</span>`;
     if (this.el.newDeckBtn) this.el.newDeckBtn.innerHTML = `${icon('file-plus', 15)}<span>Nieuwe Presentatie</span>`;
     if (this.el.saveBtn) this.el.saveBtn.innerHTML = `${icon('save', 15)}<span>Opslaan</span>`;
     if (this.el.standaloneBtn) this.el.standaloneBtn.innerHTML = icon('external-link', 16);
@@ -280,6 +289,7 @@ export class Studio {
 
     if (this.el.openBtn) this.el.openBtn.addEventListener('click', () => this.openPresentationsBrowser());
     if (this.el.newDeckBtn) this.el.newDeckBtn.addEventListener('click', () => this.openNewDeckWizard());
+    if (this.el.aiBtn) this.el.aiBtn.addEventListener('click', () => this.openAiAssistant());
     if (this.el.saveBtn) this.el.saveBtn.addEventListener('click', () => this.save());
     if (this.el.presentBtn) this.el.presentBtn.addEventListener('click', () => this.startPresentation());
     if (this.el.standaloneBtn) this.el.standaloneBtn.addEventListener('click', () => this.openStandalone());
@@ -349,6 +359,34 @@ export class Studio {
       onOpen: (entry) => this.openDeckFromManifest(entry),
       onNew: () => this.openNewDeckWizard(),
     });
+  }
+
+  /** Opent de AI Les-Assistent (prompt voor browser-LLM's + MCP-uitleg). */
+  openAiAssistant() {
+    const local = !!this.dirHandle;
+    showAiAssistant({
+      hasLocalFolder: local,
+      listInputFiles: local ? () => listInputFiles(this.dirHandle) : null,
+      readInputText: local ? (name) => readInputText(this.dirHandle, name) : null,
+      onLoadDeck: (markdown, info) => this.loadDeckFromAi(markdown, info),
+    });
+  }
+
+  /** Laadt een door een AI gegenereerd deck op het canvas (nog niet opgeslagen). */
+  loadDeckFromAi(markdown, { title, prefix }) {
+    if (this.state.deck && this.state.deck.slides.some((s) => s.dirty)
+      && !window.confirm('Er zijn niet-opgeslagen wijzigingen. Toch de AI-presentatie laden?')) return false;
+    const base = slugify(title) || 'ai-presentatie';
+    const slug = !prefix || prefix === 'custom' ? base : `${prefix}_${base}`;
+    const path = `presentations/${slug}/slides.md`;
+    this.previewCss = '';
+    this.loadDeck(parseDeck(markdown), { source: 'ai', path, title });
+    this.state.deck.slides.forEach((sl) => { sl.dirty = true; });
+    this.state.markDirty();
+    this.renderStatus();
+    this.setStatus(`AI-presentatie geladen: ${path} (nog niet opgeslagen)`);
+    toast('AI-presentatie geladen op het canvas. Controleer de slides en klik op Opslaan.');
+    return true;
   }
 
   /** Opent de "+ Nieuwe Presentatie"-wizard. */
@@ -692,11 +730,7 @@ export class Studio {
   }
 
   deckFooterText() {
-    for (const s of this.state.deck ? this.state.deck.slides : []) {
-      const m = /<div class="footer"><span>([^<]*)<\/span>/.exec(s.body);
-      if (m) return T.decodeEntities(m[1]);
-    }
-    return 'Vak · Onderwerp';
+    return deckFooterText(this.state.deck);
   }
 
   addFooter() {
@@ -893,9 +927,10 @@ export class Studio {
       const label = path.split('/').slice(-2)[0] || path;
       try {
         await gh.connect(this.auth.token);
-        await gh.commitFiles(`feat: update ${label} via GLR Slide Studio`, [{ path, content: markdown, encoding: 'utf-8' }]);
+        const commitSha = await gh.commitFiles(`feat: update ${label} via GLR Slide Studio`, [{ path, content: markdown, encoding: 'utf-8' }]);
         this.markSaved();
         toast('Opgeslagen op GitHub (main)');
+        this.deployPoller.start({ commitSha, liveUrl: gh.pagesUrl(path) });
       } catch (err) {
         toast(`GitHub: ${err.message}`, true);
       }

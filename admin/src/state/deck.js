@@ -262,7 +262,15 @@ export function parseDeck(source) {
 /** Serialiseert een Deck terug naar Markdown. */
 export function serializeDeck(deck) {
   let out = deck.frontmatter ? deck.frontmatter.serialize() : '';
-  for (const slide of deck.slides) out += slide.sep + slide.serialize();
+  // De scheiding hoort bij de positie, niet bij de slide: na verplaatsen/invoegen
+  // vooraan mag de eerste slide geen scheiding hebben en elke andere altijd één.
+  deck.slides.forEach((slide, i) => {
+    const sep = i === 0 ? '' : (slide.sep || '\n---\n\n');
+    let text = slide.serialize();
+    // Direct achter de frontmatter moet witruimte staan (eerste slide kan gewisseld zijn).
+    if (i === 0 && deck.frontmatter && text && !/^\s/.test(text)) text = `${deck.eol}${deck.eol}${text}`;
+    out += sep + text;
+  });
   return out;
 }
 

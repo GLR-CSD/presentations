@@ -100,3 +100,31 @@ export async function writeLocalFile(handle, content) {
   await writable.close();
 }
 
+
+const TEXT_INPUT = /\.(md|txt|html?|csv|json)$/i;
+
+/**
+ * Bestanden in de `input/`-map van de gekoppelde repo-map.
+ * Gooit als er geen `input/` is. `readable=false` voor PDF/PPTX (alleen via MCP).
+ * @returns {Promise<Array<{name:string, readable:boolean}>>}
+ */
+export async function listInputFiles(dirHandle) {
+  const input = await dirHandle.getDirectoryHandle('input');
+  const out = [];
+  for await (const [name, handle] of input.entries()) {
+    if (handle.kind !== 'file' || name.startsWith('.')) continue;
+    out.push({ name, readable: TEXT_INPUT.test(name) });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name, 'nl'));
+}
+
+/** Leest een tekstbestand uit `input/`; HTML wordt omgezet naar platte tekst. */
+export async function readInputText(dirHandle, name) {
+  const input = await dirHandle.getDirectoryHandle('input');
+  const file = await (await input.getFileHandle(name)).getFile();
+  const text = await file.text();
+  if (!/\.html?$/i.test(name)) return text;
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  doc.querySelectorAll('script,style').forEach((n) => n.remove());
+  return (doc.body.innerText || doc.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+}

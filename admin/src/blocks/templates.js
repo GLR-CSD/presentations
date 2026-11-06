@@ -241,3 +241,12 @@ export function slideTemplateBody(kind, { number = 1, footerText = 'Vak · Onder
       ].join('\n');
   }
 }
+
+/** Footer-tekst ("Vak · Onderwerp") van het eerste slide in het deck dat er een heeft. */
+export function deckFooterText(deck) {
+  for (const s of deck ? deck.slides : []) {
+    const m = /<div class="footer"><span>([^<]*)<\/span>/.exec(s.body);
+    if (m) return String(m[1]).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  }
+  return 'Vak · Onderwerp';
+}
