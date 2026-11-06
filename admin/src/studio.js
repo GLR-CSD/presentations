@@ -932,7 +932,13 @@ export class Studio {
         toast('Opgeslagen op GitHub (main)');
         this.deployPoller.start({ commitSha, liveUrl: gh.pagesUrl(path) });
       } catch (err) {
-        toast(`GitHub: ${err.message}`, true);
+        const msg = gh.describeGitHubError(err);
+        toast(msg, true);
+        if (err.isPermission) {
+          // Token opnieuw vragen; de presentatie en ongeopgeslagen wijzigingen blijven staan.
+          this.logout();
+          this.authGate.setError(msg);
+        }
       }
       return;
     }
@@ -1009,7 +1015,11 @@ export class Studio {
     const publicPath = `/presentations/shared/img/uploads/${safeName}`;
     if (this.auth.mode === 'github' && this.auth.token) {
       await gh.connect(this.auth.token);
-      await gh.commitFiles(`chore: upload ${safeName}`, [gh.uploadImageBase64(safeName, base64)]);
+      try {
+        await gh.commitFiles(`chore: upload ${safeName}`, [gh.uploadImageBase64(safeName, base64)]);
+      } catch (err) {
+        throw new Error(gh.describeGitHubError(err));
+      }
     } else if (this.dirHandle) {
       await writeBlobToDir(this.dirHandle, `shared/img/uploads/${safeName}`, new Blob([buffer], { type: file.type }));
     } else {
@@ -1055,7 +1065,11 @@ export class Studio {
       this.authGate.hide();
       this.renderAccountMenu();
       this.setStatus(`Verbonden met GitHub (${repo.full_name}).`);
-      toast(`Ingelogd op GitHub (${repo.full_name}).`);
+      if (repo.permissions && repo.permissions.push === false) {
+        toast('Token heeft alleen leesrechten — opslaan naar GitHub zal niet werken.', true);
+      } else {
+        toast(`Ingelogd op GitHub (${repo.full_name}).`);
+      }
     } catch (err) {
       this.authGate.setLoading(false);
       this.authGate.setError(err.message || 'Inloggen mislukt. Controleer het token en de repo-toegang.');

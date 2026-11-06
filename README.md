@@ -111,7 +111,7 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 
 ### Eenmalig: een Fine-Grained Personal Access Token (PAT) aanmaken
 
-1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write&actions=read> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
+1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&target_name=GLR-CSD&contents=write&actions=read> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
 2. **Resource owner:** kies de organisatie **`GLR-CSD`** (een organisatiebeheerder
    moet de token mogelijk eerst goedkeuren).
 3. **Repository access:** *Only select repositories* → **`presentations`**.
@@ -124,6 +124,11 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 5. **Expiration:** kies een redelijke geldigheidsduur en genereer de token.
 6. **Kopieer de token direct** (hij is daarna niet meer zichtbaar) en bewaar hem
    veilig, bijvoorbeeld in een wachtwoordmanager.
+
+> **Foutmelding "Resource not accessible by personal access token" bij opslaan?**
+> Het token mag niet schrijven. Controleer of *Resource owner* `GLR-CSD` is (niet je
+> eigen account), *Contents* op *Read and write* staat en het token niet nog
+> "pending" is bij de organisatie.
 
 > Deel de token nooit in de repository of in een chatbericht: hij geeft
 > schrijftoegang tot de presentaties.

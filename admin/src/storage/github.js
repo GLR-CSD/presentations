@@ -33,6 +33,26 @@ export async function validateToken(token, opts = {}) {
 }
 
 
+/**
+ * Vertaalt een Octokit-fout naar een begrijpelijke Nederlandse melding.
+ * Zet `err.isPermission = true` bij 401/403 zodat de UI het token opnieuw kan vragen.
+ */
+export function describeGitHubError(err, opts = {}) {
+  const { owner, repo } = { ...DEFAULT_REPO, ...opts };
+  const status = err && err.status;
+  if (status === 401) {
+    err.isPermission = true;
+    return 'GitHub: je token is ongeldig of verlopen. Voer een nieuw token in.';
+  }
+  if (status === 403 || status === 404) {
+    err.isPermission = true;
+    return `GitHub: je token mag niet schrijven naar ${owner}/${repo}. Maak het token aan met `
+      + `Resource owner = ${owner} (niet je eigen account), Repository = ${repo} en `
+      + 'Contents = Read and write. Staat het token op "pending", laat het dan goedkeuren door een org-beheerder.';
+  }
+  return `GitHub: ${(err && err.message) || 'onbekende fout'}`;
+}
+
 function client() {
   if (!octokit) throw new Error('Niet verbonden met GitHub. Voer eerst een token in.');
   return octokit;
