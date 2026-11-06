@@ -97,7 +97,7 @@ export function workedRowHtml({ highlight = '1-2|4-6', code = WORKED_CODE, lang 
     '      <div class="listrow"><span class="n">02</span><div><h3>Functie schrijven</h3><p>Regel 4–6: maak er herbruikbare code van.</p></div></div>',
     '    </div>',
     '  </div>',
-    '  <div class="col">',
+    '  <div class="col code-sm">',
     indentLines(terminalHtml({ lang, highlight, text: code, title: lang }), '    '),
     '  </div>',
     '</div>',
