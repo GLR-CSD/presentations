@@ -1098,7 +1098,7 @@ export class Studio {
   /** Opent de OAuth-popup; bij een geblokkeerde popup volgt een volledige redirect. */
   startGitHubLogin() {
     const url = this.studioConfig && this.studioConfig.oauthUrl;
-    if (!url) return this.authGate.setError('GitHub-login is niet geconfigureerd. Gebruik een handmatig token.');
+    if (!url) return this.authGate.setError("GitHub-login is nog niet geconfigureerd (GLR_OAUTH_URL ontbreekt). Gebruik voorlopig 'Geavanceerd' onderaan.");
     this.authGate.setError('');
     const popup = window.open(loginUrl(url), 'glr-oauth', 'width=600,height=720');
     if (!popup) location.assign(loginUrl(url));

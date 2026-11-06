@@ -314,7 +314,6 @@ body {
 .auth-btn--ghost:hover { background: var(--ui-bg); }
 .auth-btn--github { background: var(--ui-green); color: #fff; font-size: 16px; padding: 14px 16px; margin-bottom: 14px; }
 .auth-btn--github:hover:not(:disabled) { background: #35560a; }
-.auth-btn--github[hidden] { display: none; }
 .auth-btn--github .auth-btn__spin { border-color: rgba(255, 255, 255, .35); border-top-color: #fff; }
 .auth-gate.is-loading .auth-btn--github .auth-btn__spin { display: block; }
 .auth-gate.is-loading .auth-btn--github .auth-btn__ic { display: none; }
