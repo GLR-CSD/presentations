@@ -110,13 +110,15 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 
 ### Eenmalig: een Fine-Grained Personal Access Token (PAT) aanmaken
 
-1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
+1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write&actions=read> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
 2. **Resource owner:** kies de organisatie **`GLR-CSD`** (een organisatiebeheerder
    moet de token mogelijk eerst goedkeuren).
 3. **Repository access:** *Only select repositories* → **`presentations`**.
 4. **Repository permissions:**
    - **Contents:** *Read and write* — presentaties en afbeeldingen lezen/schrijven
      (de Studio commit rechtstreeks naar `main`, zonder Pull Requests).
+   - **Actions:** *Read-only* (optioneel) — nodig voor de live build-status na het opslaan.
+     Zonder dit recht toont de Studio een aftelling van 60 seconden in plaats van de echte status.
    - *Metadata* staat standaard op *Read-only*; laat dat zo.
 5. **Expiration:** kies een redelijke geldigheidsduur en genereer de token.
 6. **Kopieer de token direct** (hij is daarna niet meer zichtbaar) en bewaar hem
@@ -150,6 +152,68 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 - Afbeeldingen die je uploadt komen in `shared/img/uploads/` en worden als
   `/presentations/shared/img/uploads/…` in de Markdown gezet.
 
+### Build-status na opslaan
+
+Na **Opslaan** (online) toont de Studio in de topbar een indicator: *wachten tot de
+build start* → *GitHub Pages bouwt (~45-60 s)* → *Gepubliceerd!* met een link naar de live
+presentatie. De Studio vraagt elke 5 seconden (maximaal 3 minuten) de GitHub Actions-run van
+`deploy.yml` op. Heeft het token geen *Actions: read*-recht (HTTP 403/404), dan volgt een
+aftelling van 60 seconden. Via de **Actions**-link zie je altijd de echte logs.
+
+## AI Les-Assistent (Claude.ai, Gemini, ChatGPT)
+
+De knop **AI Assistent** in de topbar helpt collega's die AI gewoon in de browser gebruiken
+(geen installatie, geen clone van de repo nodig):
+
+1. Kies een didactisch model (Gagné, ABT, Sparkline, Stand-up, …), vul onderwerp, vak,
+   leerjaar en periode in en plak eventueel brontekst.
+2. **1. Kopieer Prompt naar Klembord** en open Claude.ai, Gemini, ChatGPT of Copilot
+   (snelkoppelingen in de modal). De prompt bevat de GLR-opmaakregels en alle componenten.
+3. Plak het antwoord terug en klik **2. Laad Presentatie in Studio**: het deck wordt
+   gevalideerd en opent op het 16:9-canvas (daarna Opslaan).
+
+> Het `input/` mapje voor brondocumenten kan alleen **lokaal** worden uitgelezen. In de online
+> versie plak je de tekst dus zelf in het tekstvak. Werk je offline met een gekoppelde map
+> (**Map koppelen** → repo-root), dan kun je een tekstbestand (`.md`, `.txt`, `.html`) uit
+> `input/` kiezen. PDF en PowerPoint lees je met de MCP-server (zie hieronder).
+
+## MCP-server (Claude Desktop, Claude Code, Cursor, VS Code)
+
+`scripts/mcp-server.js` laat een AI-assistent rechtstreeks met de decks werken en hergebruikt
+daarvoor dezelfde verliesvrije modules als de Studio (`admin/src/`). Tweede tab in de
+AI-assistent-modal bevat kopieerbare configuraties.
+
+**Installeren:** `npm install`, daarna het blok voor jouw app (pad aanpassen):
+
+```json
+{
+  "mcpServers": {
+    "glr-slides": {
+      "command": "node",
+      "args": ["/VOLLEDIG/PAD/NAAR/presentations/scripts/mcp-server.js"],
+      "env": { "GITHUB_TOKEN": "optioneel — alleen om te publiceren" }
+    }
+  }
+}
+```
+
+*Claude Code* leest het meegeleverde `.mcp.json` in de repo-root automatisch. In *VS Code*
+(`.vscode/mcp.json`) heet de sleutel `servers` en komt er `"type": "stdio"` bij.
+
+| Onderdeel | Inhoud |
+|---|---|
+| Resources | `glr://decks/manifest`, `glr://input/files`, `glr://components/catalog`, `glr://pedagogy/guidelines` |
+| Tools (invoer) | `list_input_documents`, `read_input_document` (md, txt, html, **pptx**, **pdf**) — alleen lokaal; online volgt een melding om de tekst in de chat te plakken |
+| Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
+| Tools (didactiek) | `analyze_presentation_pedagogy`, `apply_pedagogical_fix` |
+| Tools (GitHub) | `publish_deck_to_github` (atomaire commit + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status` |
+| Prompts | `van-input-naar-presentatie`, `maak-theorieles-gagne`, `maak-werkles-standup`, `didactische-les-review` |
+
+Omgevingsvariabelen: `GLR_REPO_ROOT` (andere werkmap), `GITHUB_TOKEN` of `GLR_GITHUB_TOKEN`,
+`GLR_GITHUB_REPO` (`owner/repo`, standaard `GLR-CSD/presentations`). Slides zijn 1-gebaseerd,
+`blockIndex` 0-gebaseerd. Zonder token werkt alles lokaal; alleen publiceren en build-status
+hebben een token nodig.
+
 ## Scripts
 
 | Commando | Wat het doet |
@@ -159,6 +223,10 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 | `npm run build` | `vendor` + `build:index` |
 | `npm run test:roundtrip` | Verifieert dat de deck-parser elke `slides.md` byte-identiek terugschrijft (verliesvrij) |
 | `npm run test:bridge` | Meet de Markdown ↔ ProseMirror-fidelity van de visuele editor |
+| `npm run test:parsers` | Test de HTML-boom, formulier-parsers, templates en didactische modules |
+| `npm run test:deploy` | Test de logica van de build-indicator (queued → bouwen → live, 403-fallback) |
+| `npm run test:mcp` | End-to-end test van de MCP-server via de MCP Client SDK (alle tools, resources en prompts) |
+| `npm run mcp` | Start de MCP-server (stdio) |
 | `npm run export:pdf` | Exporteert elke presentatie naar `presentation.pdf` via DeckTape (Docker) |
 | `npm run export:pdf -- --local` | Idem, maar met een lokaal geïnstalleerde `decktape` |
 | `npm run export:pdf:cached` | CI-variant met incrementele caching: rendert alleen gewijzigde presentaties, de rest komt uit de GitHub Actions-cache. `-- --dry-run` toont de cache-status zonder te bouwen |

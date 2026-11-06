@@ -15,7 +15,7 @@
 import { icon } from './icons.js';
 
 /** Template-URL naar GitHub's fine-grained PAT-scherm (pre-filled, net als Sveltia CMS). */
-const PAT_URL = 'https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write';
+const PAT_URL = 'https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write&actions=read';
 
 export class AuthGate {
   /**
@@ -71,7 +71,7 @@ export class AuthGate {
 
         <p class="auth-card__hint" id="auth-token-hint">
           Maak een <em>Fine-Grained</em> token aan voor de repository
-          <code>GLR-CSD/presentations</code> met <strong>Contents: read &amp; write</strong>.
+          <code>GLR-CSD/presentations</code> met <strong>Contents: read &amp; write</strong> (en optioneel <strong>Actions: read</strong> voor de live build-status).
           <a class="auth-card__link" href="${PAT_URL}" target="_blank" rel="noopener noreferrer">Token aanmaken op GitHub</a>
         </p>
       </div>`;

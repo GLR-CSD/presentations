@@ -86,6 +86,7 @@ export async function readDeckMeta(path, opts = {}) {
  * Schrijft meerdere bestanden in één atomaire commit naar de branch.
  * @param {string} message commit-message
  * @param {Array<{path:string,content:string,encoding?:'utf-8'|'base64'}>} files
+ * @returns {Promise<string>} de `commitSha` van de nieuwe commit op de branch
  */
 export async function commitFiles(message, files, opts = {}) {
   const { owner, repo, branch } = { ...DEFAULT_REPO, ...opts };
@@ -109,6 +110,42 @@ export async function commitFiles(message, files, opts = {}) {
   const commit = await api.rest.git.createCommit({ owner, repo, message, tree: tree.data.sha, parents: [baseSha] });
   await api.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.data.sha });
   return commit.data.sha;
+}
+
+/** Is dit de deploy-workflow? Bewust soepel: pad kan licht afwijken. */
+export function isDeployRun(run) {
+  return !!run && (
+    (run.path && run.path.endsWith('deploy.yml'))
+    || (run.name && run.name.toLowerCase().includes('deploy'))
+  );
+}
+
+/**
+ * Zoekt de deploy-workflow-run (GitHub Actions) voor een commit, of de meest
+ * recente run op de branch. Geeft `null` terug als de run nog niet bestaat
+ * (HTTP 200 met lege lijst = "wachtend"). Gooit alleen bij echte API-fouten;
+ * de fout draagt `.status` (403/404 = token mist *Actions: read*).
+ */
+export async function getWorkflowRunForCommit(commitSha, opts = {}) {
+  const { owner, repo, branch } = { ...DEFAULT_REPO, ...opts };
+  const params = { owner, repo, branch, per_page: 10 };
+  if (commitSha) params.head_sha = commitSha;
+  const res = await client().request('GET /repos/{owner}/{repo}/actions/runs', params);
+  const runs = (res.data && res.data.workflow_runs) || [];
+  return runs.find(isDeployRun) || null;
+}
+
+/** Publieke GitHub Pages-URL van een deck (map van het slides.md-pad). */
+export function pagesUrl(deckPath = '', opts = {}) {
+  const { owner, repo } = { ...DEFAULT_REPO, ...opts };
+  const dir = String(deckPath).replace(/\/?[^/]*\.md$/i, '').replace(/^\/+|\/+$/g, '');
+  return `https://${owner.toLowerCase()}.github.io/${repo}/${dir ? `${dir}/` : ''}`;
+}
+
+/** Link naar de Actions-pagina van de repo. */
+export function actionsUrl(opts = {}) {
+  const { owner, repo } = { ...DEFAULT_REPO, ...opts };
+  return `https://github.com/${owner}/${repo}/actions`;
 }
 
 /** Uploadt een afbeelding (base64) naar shared/img/uploads/. */

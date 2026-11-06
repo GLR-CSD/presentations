@@ -46,7 +46,20 @@ export const FRAMEWORKS = [
   },
 ];
 
-export const frameworkById = (id) => FRAMEWORKS.find((f) => f.id === id) || FRAMEWORKS[0];
+/** Alias-namen die LLM's en docenten gebruiken → echte framework-id. */
+const FRAMEWORK_ALIASES = { standup: 'agile', 'stand-up': 'agile', werkles: 'agile', gagné: 'gagne', gagne9: 'gagne', free: 'vrij' };
+
+/** Normaliseert een framework-id of alias (hoofdletters genegeerd); onbekend → 'vrij'. */
+export function resolveFrameworkId(id) {
+  const key = String(id || '').trim().toLowerCase();
+  if (FRAMEWORKS.some((f) => f.id === key)) return key;
+  return FRAMEWORK_ALIASES[key] || 'vrij';
+}
+
+/** Alle geldige invoerwaarden (ids + aliassen), voor schema's. */
+export const FRAMEWORK_INPUTS = [...FRAMEWORKS.map((f) => f.id), ...Object.keys(FRAMEWORK_ALIASES)];
+
+export const frameworkById = (id) => FRAMEWORKS.find((f) => f.id === resolveFrameworkId(id)) || FRAMEWORKS[0];
 
 const HERO_ATTRS = '<!-- .slide: class="bleed dark" data-background-color="#111111" -->';
 
@@ -330,6 +343,6 @@ const BUILDERS = { vrij, gagne, abt, sparkline, agile };
 export function buildDeckMarkdown(data, frameworkId = 'vrij') {
   const subject = (SUBJECT_PREFIXES.find((p) => p.value === data.prefix) || {}).subject || 'Onderwerp';
   const ctx = { subject, title: data.title || '', cohort: data.cohort || '' };
-  const build = BUILDERS[frameworkId] || BUILDERS.vrij;
+  const build = BUILDERS[resolveFrameworkId(frameworkId)] || BUILDERS.vrij;
   return `${frontmatter(data)}\n\n${build(ctx).join('\n\n---\n\n')}\n`;
 }
