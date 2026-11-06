@@ -76,3 +76,25 @@ export function entryPeriode(entry) {
   const p = String(entry.periode == null ? '' : entry.periode).trim();
   return ['1', '2', '3', '4'].includes(p) ? `Periode ${p}` : 'Overig';
 }
+
+/**
+ * Doelmap voor een deck op basis van cohort, leerjaar en slug-prefix:
+ * `presentations/<cohort>/jaar-<n>/<vak>/<slug>` (mvi-k09: `<cohort>/vmbo/keuzevak-mvi-k09`).
+ * Geeft `null` terug als de locatie niet uit de gegevens af te leiden is
+ * (onbekende prefix, ongeldig cohort of leerjaar): dan blijft het deck waar het staat.
+ */
+export function deckFolder({ cohort, leerjaar, slug }) {
+  const c = String(cohort || '').trim();
+  const lj = String(leerjaar == null ? '' : leerjaar).trim();
+  const s = String(slug || '').trim();
+  if (!/^\d{4}-\d{4}$/.test(c) || !SLUG_RE.test(s)) return null;
+  const prefix = s.split('_')[0];
+  if (/^mvi/.test(prefix)) return `presentations/${c}/vmbo/keuzevak-mvi-k09/${s}`;
+  if (!['1', '2', '3'].includes(lj)) return null;
+  let vak = null;
+  if (/^beroeps/.test(prefix)) vak = 'beroeps';
+  else if (/^design/.test(prefix)) vak = 'design';
+  else if (/^interface/.test(prefix)) vak = 'interface';
+  else if (/^(webxr|immersive)/.test(prefix)) vak = 'minor-immersive-design';
+  return vak ? `presentations/${c}/jaar-${lj}/${vak}/${s}` : null;
+}

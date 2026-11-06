@@ -105,8 +105,8 @@ const { client, transport } = await connect(withInput);
 try {
   // Catalogus
   const tools = (await client.listTools()).tools.map((t) => t.name);
-  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status'];
-  ok(tools.length === 14 && wantedTools.every((t) => tools.includes(t)), `14 tools aanwezig (${tools.length})`);
+  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status'];
+  ok(tools.length === 15 && wantedTools.every((t) => tools.includes(t)), `15 tools aanwezig (${tools.length})`);
   const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
   ok(resources.join() === ['glr://components/catalog', 'glr://decks/manifest', 'glr://input/files', 'glr://pedagogy/guidelines'].join(), `4 resources (${resources})`);
   const prompts = (await client.listPrompts()).prompts.map((p) => p.name).sort();
@@ -144,17 +144,37 @@ try {
 
   // Deck-flow
   const created = await call(client, 'create_presentation', { title: 'Kleur Basis', prefix: 'design1', framework: 'gagne', leerjaar: 1, periode: 2, tags: ['Design'] });
-  const P = 'presentations/design1_kleur-basis/slides.md';
+  const P = 'presentations/2026-2027/jaar-1/design/design1_kleur-basis/slides.md';
   ok(!created.isError && created.structuredContent.slides === 9, `create_presentation gagne = 9 slides (${text(created).slice(0, 60)})`);
-  ok(fs.existsSync(path.join(withInput, 'presentations/design1_kleur-basis/index.html')), 'index.html-shell aangemaakt');
+  ok(fs.existsSync(path.join(withInput, 'presentations/2026-2027/jaar-1/design/design1_kleur-basis/index.html')), 'index.html-shell aangemaakt');
   ok((await call(client, 'create_presentation', { title: 'Kleur Basis', prefix: 'design1' })).isError, 'overschrijven standaard geweigerd');
   ok(!(await call(client, 'create_presentation', { title: 'Werk', prefix: 'webxr', framework: 'standup' })).isError, 'framework-alias standup werkt');
-  ok(parseDeck(fs.readFileSync(path.join(withInput, 'presentations/webxr_werk/slides.md'), 'utf8')).slides.length === 4, 'standup = agile (4 slides)');
+  // Verplaatsen: aangemaakt deck staat al goed; afleiden uit frontmatter, expliciete map, botsing, traversal.
+  const shell = path.join(withInput, 'presentations/2026-2027/jaar-1/design/design1_kleur-basis/index.html');
+  ok(fs.readFileSync(shell, 'utf8').includes('"../../../../../shared/'), 'shell-prefix diep genoeg (5x ../)');
+  ok((await call(client, 'move_presentation', { path: P })).isError, 'verplaatsen naar dezelfde map geweigerd');
+  const flatDir = path.join(withInput, 'presentations/design1_flat');
+  fs.mkdirSync(path.join(flatDir, 'assets'), { recursive: true });
+  fs.writeFileSync(path.join(flatDir, 'slides.md'), '<!-- frontmatter\ntitle: "Flat"\ncohort: "2026-2027"\nleerjaar: 1\n-->\n\n## Een\n');
+  fs.writeFileSync(path.join(flatDir, 'assets/a.txt'), 'x');
+  fs.writeFileSync(path.join(flatDir, 'index.html'), buildHtmlShell({ prefix: '../../', mdFile: 'slides.md', title: 'Flat' }).replace('</head>', '<style>.eigen{color:red}</style></head>'));
+  const mv = await call(client, 'move_presentation', { path: 'presentations/design1_flat' });
+  const NEW = 'presentations/2026-2027/jaar-1/design/design1_flat';
+  ok(!mv.isError && mv.structuredContent.path === `${NEW}/slides.md`, `move afgeleid uit frontmatter (${text(mv).slice(0, 80)})`);
+  ok(!fs.existsSync(flatDir) && fs.existsSync(path.join(withInput, NEW, 'assets/a.txt')), 'map inclusief assets verplaatst');
+  const movedHtml = fs.readFileSync(path.join(withInput, NEW, 'index.html'), 'utf8');
+  ok(movedHtml.includes('"../../../../../shared/') && !movedHtml.includes('"../../shared/') && movedHtml.includes('.eigen{color:red}'), 'prefix herschreven, eigen stijl behouden');
+  fs.mkdirSync(path.join(withInput, 'presentations/botst'), { recursive: true });
+  fs.writeFileSync(path.join(withInput, 'presentations/botst/slides.md'), '## x\n');
+  ok((await call(client, 'move_presentation', { path: 'presentations/botst', folder: NEW })).isError, 'verplaatsen naar bestaande map geweigerd');
+  ok((await call(client, 'move_presentation', { path: 'presentations/botst', folder: 'presentations/../buiten' })).isError, 'traversal geweigerd');
+  ok((await call(client, 'move_presentation', { path: 'presentations/botst' })).isError, 'zonder afleidbare map: expliciete folder vereist');
+  ok(parseDeck(fs.readFileSync(path.join(withInput, 'presentations/2026-2027/jaar-1/minor-immersive-design/webxr_werk/slides.md'), 'utf8')).slides.length === 4, 'standup = agile (4 slides)');
   const own = await call(client, 'create_presentation', { title: 'Eigen AI', prefix: 'custom', markdown: 'Hier je deck:\n```markdown\n<!-- frontmatter\ntitle: "Eigen AI"\nleerjaar: 1\n-->\n\n## Een\n\n---\n\n## Twee\n```' });
   ok(!own.isError && own.structuredContent.slides === 2, 'create_presentation met eigen (gefencede) markdown');
   ok((await call(client, 'create_presentation', { title: 'Kapot', markdown: '## geen frontmatter' })).isError, 'ongeldige markdown geweigerd');
 
-  const got = await call(client, 'get_presentation', { path: 'design1_kleur-basis', slide: 2 });
+  const got = await call(client, 'get_presentation', { path: P, slide: 2 });
   ok(!got.isError && got.structuredContent.slide.blocks.length > 0 && got.structuredContent.slide.phase, 'get_presentation (slide-detail)');
 
   // add_slide (cards) + insert timer
@@ -260,4 +280,4 @@ try {
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failures) { console.error(`\n${failures} fout(en).`); process.exit(1); }
-console.log(`✔ MCP: 14 tools, 4 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);
+console.log(`✔ MCP: 15 tools, 4 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);

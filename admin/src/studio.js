@@ -32,7 +32,8 @@ import { openModal } from './ui/modal.js';
 import { openPresentationsBrowser as browsePresentations } from './ui/presentations-browser.js';
 import { openNewDeckWizard as showNewDeckWizard } from './ui/new-deck-wizard.js';
 import { openImageDialog as showImageDialog } from './ui/image-dialog.js';
-import { escapeHtml, slugify, SUBJECT_PREFIXES } from './ui/util.js';
+import { escapeHtml, slugify, SUBJECT_PREFIXES, deckFolder } from './ui/util.js';
+import { deckDepth, rewriteShellPrefix } from '../../scripts/lib/rewrite-prefix.js';
 import { mountDeployIndicator } from './ui/deploy-poller.js';
 import { openAiAssistant as showAiAssistant } from './ui/ai-assistant.js';
 import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig, checkOAuthHealth } from './storage/oauth.js';
@@ -407,7 +408,8 @@ export class Studio {
 
   /** Bouwt een nieuw deck uit de wizard en laadt het in de Studio. */
   createDeckFromWizard(data) {
-    const path = `presentations/${data.slug}/slides.md`;
+    const dir = deckFolder({ cohort: data.cohort, leerjaar: data.leerjaar, slug: data.slug }) || `presentations/${data.slug}`;
+    const path = `${dir}/slides.md`;
     const markdown = buildDeckMarkdown(data, data.framework || 'vrij');
     const deck = parseDeck(markdown);
     const subject = (SUBJECT_PREFIXES.find((p) => p.value === data.prefix) || {}).subject || '';
@@ -626,6 +628,8 @@ export class Studio {
         this.el.deckname.textContent = fm.get('title') || 'Naamloos deck';
         this.renderStatus();
       },
+      locationInfo: () => this.locationInfo(),
+      moveDeck: () => this.moveDeckToTarget(),
       addFooter: () => this.addFooter(),
       applyCoach: (r) => this.applyCoach(r),
       restoreCoach: (snap) => this.restoreCoach(snap),
@@ -923,6 +927,61 @@ export class Studio {
   markSaved() {
     if (this.state.deck) this.state.deck.slides.forEach((s) => { s.dirty = false; });
     this.renderStatus();
+  }
+
+  /** Huidige en gewenste locatie van het open deck (gewenst = uit cohort/leerjaar/slug-prefix). */
+  locationInfo() {
+    const meta = this.state.deckMeta;
+    const fm = this.state.deck && this.state.deck.frontmatter;
+    if (!meta || !meta.path || !fm) return null;
+    const current = meta.path.replace(/\/[^/]*$/, '');
+    const slug = current.split('/').pop();
+    const target = deckFolder({ cohort: fm.get('cohort'), leerjaar: fm.get('leerjaar'), slug });
+    return { current, target: target && target !== current ? target : null, source: meta.source };
+  }
+
+  /** Verplaatst het open deck naar de map die bij cohort/leerjaar hoort. */
+  async moveDeckToTarget() {
+    const info = this.locationInfo();
+    if (!info || !info.target) return;
+    const file = this.state.deckMeta.path.split('/').pop();
+    const newPath = `${info.target}/${file}`;
+    if (info.source === 'new') {
+      this.state.deckMeta.path = newPath;
+      if (this.el.deckpath) this.el.deckpath.textContent = newPath;
+      this.panel.render();
+      return toast(`Nieuwe locatie: ${newPath}`);
+    }
+    if (!(this.auth.mode === 'github' && this.auth.token)) {
+      return toast('Verplaatsen kan alleen in GitHub-modus (log in met GitHub).', true);
+    }
+    if (!window.confirm(`Verplaats naar ${info.target}?\n\nDit maakt direct een commit op main en wijzigt de live-URL en PDF-naam van deze presentatie. Niet-opgeslagen wijzigingen worden meteen meegenomen.`)) return;
+    const depth = deckDepth(`${info.target}/x`);
+    try {
+      await gh.connect(this.auth.token);
+      const commitSha = await gh.moveDeck(
+        `refactor: verplaats ${info.current.split('/').pop()} naar ${info.target} via GLR Slide Studio`,
+        info.current,
+        info.target,
+        (rel, text) => (/\.html$/i.test(rel) ? rewriteShellPrefix(text, depth) : null),
+        { slidesContent: this.deckMarkdown() },
+      );
+      this.state.deckMeta.path = newPath;
+      this.markSaved();
+      if (this.el.deckpath) this.el.deckpath.textContent = newPath;
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.set('deck', newPath);
+        window.history.replaceState(null, '', u);
+      } catch { /* noop */ }
+      const base = `../${info.target}/`;
+      this.preview.setBaseUrl(base); this.sorter.baseUrl = base; setAssetBase(base);
+      this.panel.render();
+      toast(`Verplaatst naar ${info.target}`);
+      this.deployPoller.start({ commitSha, liveUrl: gh.pagesUrl(newPath) });
+    } catch (err) {
+      toast(gh.describeGitHubError ? gh.describeGitHubError(err) : err.message, true);
+    }
   }
 
   /** 1-klik opslaan: GitHub (main) of lokaal, afhankelijk van de modus. */
