@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: 'Alle PDF\'s opnieuw bouwen'
+        description: 'Alle PDFs opnieuw bouwen'
         type: boolean
         default: false
 
