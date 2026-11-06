@@ -1,9 +1,22 @@
 name: Deploy Presentations to GitHub Pages
 
+# Site-flow: bouwt en deployt de site. Wacht nooit op PDF's (die staan op een
+# GitHub Release, zie pdfs.yml). Draait alleen als site-relevante bestanden wijzigen.
 on:
   push:
     branches:
       - main
+    paths:
+      - 'presentations/**'
+      - 'shared/**'
+      - 'admin/**'
+      - 'scripts/build-index.js'
+      - 'scripts/lib/**'
+      - 'scripts/vendor-*.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/**'
   workflow_dispatch:
 
 permissions:
@@ -22,17 +35,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 26
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Vendor reveal.js + plugins (offline assets)
-        run: npm run vendor
+      - name: Vendor (gecached)
+        uses: ./.github/actions/vendor
 
       - name: Prepare build directory
         run: |
@@ -41,27 +45,10 @@ jobs:
           cp -r shared dist/
 
       - name: Build Index Page
+        # GITHUB_TOKEN: leest de PDF-release om per deck "PDF volgt" / "oude versie" te tonen.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run build:index
-
-      - name: Expose GitHub Runtime for @actions/cache
-        # De runner injecteert ACTIONS_RUNTIME_TOKEN + de cache-URL alleen in
-        # JavaScript-actions (`uses:`), niet in `run:`-stappen. Deze stap zet ze
-        # in GITHUB_ENV zodat de PDF-export de GitHub-cache kan gebruiken.
-        uses: actions/github-script@v9
-        with:
-          script: |
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN'] || '');
-            core.exportVariable('ACTIONS_RESULTS_URL', process.env['ACTIONS_RESULTS_URL'] || '');
-            core.exportVariable('ACTIONS_CACHE_URL', process.env['ACTIONS_CACHE_URL'] || '');
-            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env['ACTIONS_CACHE_SERVICE_V2'] || 'True');
-
-      - name: Generate PDFs via DeckTape (incrementeel, gecached)
-        # PDF-export is een nice-to-have: als DeckTape faalt, moeten de slides
-        # alsnog gedeployed worden. Daarom blokkeert deze stap de deploy niet.
-        # Alleen gewijzigde presentaties worden opnieuw gerenderd; de rest komt
-        # uit de GitHub Actions-cache (zie scripts/export-pdf-cached.js).
-        continue-on-error: true
-        run: npm run export:pdf:cached
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5

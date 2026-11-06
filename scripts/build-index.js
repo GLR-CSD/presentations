@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildHtmlShell, shellNameFor } from './lib/html-shell.js';
+import { pdfUrl, computeDeckHash, listPdfAssets, pdfStatus } from './lib/pdf-assets.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
@@ -227,9 +228,18 @@ function renderLeaf(item) {
   const search = [item.name, item.path, item.cohort, item.auteur, item.leerjaar, item.periode, ...item.tags]
     .filter(Boolean).join(' ').toLowerCase();
   const metaBlock = meta || tags ? `\n            <div class="meta">${meta}${tags}</div>` : '';
-  const pdfLink = item.hasPdf
-    ? `\n            <a class="btn btn-secondary" href="./${WEB_PREFIX}/${item.path}/presentation.pdf" download>PDF</a>`
-    : '';
+  let pdfLink = '';
+  if (item.hasPdf) {
+    const href = pdfUrl(item.path);
+    if (item.pdfStatus === 'missing') {
+      pdfLink = '\n            <span class="pdf-pending" title="De PDF wordt nog gegenereerd">PDF volgt</span>';
+    } else {
+      const badge = item.pdfStatus === 'outdated'
+        ? '<span class="pdf-badge" title="Deze PDF is van een eerdere versie; de nieuwe wordt gegenereerd.">oude versie — wordt bijgewerkt</span>'
+        : '';
+      pdfLink = `\n            <a class="btn btn-secondary" href="${href}" download>PDF</a>${badge}`;
+    }
+  }
   return `
         <div class="leaf" data-search="${escapeHtml(search)}">
           <div class="leaf-main">
@@ -367,6 +377,14 @@ const presentations = [];
 if (fs.existsSync(presentationsRoot)) collect(presentationsRoot, presentations);
 presentations.sort((a, b) => a.path.localeCompare(b.path, 'nl'));
 
+// PDF-status per deck (release-assets vs. huidige content-hash). Zonder token
+// of bij een API-fout is de status 'unknown' en tonen we gewoon de link.
+const pdfAssets = await listPdfAssets();
+if (!pdfAssets) console.warn('⚠️  PDF-status onbekend (geen GITHUB_TOKEN of API-fout); PDF-links worden ongecontroleerd getoond.');
+for (const p of presentations) {
+  if (p.hasPdf) p.pdfStatus = pdfStatus(pdfAssets, p.path, pdfAssets ? computeDeckHash(p.path) : '');
+}
+
 const tree = buildTree(presentations);
 const treeHtml = tree.children.map((child) => renderNode(child)).join('\n');
 const totalPresentations = presentations.length;
@@ -427,6 +445,8 @@ const css = `
     .btn:hover{background:var(--green);color:var(--white)}
     .btn-secondary{background:var(--subtle);color:var(--ink-soft);border:1px solid var(--border)}
     .btn-secondary:hover{border-color:var(--green);color:var(--green-dk)}
+    .pdf-pending{display:inline-block;padding:6px 13px;font-size:13px;font-weight:600;border-radius:999px;white-space:nowrap;color:var(--muted);background:var(--subtle);border:1px dashed var(--border);cursor:default}
+    .pdf-badge{align-self:center;font-size:11.5px;color:var(--muted);white-space:nowrap}
     .empty{padding:28px 4px;color:var(--muted)}
     .help{margin:18px 0 0;border:1px solid var(--border);border-radius:var(--radius);background:var(--white)}
     .help>summary{cursor:pointer;padding:11px 16px;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:9px}

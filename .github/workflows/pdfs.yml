@@ -1,0 +1,77 @@
+name: Build PDFs
+
+# PDF-flow: rendert alleen verouderde decks (parallel) en uploadt ze naar de
+# GitHub Release 'pdfs'. Raakt Pages niet; triggert alleen een snelle site-redeploy
+# als er iets is gewijzigd, zodat de portaalpagina de nieuwe status toont.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'presentations/**'
+      - 'shared/**'
+      - 'scripts/build-index.js'
+      - 'scripts/lib/**'
+      - 'scripts/export-pdf-release.js'
+      - 'scripts/vendor-reveal.js'
+      - 'scripts/vendor-plugins.js'
+      - 'package-lock.json'
+      - '.github/workflows/pdfs.yml'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Alle PDF\'s opnieuw bouwen'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: pdfs
+  cancel-in-progress: false
+
+env:
+  GITHUB_TOKEN: ${{ github.token }}
+  GH_TOKEN: ${{ github.token }}
+  PDF_FORCE: ${{ inputs.force }}
+
+jobs:
+  pdfs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      # build-index gebruikt alleen Node-built-ins en genereert de shells van
+      # Markdown-decks, die bepalen welke decks een PDF krijgen.
+      - name: Genereer ontbrekende shells
+        run: node scripts/build-index.js
+
+      - name: Plan (wat is verouderd?)
+        id: plan
+        run: node scripts/export-pdf-release.js --plan
+
+      - name: Vendor (gecached)
+        if: steps.plan.outputs.stale != '0'
+        uses: ./.github/actions/vendor
+
+      - name: Prepare build directory
+        if: steps.plan.outputs.stale != '0'
+        run: |
+          mkdir -p dist
+          cp -r presentations dist/
+          cp -r shared dist/
+
+      - name: Render en upload PDF's
+        id: export
+        if: steps.plan.outputs.stale != '0'
+        run: node scripts/export-pdf-release.js
+
+      - name: Site herdeployen met nieuwe PDF-status
+        if: ${{ always() && steps.export.outputs.changed != '' && steps.export.outputs.changed != '0' }}
+        run: gh workflow run deploy.yml --ref main

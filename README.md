@@ -12,7 +12,8 @@ Zie voor de volledige architectuur en richtlijnen:
 
 ```text
 .
-├── .github/workflows/deploy.yml    # CI/CD: build, PDF-export en deploy naar GitHub Pages
+├── .github/workflows/deploy.yml    # CI/CD: site-deploy (deploy.yml) + PDF-build (pdfs.yml)
+├── .github/workflows/pdfs.yml      # Rendert verouderde PDF's naar de 'pdfs'-release
 ├── .agents/skills/                 # Agent Skills (educational-presentation-nl + reveal-slide-builder)
 ├── admin/                          # GLR Slide Studio (visuele editor)
 │   ├── index.html                  # Shell die de gebundelde Studio laadt
@@ -229,7 +230,7 @@ hebben een token nodig.
 | `npm run mcp` | Start de MCP-server (stdio) |
 | `npm run export:pdf` | Exporteert elke presentatie naar `presentation.pdf` via DeckTape (Docker) |
 | `npm run export:pdf -- --local` | Idem, maar met een lokaal geïnstalleerde `decktape` |
-| `npm run export:pdf:cached` | CI-variant met incrementele caching: rendert alleen gewijzigde presentaties, de rest komt uit de GitHub Actions-cache. `-- --dry-run` toont de cache-status zonder te bouwen |
+| `npm run export:pdf:release` | CI-variant: rendert alleen verouderde decks (parallel) en uploadt ze naar de GitHub Release `pdfs`. `-- --dry-run` toont de status, `-- --force` bouwt alles |
 | `npm run serve` | Start een statische server in de repo-root |
 
 ## Plugins in de presentaties
@@ -248,34 +249,34 @@ tabblad en staat een korte uitleg met een link naar de reveal.js-documentatie.
 
 ## Deployment (CI/CD)
 
-Bij elke push naar `main` draait `.github/workflows/deploy.yml`: dependencies
-installeren, reveal.js vendoren, de `dist/`-map opbouwen, per presentatie een PDF
-genereren en het geheel publiceren naar **GitHub Pages**. De portaalpagina
-(`dist/index.html`) toont alle presentaties als een opvouwbare mapstructuur
-(`cohort / jaar / vak / presentatie`) met per map het aantal presentaties, een
-zoekveld dat live filtert en markeert, en knoppen om alles in of uit te klappen.
-Per presentatie staan er links naar de slides en de PDF.
+Twee onafhankelijke workflows, elk met `paths`-filters zodat ze alleen draaien als dat nodig is:
 
-### Incrementele PDF-builds (caching)
+| Workflow | Draait bij wijzigingen in | Doet | Duur |
+|---|---|---|---|
+| `deploy.yml` (site) | `presentations/`, `shared/`, `admin/`, `scripts/build-index.js`, `scripts/lib/`, vendor-scripts, `package*.json` | bouwt `dist/` + portaalpagina en deployt naar **GitHub Pages**; wacht nooit op PDF's | ~30-45 s |
+| `pdfs.yml` (PDF's) | `presentations/`, `shared/`, `scripts/lib/`, export-/vendor-scripts, `package-lock.json` | rendert alleen verouderde decks (parallel, DeckTape) en uploadt ze naar de **GitHub Release `pdfs`** | ~10 s (niets te doen) tot ~2 min (alles) |
 
-PDF's worden niet gecommit; zonder caching zou élke run alle decks opnieuw
-renderen. `scripts/export-pdf-cached.js` cached daarom **per presentatie**:
+Alleen README/docs/tests/MCP-wijzigingen starten geen van beide. Via *Actions → Build PDFs →
+Run workflow* (optie `force`) bouw je alle PDF's opnieuw. De Studio-build-indicator volgt
+alleen `deploy.yml`; de PDF volgt enkele minuten later.
 
-- Per deck wordt een **content-hash** berekend over alle bestanden in de
-  presentatiemap (m.u.v. de gegenereerde PDF) plus een `sharedHash` over alle
-  gedeelde assets (`shared/**`), de DeckTape-image en het script zelf.
-- De cache-key is content-addressed (`pdf-v1-<pad>-<hash>`): wijzigt één deck,
-  dan wordt alleen dat deck opnieuw gerenderd; wijzigt iets gedeelds (thema,
-  reveal.js, DeckTape-versie), dan alles.
-- De runtime-tokens van de GitHub-cache (`ACTIONS_RUNTIME_TOKEN`,
-  `ACTIONS_RESULTS_URL`) zijn alleen beschikbaar in JavaScript-actions, niet in
-  `run:`-stappen. De workflow exporteert ze daarom eerst via
-  `actions/github-script` naar `GITHUB_ENV`.
-- DeckTape is vastgepind op `astefanutti/decktape:3.12.0` (i.p.v. `latest`) voor
-  reproduceerbare cache-keys, en draait met `--user "$(id -u):$(id -g)"` zodat de
-  PDF's eigendom van de runner zijn.
-- Caching is **best-effort**: ontbreekt de runtime of faalt de cache-service, dan
-  valt de export terug op onvoorwaardelijk bouwen (het oude gedrag).
+### PDF's op een GitHub Release
+
+GitHub Pages vervangt bij elke deploy de héle site, dus PDF's staan als assets op de
+release-tag `pdfs`. De state zit in de release zelf: elk asset heeft als label
+`<pad> · <content-hash>`.
+
+- De **content-hash** per deck dekt de deckmap, de gebruikte `shared/img/uploads/*`-
+  afbeeldingen en een `sharedHash` over `shared/**`, de `reveal.js`/`katex`-versies uit
+  `package-lock.json`, de vendor-scripts, de DeckTape-image (`3.17.0`) en de exportlogica.
+  Zie `scripts/lib/pdf-assets.js`.
+- De portaalpagina vergelijkt bij het bouwen de hash met de release en toont per deck
+  **PDF** (actueel), **PDF + "oude versie — wordt bijgewerkt"**, of **"PDF volgt"** (nog
+  niet beschikbaar, geen link). Zonder token (lokale build) worden links ongecontroleerd getoond.
+- Na een upload/verwijdering start `pdfs.yml` `deploy.yml` opnieuw zodat de status
+  ververst wordt.
+- Vendor-output (`shared/vendor`, `admin/vendor`) wordt gecached (`.github/actions/vendor`);
+  `npm ci` draait alleen bij een cache-miss.
 
 ## Conventies
 
