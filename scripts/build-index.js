@@ -240,13 +240,16 @@ function renderLeaf(item) {
       pdfLink = `\n            <a class="btn btn-secondary" href="${href}" download>PDF</a>${badge}`;
     }
   }
+  const editLink = item.mdFile
+    ? `\n            <a class="btn btn-secondary" href="./admin/?deck=${encodeURIComponent(`presentations/${item.path}/${item.mdFile}`)}">Bewerken</a>`
+    : '';
   return `
         <div class="leaf" data-search="${escapeHtml(search)}">
           <div class="leaf-main">
             <span class="leaf-title" data-title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>${metaBlock}
           </div>
           <div class="links">
-            <a class="btn" href="${item.href}" target="_blank" rel="noopener noreferrer">Presentatie</a>${pdfLink}
+            <a class="btn" href="${item.href}" target="_blank" rel="noopener noreferrer">Presentatie</a>${editLink}${pdfLink}
           </div>
         </div>`;
 }
