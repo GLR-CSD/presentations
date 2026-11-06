@@ -1129,7 +1129,7 @@ function boot() {
     const params = new URLSearchParams(location.search);
     const wanted = params.get('deck');
     if (wanted) {
-      const entry = studio.manifest.presentations.find((p) => p.md === wanted || p.md.endsWith(wanted));
+      const entry = studio.manifest.presentations.find((p) => p.md && (p.md === wanted || p.md.endsWith(wanted)));
       if (entry) studio.openDeckFromManifest(entry);
     }
   }).catch((err) => {
