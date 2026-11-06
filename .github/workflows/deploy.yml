@@ -48,6 +48,7 @@ jobs:
         # GITHUB_TOKEN: leest de PDF-release om per deck "PDF volgt" / "oude versie" te tonen.
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GLR_OAUTH_URL: ${{ vars.GLR_OAUTH_URL }}
         run: npm run build:index
 
       - name: Upload artifact

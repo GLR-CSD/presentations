@@ -323,6 +323,7 @@ export class LivePreviewController {
     try {
       const hl = window.Reveal.getPlugin('highlight');
       const scope = section || this.revealEl;
+      if (hl && hl.hljs && hl.hljs.configure) hl.hljs.configure({ ignoreUnescapedHTML: true });
       if (hl && hl.highlightBlock) scope.querySelectorAll('pre code:not(.hljs)').forEach((b) => hl.highlightBlock(b));
     } catch { /* noop */ }
     this._setBackAt(section || this._currentSection());

@@ -109,9 +109,32 @@ Kenmerken:
 De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 (`scripts/build-index.js`); de Studio schrijft alleen de `slides.md`.
 
-### Eenmalig: een Fine-Grained Personal Access Token (PAT) aanmaken
+### Inloggen met GitHub (OAuth, aanbevolen)
 
-1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&contents=write&actions=read> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
+De Studio heeft een knop **Inloggen met GitHub**. Daarvoor draait een kleine
+Cloudflare Worker (`scripts/oauth-worker/`) die het OAuth-geheim bewaart. Eenmalig inrichten:
+
+1. **GitHub OAuth App** aanmaken (organisatie *GLR-CSD* → Settings → Developer settings →
+   OAuth Apps → New). *Authorization callback URL*: `https://<jouw-worker>.workers.dev/callback`.
+   Noteer de *Client ID* en genereer een *Client secret*.
+2. **Cloudflare**: ga naar **Compute -> Workers & Pages -> Create Application**, koppel deze
+   GitHub-repo (Cloudflare's ingebouwde Git-integratie; er is dus geen GitHub Actions-workflow nodig)
+   en stel **Root directory: `scripts/oauth-worker`** in.
+3. Open de Worker → **Settings -> Variables and Secrets** en voeg toe (type *Secret*):
+   `GITHUB_CLIENT_ID` en `GITHUB_CLIENT_SECRET`. Optioneel overschrijf je `STUDIO_URL`,
+   `ALLOWED_ORIGIN` en `GITHUB_SCOPE` (standaard `repo,workflow`, zie `wrangler.toml`).
+   Controleer met `https://<jouw-worker>.workers.dev/health` → `{"ok":true,"configured":true}`.
+4. **Worker-URL aan de Studio geven** (niet hardcoded): maak in de GitHub-repo onder
+   *Settings → Secrets and variables → Actions → Variables* de variabele `GLR_OAUTH_URL`
+   aan met de Worker-URL. `deploy.yml` geeft die door aan `npm run build:index`, dat
+   `admin/studio-config.json` schrijft. Lokaal: `GLR_OAUTH_URL=https://… npm run build:index`.
+   Zonder deze variabele verbergt de Studio de knop en blijft het PAT-veld beschikbaar.
+
+Het token wordt gevalideerd (incl. schrijfrechten) en bewaard in `localStorage['glr-gh-token']`.
+
+### Alternatief (geavanceerd): een Fine-Grained Personal Access Token (PAT) aanmaken
+
+1. Ga naar <https://github.com/settings/personal-access-tokens/new?name=GLR%20Slide%20Studio&target_name=GLR-CSD&contents=write&actions=read> (de "Template-URL" vult de tokennaam en de *Contents: read & write*-rechten alvast in).
 2. **Resource owner:** kies de organisatie **`GLR-CSD`** (een organisatiebeheerder
    moet de token mogelijk eerst goedkeuren).
 3. **Repository access:** *Only select repositories* → **`presentations`**.
@@ -125,6 +148,11 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
 6. **Kopieer de token direct** (hij is daarna niet meer zichtbaar) en bewaar hem
    veilig, bijvoorbeeld in een wachtwoordmanager.
 
+> **Foutmelding "Resource not accessible by personal access token" bij opslaan?**
+> Het token mag niet schrijven. Controleer of *Resource owner* `GLR-CSD` is (niet je
+> eigen account), *Contents* op *Read and write* staat en het token niet nog
+> "pending" is bij de organisatie.
+
 > Deel de token nooit in de repository of in een chatbericht: hij geeft
 > schrijftoegang tot de presentaties.
 
@@ -134,8 +162,8 @@ De `.html`-shell naast elk deck wordt bij de build automatisch gegenereerd
    `npm run serve` → `/admin/`).
 2. Kies **Deck openen** en selecteer een presentatie uit de lijst (die direct uit
    het gegenereerde `presentations-manifest.json` komt — geen token nodig).
-3. Voor **opslaan naar GitHub**: kies **Opslaan ▾ → GitHub-token instellen…** en
-   plak de PAT. Daarna schrijft **Opslaan ▾ → Naar GitHub (main)** de `slides.md`
+3. Voor **opslaan naar GitHub**: klik **Inloggen met GitHub** (of klap onderaan
+   *Geavanceerd* open en plak een PAT). Daarna schrijft **Opslaan ▾ → Naar GitHub (main)** de `slides.md`
    in één atomaire commit naar `main`.
 4. Voor **offline werken**: kies **Opslaan ▾ → Lokaal wegschrijven…** en koppel
    de map, of gebruik **Download .md**.
@@ -225,6 +253,7 @@ hebben een token nodig.
 | `npm run test:roundtrip` | Verifieert dat de deck-parser elke `slides.md` byte-identiek terugschrijft (verliesvrij) |
 | `npm run test:bridge` | Meet de Markdown ↔ ProseMirror-fidelity van de visuele editor |
 | `npm run test:parsers` | Test de HTML-boom, formulier-parsers, templates en didactische modules |
+| `npm run test:oauth` | Test de OAuth-Worker (`/health`, `/login`, `/callback`, `/exchange`, CORS) en de `#oauth_token`-hash-afhandeling |
 | `npm run test:deploy` | Test de logica van de build-indicator (queued → bouwen → live, 403-fallback) |
 | `npm run test:mcp` | End-to-end test van de MCP-server via de MCP Client SDK (alle tools, resources en prompts) |
 | `npm run mcp` | Start de MCP-server (stdio) |

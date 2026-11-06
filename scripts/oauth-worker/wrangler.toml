@@ -1,0 +1,10 @@
+name = "glr-slides-oauth"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# GITHUB_CLIENT_ID en GITHUB_CLIENT_SECRET stel je in via het Cloudflare-dashboard:
+# Settings -> Variables and Secrets (type Secret). Zet ze NIET in dit bestand.
+[vars]
+STUDIO_URL = "https://glr-csd.github.io/presentations/admin/"
+ALLOWED_ORIGIN = "https://glr-csd.github.io"
+GITHUB_SCOPE = "repo,workflow"

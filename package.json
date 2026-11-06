@@ -20,6 +20,7 @@
     "mcp": "node scripts/mcp-server.js",
     "test:mcp": "node scripts/test-mcp.js",
     "test:deploy": "node scripts/test-deploy-poller.js",
+    "test:oauth": "node scripts/test-deploy.js",
     "export:pdf:release": "node scripts/export-pdf-release.js"
   },
   "dependencies": {

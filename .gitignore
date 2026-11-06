@@ -11,6 +11,9 @@ admin/vendor/
 # Gegenereerd deck-manifest voor de Slide Studio (genereer met `npm run build:index`)
 admin/presentations-manifest.json
 
+# Gegenereerde Studio-config (Worker-URL uit env GLR_OAUTH_URL)
+admin/studio-config.json
+
 # Lokale brondocumenten en staging (alles negeren, behalve gitkeep)
 input/*
 !input/.gitkeep
