@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDeck, serializeDeck } from '../../admin/src/state/deck.js';
+import { deckDepth, rewriteShellPrefix } from '../lib/rewrite-prefix.js';
 
 export const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -52,6 +53,37 @@ export class Workspace {
     const text = serializeDeck(deck);
     this.writeFile(rel, text);
     return text;
+  }
+
+  /**
+   * Verplaatst de hele deck-map (slides.md, index.html, assets/...) naar `toDir`
+   * (bv. `presentations/2026-2027/jaar-1/beroeps/beroeps1_x`) en herschrijft de
+   * `../`-prefix van de shells. Geeft het nieuwe slides.md-pad terug.
+   */
+  moveDeck(input, toDir) {
+    const fromRel = this.deckRel(input);
+    const fromDir = path.posix.dirname(fromRel);
+    const toRel = this.deckRel(toDir);
+    const target = path.posix.dirname(toRel);
+    if (fromDir === 'presentations') throw new Error('Dit pad is geen deck-map.');
+    if (target === fromDir) throw new Error(`Het deck staat al in ${fromDir}.`);
+    if (target.startsWith(`${fromDir}/`)) throw new Error('Het doel mag niet binnen het deck zelf liggen.');
+    if (this.exists(target)) throw new Error(`Doelmap bestaat al: ${target}.`);
+    fs.mkdirSync(path.dirname(this.abs(target)), { recursive: true });
+    fs.renameSync(this.abs(fromDir), this.abs(target));
+    const depth = deckDepth(`${target}/slides.md`);
+    for (const e of fs.readdirSync(this.abs(target))) {
+      if (!/\.html$/i.test(e)) continue;
+      const f = path.join(this.abs(target), e);
+      const html = fs.readFileSync(f, 'utf8');
+      const next = rewriteShellPrefix(html, depth);
+      if (next !== html) fs.writeFileSync(f, next);
+    }
+    // Lege bovenliggende mappen opruimen (nooit presentations/ zelf).
+    for (let d = path.posix.dirname(fromDir); d !== 'presentations' && d.startsWith('presentations/'); d = path.posix.dirname(d)) {
+      try { fs.rmdirSync(this.abs(d)); } catch { break; }
+    }
+    return `${target}/slides.md`;
   }
 
   /** Alle decks onder presentations/ (slides.md, of .md met frontmatter). */

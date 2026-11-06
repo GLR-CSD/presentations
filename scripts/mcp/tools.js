@@ -15,7 +15,8 @@ import { analyzeSlide } from '../../admin/src/pedagogy/coach.js';
 import { extractDeckMarkdown } from '../../admin/src/pedagogy/ai-prompt.js';
 import { describeBuildRun, isPermissionError } from '../../admin/src/storage/build-status.js';
 import * as gh from '../../admin/src/storage/github.js';
-import { slugify, SLUG_RE } from '../../admin/src/ui/util.js';
+import { slugify, SLUG_RE, deckFolder } from '../../admin/src/ui/util.js';
+import { deckDepth } from '../lib/rewrite-prefix.js';
 import { buildHtmlShell } from '../lib/html-shell.js';
 import { slideAt } from './workspace.js';
 import { InputDocs } from './input-docs.js';
@@ -90,7 +91,7 @@ export function registerTools(server, ws) {
 
   /* 5 */ reg('create_presentation', {
     title: 'Nieuwe presentatie maken',
-    description: 'Maakt presentations/<slug>/slides.md (+ index.html). Geef óf een framework (vrij, gagne, abt, sparkline, agile/standup) óf complete `markdown` (bijv. door de AI geschreven).',
+    description: 'Maakt een deck in presentations/<cohort>/jaar-<n>/<vak>/<slug>/ (slides.md + index.html); bij een onbekende prefix direct onder presentations/<slug>/. Geef óf een framework (vrij, gagne, abt, sparkline, agile/standup) óf complete `markdown` (bijv. door de AI geschreven).',
     inputSchema: {
       title: z.string().min(1), prefix: z.string().default('custom').describe('Vak-prefix: beroeps1, beroeps2, design1, interface1, mvi-k09, webxr, immersive-design of custom.'),
       slug: z.string().optional(), framework: z.enum(FRAMEWORK_INPUTS).optional().describe('Standaard "vrij". "standup" is een alias van "agile".'),
@@ -102,7 +103,9 @@ export function registerTools(server, ws) {
     const base = slugify(a.title);
     const slug = a.slug || (a.prefix === 'custom' || !a.prefix ? base : `${a.prefix}_${base}`);
     if (!SLUG_RE.test(slug)) return fail(`Ongeldige mapnaam "${slug}": alleen kleine letters, cijfers, _ en - (begin met letter/cijfer).`);
-    const rel = `presentations/${slug}/slides.md`;
+    const cohort = a.cohort || '2026-2027';
+    const dir = deckFolder({ cohort, leerjaar: a.leerjaar ?? 1, slug }) || `presentations/${slug}`;
+    const rel = `${dir}/slides.md`;
     if (ws.exists(rel) && !a.overwrite) return fail(`${rel} bestaat al. Kies een andere slug of zet overwrite op true.`);
     let md;
     let warnings = [];
@@ -112,13 +115,35 @@ export function registerTools(server, ws) {
       md = r.markdown; warnings = r.warnings;
     } else {
       const fw = resolveFrameworkId(a.framework || 'vrij');
-      md = buildDeckMarkdown({ title: a.title, prefix: a.prefix, cohort: a.cohort, leerjaar: a.leerjaar ?? 1, periode: a.periode ?? 1, auteur: a.auteur || 'Docententeam CSD', tags: a.tags || [] }, fw);
+      md = buildDeckMarkdown({ title: a.title, prefix: a.prefix, cohort, leerjaar: a.leerjaar ?? 1, periode: a.periode ?? 1, auteur: a.auteur || 'Docententeam CSD', tags: a.tags || [] }, fw);
     }
     ws.writeFile(rel, md);
-    const htmlRel = `presentations/${slug}/index.html`;
-    if (!ws.exists(htmlRel)) ws.writeFile(htmlRel, buildHtmlShell({ prefix: '../../', mdFile: 'slides.md', title: a.title }));
+    const htmlRel = `${dir}/index.html`;
+    if (!ws.exists(htmlRel)) ws.writeFile(htmlRel, buildHtmlShell({ prefix: '../'.repeat(deckDepth(rel)), mdFile: 'slides.md', title: a.title }));
     const { deck } = ws.loadDeck(rel);
     return ok(`Aangemaakt: ${rel} (${deck.slides.length} slides)${warnings.length ? `\nLet op: ${warnings.join(' ')}` : ''}\n${outline(deck)}`, { path: rel, slides: deck.slides.length, warnings });
+  });
+
+  reg('move_presentation', {
+    title: 'Presentatie verplaatsen',
+    description: 'Verplaatst een deck (hele map incl. assets) naar een andere map onder presentations/ en herschrijft de ../-prefix in index.html. Zonder `folder` wordt de map afgeleid uit cohort, leerjaar en slug-prefix in de frontmatter (presentations/<cohort>/jaar-<n>/<vak>/<slug>). Let op: de live-URL en PDF-naam veranderen.',
+    inputSchema: {
+      path: deckPath,
+      folder: z.string().optional().describe('Doelmap van het deck, bv. presentations/2026-2027/jaar-1/beroeps/beroeps1_x. Optioneel.'),
+    },
+  }, async (a) => {
+    const { rel, deck } = ws.loadDeck(a.path);
+    let target = a.folder;
+    if (!target) {
+      const fm = deck.frontmatter ? deck.frontmatter.toObject() : {};
+      const slug = rel.split('/').slice(-2)[0];
+      target = deckFolder({ cohort: fm.cohort, leerjaar: fm.leerjaar, slug });
+      if (!target) return fail('Kan de doelmap niet afleiden uit cohort/leerjaar/prefix. Geef `folder` expliciet op.');
+    }
+    try {
+      const to = ws.moveDeck(rel, target);
+      return ok(`Verplaatst: ${rel} → ${to}\nDe live-URL en PDF-naam zijn veranderd.`, { from: rel, path: to });
+    } catch (e) { return fail(e.message); }
   });
 
   /* 6 */ reg('add_slide', {

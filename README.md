@@ -73,6 +73,17 @@ Open daarna een presentatie via de server, bijvoorbeeld
 > (`presentations/<cohort>/<jaar>/<vak>/<presentatie>/`). Nest je dieper of
 > ondieper, pas dan het aantal `../` in `index.html` aan.
 
+> **Presentaties verplaatsen.** De map volgt uit de frontmatter:
+> `presentations/<cohort>/jaar-<leerjaar>/<vak>/<slug>/`, waarbij het vak uit de
+> slug-prefix komt (`beroeps1_…` → `beroeps`, `design1_…` → `design`,
+> `interface1_…` → `interface`, `webxr_`/`immersive-design_` →
+> `minor-immersive-design`, `mvi-k09_…` → `vmbo/keuzevak-mvi-k09`). Nieuwe decks
+> (Studio-wizard en MCP) worden direct daar aangemaakt. Pas je cohort of leerjaar
+> aan en staat het deck niet meer op de juiste plek, dan toont de Studio onder
+> *Lesgegevens* een knop **Verplaatsen** (één atomaire commit op `main`, assets
+> inbegrepen, `../`-prefix in `index.html` wordt herschreven). Lokaal kan dat met
+> de MCP-tool `move_presentation`. Let op: de live-URL en PDF-naam veranderen.
+
 > **Markdown-scheidingstekens & frontmatter.** De wrapper splitst `slides.md`
 > met `data-separator="\n---\n\n"` en `data-separator-vertical="\n--\n\n"`.
 > Horizontale (`---`) en verticale (`--`) scheiders hebben dus **steeds een lege

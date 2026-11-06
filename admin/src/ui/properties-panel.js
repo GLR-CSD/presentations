@@ -374,7 +374,20 @@ export class PropertiesPanel {
       root.appendChild(d);
       return;
     }
-    const set = (key, numeric = false) => (v) => this.api.setFrontmatter(key, numeric && /^\d+$/.test(v) ? Number(v) : v);
+    const loc = h('div', 'pp-location');
+    const refreshLoc = () => {
+      loc.textContent = '';
+      const info = this.api.locationInfo && this.api.locationInfo();
+      if (!info || !info.target) return;
+      loc.appendChild(h('p', 'insp-help', `Deze presentatie staat in ${info.current}, maar hoort bij deze gegevens in ${info.target}.`));
+      const btn = h('button', 'studio-btn studio-btn--primary', 'Verplaatsen');
+      btn.type = 'button';
+      btn.addEventListener('click', () => this.api.moveDeck());
+      loc.appendChild(btn);
+    };
+    const set = (key, numeric = false) => (v) => { this.api.setFrontmatter(key, numeric && /^\d+$/.test(v) ? Number(v) : v); refreshLoc(); };
+    refreshLoc();
+    d.appendChild(loc);
     d.appendChild(simpleField('text', { label: 'Titel', value: fm.get('title') || '' }, set('title')));
     d.appendChild(simpleField('text', { label: 'Cohort', value: fm.get('cohort') || '' }, set('cohort')));
     d.appendChild(simpleField('text', { label: 'Leerjaar', value: String(fm.get('leerjaar') ?? '') }, set('leerjaar', true)));

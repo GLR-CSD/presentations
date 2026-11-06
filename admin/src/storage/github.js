@@ -132,6 +132,56 @@ export async function commitFiles(message, files, opts = {}) {
   return commit.data.sha;
 }
 
+/**
+ * Verplaatst een hele deck-map in één atomaire commit. Bestaande blobs worden
+ * hergebruikt (assets worden niet opnieuw geüpload); `overrides` vervangt de
+ * inhoud van bestanden (bv. nieuwe slides.md / herschreven index.html).
+ * @param {string} message commit-message
+ * @param {string} fromDir bv. `presentations/beroeps1_x`
+ * @param {string} toDir bv. `presentations/2026-2027/jaar-1/beroeps/beroeps1_x`
+ * @param {(relPath:string, text:string)=>string|null} [rewrite] herschrijft tekstbestanden (null = ongewijzigd)
+ * @param {{ slidesContent?: string }} [extra] actuele (mogelijk onopgeslagen) slides.md
+ * @returns {Promise<string>} commitSha
+ */
+export async function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opts = {}) {
+  const { owner, repo, branch } = { ...DEFAULT_REPO, ...opts };
+  const api = client();
+  fromDir = fromDir.replace(/\/+$/, '');
+  toDir = toDir.replace(/\/+$/, '');
+  if (toDir === fromDir || toDir.startsWith(`${fromDir}/`)) throw new Error('Ongeldige doelmap.');
+
+  const ref = await api.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+  const baseSha = ref.data.object.sha;
+  const baseCommit = await api.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
+  const full = await api.rest.git.getTree({ owner, repo, tree_sha: baseCommit.data.tree.sha, recursive: 'true' });
+  if (full.data.truncated) throw new Error('De repo-boom is te groot om veilig te verplaatsen.');
+  const files = full.data.tree.filter((t) => t.type === 'blob');
+  if (files.some((t) => t.path.startsWith(`${toDir}/`))) throw new Error(`Doelmap bestaat al: ${toDir}`);
+  const mine = files.filter((t) => t.path.startsWith(`${fromDir}/`));
+  if (!mine.length) throw new Error(`Geen bestanden gevonden in ${fromDir}.`);
+
+  const entries = [];
+  for (const f of mine) {
+    const rel = f.path.slice(fromDir.length + 1);
+    let sha = f.sha;
+    let text = null;
+    if (rel === 'slides.md' && extra.slidesContent != null) text = extra.slidesContent;
+    else if (rewrite && /\.(html|md|css|js)$/i.test(rel)) {
+      const old = await api.rest.git.getBlob({ owner, repo, file_sha: f.sha });
+      const cur = decodeBase64(old.data.content);
+      const next = rewrite(rel, cur);
+      if (next != null && next !== cur) text = next;
+    }
+    if (text != null) sha = (await api.rest.git.createBlob({ owner, repo, content: text, encoding: 'utf-8' })).data.sha;
+    entries.push({ path: `${toDir}/${rel}`, mode: f.mode || '100644', type: 'blob', sha });
+    entries.push({ path: f.path, mode: f.mode || '100644', type: 'blob', sha: null });
+  }
+  const tree = await api.rest.git.createTree({ owner, repo, base_tree: baseCommit.data.tree.sha, tree: entries });
+  const commit = await api.rest.git.createCommit({ owner, repo, message, tree: tree.data.sha, parents: [baseSha] });
+  await api.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.data.sha });
+  return commit.data.sha;
+}
+
 /** Is dit de deploy-workflow? Bewust soepel: pad kan licht afwijken. */
 export function isDeployRun(run) {
   return !!run && (
