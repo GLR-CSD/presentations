@@ -17,6 +17,7 @@ import * as T from './blocks/html-tree.js';
 import * as B from './blocks/block-ops.js';
 import { resolveTarget } from './blocks/parsers.js';
 import { slideTemplateBody } from './blocks/templates.js';
+import { buildDeckMarkdown, frameworkById } from './pedagogy/frameworks.js';
 import { blockToMarkdown, bodyToDoc } from './markdown/bridge.js';
 import { PropertiesPanel } from './ui/properties-panel.js';
 import { QuickBar } from './ui/quick-actions.js';
@@ -361,13 +362,16 @@ export class Studio {
   /** Bouwt een nieuw deck uit de wizard en laadt het in de Studio. */
   createDeckFromWizard(data) {
     const path = `presentations/${data.slug}/slides.md`;
-    const markdown = buildNewDeckMarkdown(data);
+    const markdown = buildDeckMarkdown(data, data.framework || 'vrij');
     const deck = parseDeck(markdown);
     const subject = (SUBJECT_PREFIXES.find((p) => p.value === data.prefix) || {}).subject || '';
     this.previewCss = '';
     this.loadDeck(deck, { source: 'new', path, title: data.title, subject });
     this.setStatus(`Nieuw deck aangemaakt: ${path}`);
-    toast('Nieuwe presentatie aangemaakt. Bewerk de slides en klik op Opslaan.');
+    const fw = frameworkById(data.framework);
+    toast(fw.id === 'vrij'
+      ? 'Nieuwe presentatie aangemaakt. Bewerk de slides en klik op Opslaan.'
+      : `Nieuwe presentatie aangemaakt met het start-model "${fw.label}". Alles blijft vrij aan te passen.`);
   }
 
   async openDeckFromManifest(entry) {
@@ -510,6 +514,7 @@ export class Studio {
         inner.innerHTML = '';
         inner.appendChild(section);
       });
+      this.sorter.refreshMeta(this.state.currentIndex);
     }, 500);
   }
 
@@ -576,7 +581,45 @@ export class Studio {
         this.renderStatus();
       },
       addFooter: () => this.addFooter(),
+      applyCoach: (r) => this.applyCoach(r),
+      restoreCoach: (snap) => this.restoreCoach(snap),
     };
+  }
+
+  /** Voert een actie van de Didactische Coach uit: `{ body, note, focus? }`. */
+  applyCoach({ body, note, focus }) {
+    const slide = this.state.currentSlide;
+    if (!slide) return;
+    const noteChanged = note != null && note !== slide.noteText;
+    if (noteChanged) {
+      slide.setNote(note);
+      this.state.markDirty();
+    }
+    this.commitBody(body, { origin: 'panel' });
+    this.renderStatus();
+    if (focus) {
+      this.panel.focusFieldAfterRender(focus.field);
+      if (focus.path) this.selectPath(focus.blockIndex, focus.path);
+      else this.state.setSelection({ blockIndex: focus.blockIndex, path: [], highlight: [], openItem: -1 });
+    } else if (noteChanged) {
+      // Er is een blok of onderdeel verwijderd: de oude selectie klopt niet meer.
+      this.state.setSelection(null);
+    } else {
+      this.panel.render();
+    }
+  }
+
+  /** "Ongedaan maken" van de laatste coach-actie: body én notitie exact terugzetten. */
+  restoreCoach(snap) {
+    const slide = snap && snap.slide;
+    if (!slide || slide !== this.state.currentSlide) return;
+    slide.note = snap.note;
+    slide.gap2 = snap.gap2;
+    slide.dirty = true;
+    this.state.markDirty();
+    this.commitBody(snap.body, { origin: 'panel' });
+    this.renderStatus();
+    this.state.setSelection(null);
   }
 
   /**
@@ -1040,42 +1083,6 @@ export class Studio {
       item('Offline werken…', 'wifi-off', () => this.handleOffline());
     }
   }
-}
-
-/* --------------------------------------------------------------- helpers --- */
-
-/** Bouwt de complete `slides.md`-inhoud voor een nieuw deck uit de wizard. */
-function buildNewDeckMarkdown(data) {
-  const q = (s) => String(s == null ? '' : s).replace(/"/g, '\\"');
-  const tags = (data.tags || []).map((t) => `"${q(t)}"`).join(', ');
-  const subject = (SUBJECT_PREFIXES.find((p) => p.value === data.prefix) || {}).subject || 'Onderwerp';
-  const fm = [
-    '<!-- frontmatter',
-    `title: "${q(data.title)}"`,
-    `cohort: "${q(data.cohort || '2026-2027')}"`,
-    `leerjaar: ${data.leerjaar}`,
-    `periode: ${data.periode}`,
-    `auteur: "${q(data.auteur)}"`,
-    `tags: [${tags}]`,
-    '-->',
-  ].join('\n');
-  const titleSlide = [
-    '<!-- .slide: class="bleed dark" data-background-color="#111111" -->',
-    '',
-    '<div class="bar" style="margin-top:28px"></div>',
-    `<p class="kicker kicker--lime">${escapeHtml(subject)} · ${escapeHtml(data.cohort || '')}</p>`,
-    `<h1 class="title" style="color:#fff;font-size:72px">${escapeHtml(data.title)}</h1>`,
-    '<p class="lede" style="color:#EDEDED;font-size:27px;max-width:1000px">Korte inleiding op deze les.</p>',
-    `<div class="footer"><span>${escapeHtml(subject)} · ${escapeHtml(data.title)}</span><span class="num">01</span></div>`,
-  ].join('\n');
-  const contentSlide = [
-    '## Eerste slide',
-    '',
-    '<p>Begin hier met de inhoud van je les.</p>',
-    '',
-    `<div class="footer"><span>${escapeHtml(subject)}</span><span class="num">02</span></div>`,
-  ].join('\n');
-  return `${fm}\n\n${titleSlide}\n\n---\n\n${contentSlide}\n`;
 }
 
 /* --------------------------------------------------------------- bootstrap */

@@ -26,6 +26,12 @@ export function renderSlideBody(body, { annotate = false } = {}) {
   let n = 0;
   for (let ti = 0; ti < tokens.length; ti += 1) {
     const t = tokens[ti];
+    if (t.type === 'list_item_open') {
+      // `- item <!-- .element: class="fragment" -->`: reveal.js past de comment toe op het
+      // ouder-element: de <li> in een strakke lijst, de <p> in een losse lijst.
+      const p = tokens[ti + 1];
+      if (p && p.type === 'paragraph_open') applyElementComment(p.hidden ? t : p, tokens[ti + 2]);
+    }
     if (t.level !== 0) continue;
     if (t.type === 'html_block') {
       t.content = annotateHtml(t.content, n);

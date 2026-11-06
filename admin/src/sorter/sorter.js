@@ -8,6 +8,7 @@ import { renderSlideBody, slideAttrsToHtml, resolveAssets } from '../markdown/re
 import { icon } from '../ui/icons.js';
 
 import { SLIDE_TEMPLATES } from '../blocks/templates.js';
+import { classifySlide, deckBalance } from '../pedagogy/phases.js';
 
 export class SlideSorter {
   constructor(container, { onSelect, onReorder, onAdd, onDelete, onDuplicate }) {
@@ -34,6 +35,11 @@ export class SlideSorter {
     });
     this.header.append(this.headerBtn);
     this.container.appendChild(this.header);
+
+    // Subtiele balans-indicator: theorie ↔ interactie/opdracht in het hele deck.
+    this.balance = document.createElement('div');
+    this.balance.className = 'sorter-balance';
+    this.container.appendChild(this.balance);
 
     this.list = document.createElement('ul');
     this.list.className = 'sorter-list';
@@ -91,12 +97,48 @@ export class SlideSorter {
         this._actionBtn('Verwijderen', 'trash', () => this.onDelete && this.onDelete(i), true),
       );
 
+      const phase = document.createElement('span');
+      phase.className = 'sorter-phase';
+      this._setPhase(phase, slide);
+      thumb.appendChild(phase);
+
       li.append(num, thumb, actions);
       li.addEventListener('click', () => this.onSelect && this.onSelect(i));
       this.list.appendChild(li);
     });
     this._fitThumbs();
     this._syncThumbScale();
+    this._renderBalance();
+  }
+
+  /** Werkt de fase-badge van één slide en de balans-indicator bij (na een bewerking). */
+  refreshMeta(index) {
+    if (!this.deck) return;
+    const li = this.list.children[index];
+    const badge = li && li.querySelector('.sorter-phase');
+    if (badge && this.deck.slides[index]) this._setPhase(badge, this.deck.slides[index]);
+    this._renderBalance();
+  }
+
+  _setPhase(el, slide) {
+    const p = classifySlide(slide);
+    el.className = `sorter-phase sorter-phase--${p.id}`;
+    el.textContent = p.label;
+    el.title = `Herkende fase: ${p.label} (alleen een indicatie)`;
+  }
+
+  _renderBalance() {
+    const b = deckBalance(this.deck ? this.deck.slides : []);
+    this.balance.hidden = !b.total;
+    if (!b.total) return;
+    this.balance.title = 'Verhouding theorie (Theorie + Code) ↔ interactie (Opdracht + Check). '
+      + 'Vuistregel uit de skills: elke ~5 inhoudelijke slides een actieve opdracht of check-in. Alleen een indicatie.';
+    this.balance.classList.toggle('is-low', b.lowInteraction);
+    this.balance.innerHTML = `<div class="sorter-balance__bar" aria-hidden="true">`
+      + `<span class="sorter-balance__theory" style="width:${b.theoryPct}%"></span>`
+      + `<span class="sorter-balance__interaction" style="width:${b.interactionPct}%"></span></div>`
+      + `<div class="sorter-balance__label"><span>Theorie ${b.theoryPct}%</span><span>Interactie ${b.interactionPct}%</span></div>`
+      + (b.lowInteraction ? '<div class="sorter-balance__hint">Tip: voeg een opdracht of begripscheck toe.</div>' : '');
   }
 
   setActive(index) {
@@ -115,7 +157,7 @@ export class SlideSorter {
     return b;
   }
 
-  /** Template-kiezer: 6 didactische slide-types als tegels met icoon. */
+  /** Template-kiezer: 9 didactische slide-types (3x3) als tegels met icoon. */
   _openTypeMenu(anchor, insertIndex) {
     document.querySelectorAll('.sorter-context--types').forEach((m) => m.remove());
     const menu = document.createElement('div');
@@ -148,7 +190,7 @@ export class SlideSorter {
     menu.appendChild(sub);
     document.body.appendChild(menu);
     const r = anchor.getBoundingClientRect();
-    const mw = menu.offsetWidth || 400;
+    const mw = menu.offsetWidth || 560;
     const mh = menu.offsetHeight || 360;
     menu.style.top = `${Math.max(8, Math.min(r.bottom + 4, window.innerHeight - mh - 8))}px`;
     menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mw - 8))}px`;

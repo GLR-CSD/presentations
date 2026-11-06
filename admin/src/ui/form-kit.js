@@ -62,6 +62,7 @@ function serializeRich(root, keepNbsp) {
 
 function wrap(f, extraCls = '') {
   const w = el('div', `pp-field ${extraCls}`.trim());
+  if (f.label) w.dataset.fieldLabel = f.label;
   if (f.label || f.badge) {
     const head = el('div', 'pp-field__head');
     if (f.label) head.appendChild(el('label', 'pp-label', escapeHtml(f.label)));

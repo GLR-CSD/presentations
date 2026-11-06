@@ -9,6 +9,7 @@
 import { openModal } from './modal.js';
 import { icon } from './icons.js';
 import { escapeHtml, slugify, SLUG_RE, SUBJECT_PREFIXES } from './util.js';
+import { FRAMEWORKS, frameworkById } from '../pedagogy/frameworks.js';
 
 function formRow(label, control, hint = '') {
   const row = document.createElement('label');
@@ -64,6 +65,17 @@ export function openNewDeckWizard({ manifest, onCreated }) {
   const periodeEl = select([{ value: '1', label: 'Periode 1' }, { value: '2', label: 'Periode 2' }, { value: '3', label: 'Periode 3' }, { value: '4', label: 'Periode 4' }], '1');
   const auteurEl = input('', { placeholder: 'bijv. Docententeam CSD' });
   const tagsEl = input('', { placeholder: 'Design, Kleur, Contrast' });
+  const frameworkEl = select(FRAMEWORKS.map((f) => ({ value: f.id, label: f.label })), 'vrij');
+  const frameworkInfo = document.createElement('div');
+  frameworkInfo.className = 'deck-form__framework';
+  const renderFramework = () => {
+    const fw = frameworkById(frameworkEl.value);
+    frameworkInfo.innerHTML = `<p class="deck-form__framework-short">${escapeHtml(fw.short)}</p>`
+      + `<ol class="deck-form__outline">${fw.outline.map((o) => `<li>${escapeHtml(o)}</li>`).join('')}</ol>`
+      + `<p class="deck-form__framework-hint">${fw.outline.length} slides met richtinggevende docentnotities. Alles blijft vrij aan te passen.</p>`;
+  };
+  frameworkEl.addEventListener('change', renderFramework);
+  renderFramework();
 
   let slugTouched = false;
   const regenerateSlug = () => {
@@ -87,6 +99,10 @@ export function openNewDeckWizard({ manifest, onCreated }) {
     formRow('Auteur', auteurEl),
     formRow('Tags', tagsEl, 'Komma-gescheiden.'),
   );
+  const fwRow = formRow('Didactische Les-opbouw (Optioneel start-model)', frameworkEl);
+  fwRow.classList.add('form-row--wide');
+  fwRow.append(frameworkInfo);
+  grid.append(fwRow);
 
   const status = document.createElement('p');
   status.className = 'deck-form__status';
@@ -116,6 +132,7 @@ export function openNewDeckWizard({ manifest, onCreated }) {
       periode: periodeEl.value,
       auteur: auteurEl.value.trim(),
       tags: tagsEl.value.split(',').map((s) => s.trim()).filter(Boolean),
+      framework: frameworkEl.value,
     };
   }
 

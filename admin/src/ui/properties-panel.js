@@ -15,6 +15,9 @@ import { blockToMarkdown, bodyToDoc } from '../markdown/bridge.js';
 import { renderFields, segmented, simpleField, h } from './form-kit.js';
 import { icon } from './icons.js';
 import { escapeHtml } from './util.js';
+import { renderCoach } from '../pedagogy/coach-panel.js';
+import { titleTip } from '../pedagogy/coach.js';
+import { NOTE_PROMPTS, appendNotePrompt } from '../pedagogy/note-prompts.js';
 
 const shiftLast = (p, d) => (p.length ? [...p.slice(0, -1), p[p.length - 1] + d] : p);
 
@@ -41,7 +44,35 @@ export class PropertiesPanel {
     const sel = this.state.selection;
     if (!sel) this.renderSlide();
     else if (!this.renderBlock(sel)) { this.state.selection = null; this.renderSlide(); }
+    renderCoach(this.host, this.coachApi());
     this.host.scrollTop = scroll;
+    this.applyPendingFocus();
+  }
+
+  /** Vraag om na de volgende render een veld te focussen (bijv. door de Didactische Coach). */
+  focusFieldAfterRender(labelPrefix) {
+    this.pendingFocus = labelPrefix;
+  }
+
+  applyPendingFocus() {
+    const want = this.pendingFocus;
+    if (!want) return;
+    this.pendingFocus = null;
+    const wrap = [...this.host.querySelectorAll('[data-field-label]')].find((w) => w.dataset.fieldLabel.startsWith(want));
+    const input = wrap && wrap.querySelector('input, textarea');
+    if (!input) return;
+    wrap.scrollIntoView({ block: 'center' });
+    input.focus();
+    if (typeof input.select === 'function') input.select();
+  }
+
+  coachApi() {
+    return {
+      state: this.state,
+      applyCoach: (r) => this.api.applyCoach(r),
+      restoreCoach: (snap) => this.api.restoreCoach(snap),
+      rerender: () => this.render(),
+    };
   }
 
   /* ------------------------------------------------------ Blok Eigenschappen --- */
@@ -109,6 +140,12 @@ export class PropertiesPanel {
     renderFields(form, info.fields, ctx);
     if (!info.fields.length) form.appendChild(h('p', 'insp-help', 'Dit onderdeel heeft geen instellingen.'));
     this.host.appendChild(form);
+
+    // Assertion-Evidence: subtiele tip direct onder het titelveld (alleen een suggestie).
+    const tt = titleTip(this.state.currentSlide);
+    if (tt && tt.title.blockIndex === sel.blockIndex && (tt.title.path === null || tt.title.path.join('.') === (sel.path || []).join('.'))) {
+      this.host.appendChild(h('p', 'pp-ae-tip', `💡 ${escapeHtml(tt.text)}`));
+    }
 
     this.host.appendChild(isHtml ? this.rawHtmlDetails(sel) : this.rawMdDetails(sel.blockIndex, block));
     return true;
@@ -258,7 +295,23 @@ export class PropertiesPanel {
 
     /* notities */
     root.appendChild(h('div', 'pp-section-title', 'Docentnotities (Note:)'));
-    root.appendChild(simpleField('textarea', { label: 'Alleen zichtbaar in de sprekersweergave (toets S)', value: slide.noteText }, (v) => this.api.setNote(v)));
+    const chips = h('div', 'pp-note-chips');
+    for (const p of NOTE_PROMPTS) {
+      const b = h('button', 'pp-note-chip', escapeHtml(p.label));
+      b.type = 'button';
+      b.title = `${p.title}: voegt een regel onderaan je notitie toe`;
+      b.addEventListener('click', () => {
+        this.api.setNote(appendNotePrompt(this.state.currentSlide.noteText, p.text));
+        this.render();
+        const ta = this.host.querySelector('.pp-notes textarea');
+        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollTop = ta.scrollHeight; }
+      });
+      chips.appendChild(b);
+    }
+    root.appendChild(chips);
+    const notes = simpleField('textarea', { label: 'Alleen zichtbaar in de sprekersweergave (toets S)', value: slide.noteText }, (v) => this.api.setNote(v));
+    notes.classList.add('pp-notes');
+    root.appendChild(notes);
 
     /* lesgegevens */
     this.renderLesgegevens(root);

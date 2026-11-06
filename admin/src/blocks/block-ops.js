@@ -212,18 +212,31 @@ export function toggleFragmentSelection(body, sel) {
     if (!node) return body;
     return setHtmlAt(body, sel.blockIndex, T.setClass(b.attrs.html, node, 'fragment', !T.hasClass(node, 'fragment')));
   }
-  const content = [...(b.content || [])];
-  const last = content[content.length - 1];
-  if (last && last.type === 'inlineHtml' && FRAG_COMMENT.test(last.attrs.html)) {
-    content.pop();
-    const prev = content[content.length - 1];
-    if (prev && prev.type === 'text') {
-      if (prev.text.trim() === '') content.pop();
-      else content[content.length - 1] = { ...prev, text: prev.text.replace(/\s+$/, '') };
-    }
-  } else {
-    content.push({ type: 'text', text: ' ', marks: [] }, { type: 'inlineHtml', attrs: { html: '<!-- .element: class="fragment" -->' } });
-  }
+  const content = setInlineFragment(b.content, !hasInlineFragment(b.content));
   blocks[sel.blockIndex] = { ...b, content };
   return toBody(blocks);
+}
+
+/** Eindigt deze inline-inhoud (kop, alinea, lijstitem) met `<!-- .element: class="fragment" -->`? */
+export function hasInlineFragment(content) {
+  const list = content || [];
+  const last = list[list.length - 1];
+  return !!last && last.type === 'inlineHtml' && FRAG_COMMENT.test(last.attrs.html);
+}
+
+/** Zet/verwijdert de `.element`-fragment-comment aan het eind van inline-inhoud (geeft een nieuwe array). */
+export function setInlineFragment(content, on) {
+  const out = [...(content || [])];
+  if (hasInlineFragment(out) === !!on) return out;
+  if (!on) {
+    out.pop();
+    const prev = out[out.length - 1];
+    if (prev && prev.type === 'text') {
+      if (prev.text.trim() === '') out.pop();
+      else out[out.length - 1] = { ...prev, text: prev.text.replace(/\s+$/, '') };
+    }
+  } else {
+    out.push({ type: 'text', text: ' ', marks: [] }, { type: 'inlineHtml', attrs: { html: '<!-- .element: class="fragment" -->' } });
+  }
+  return out;
 }

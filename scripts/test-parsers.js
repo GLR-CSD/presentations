@@ -6,13 +6,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDeck } from '../admin/src/state/deck.js';
-import { bodyToDoc } from '../admin/src/markdown/bridge.js';
+import { parseDeck, serializeDeck } from '../admin/src/state/deck.js';
+import { bodyToDoc, docToBody } from '../admin/src/markdown/bridge.js';
 import { renderSlideBody } from '../admin/src/markdown/render.js';
 import * as T from '../admin/src/blocks/html-tree.js';
 import { SLIDE_TEMPLATES, slideTemplateBody } from '../admin/src/blocks/templates.js';
 import * as B from '../admin/src/blocks/block-ops.js';
 import * as P from '../admin/src/blocks/parsers.js';
+import { FRAMEWORKS, buildDeckMarkdown } from '../admin/src/pedagogy/frameworks.js';
+import { classifySlide, deckBalance } from '../admin/src/pedagogy/phases.js';
+import * as C from '../admin/src/pedagogy/coach.js';
+import { NOTE_PROMPTS, appendNotePrompt } from '../admin/src/pedagogy/note-prompts.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
@@ -224,31 +228,170 @@ console.log('Componenten (alle elementen):', Object.entries(compCount).sort((a, 
   ok(/<h2[^>]*class="fragment"/.test(html) && !html.includes('.element'), 'render past .element-comment toe');
 }
 
+/* ---- gedeelde check: één slide-body is 100% bewerkbaar via html-tree + parsers ---- */
+function checkBody(body, where) {
+  const attrsFree = body.replace(/^<!-- \.slide:[^>]*-->\n\n/, '');
+  const blocksOfBody = bodyToDoc(attrsFree).content;
+  ok(B.blocksOf(attrsFree).length === blocksOfBody.length, `${where}: blokken`);
+  ok(docToBody(bodyToDoc(attrsFree)) === attrsFree, `${where}: markdown-brug niet byte-identiek`);
+  ok(blocksOfBody.some((b) => b.type === 'htmlBlock'), `${where}: heeft html-blok`);
+  for (const b of blocksOfBody) {
+    if (b.type !== 'htmlBlock') continue;
+    ok(!/\n\s*\n/.test(b.attrs.html), `${where}: lege regel in html-blok`);
+    T.walk(T.parse(b.attrs.html), (el, p) => {
+      ok(el.start < el.openEnd && el.openEnd <= el.closeStart && el.closeStart <= el.end, `${where}: ongeldige offsets <${el.tag}>`);
+      const d = P.describe(b.attrs.html, el);
+      checkFields(d.fields, b.attrs.html, el, `${where} ${d.id} ${p.join('.')}`);
+      const r = P.resolveTarget(b.attrs.html, p);
+      ok(Array.isArray(r.path) && T.nodeAt(T.parse(b.attrs.html), r.path), `${where}: resolveTarget ongeldig pad ${p.join('.')}`);
+      return true;
+    });
+  }
+  const html = renderSlideBody(attrsFree, { annotate: true });
+  const seen = new Set([...html.matchAll(/data-bi="(\d+)"/g)].map((m) => Number(m[1])));
+  blocksOfBody.forEach((node, i) => {
+    if (node.type !== 'commentBlock') ok(seen.has(i), `${where}: blok ${i} (${node.type}) mist data-bi`);
+  });
+  return blocksOfBody;
+}
+
 /* ---- (g) slide-templates: round-trip + elk onderdeel heeft een formulier ---- */
 {
-  ok(SLIDE_TEMPLATES.length === 6, 'precies 6 templates');
-  for (const tpl of SLIDE_TEMPLATES) {
-    const body = slideTemplateBody(tpl.kind, { number: 7, footerText: 'Vak · Test' });
-    const attrsFree = body.replace(/^<!-- \.slide:[^>]*-->\n\n/, '');
-    const blocksOfTpl = bodyToDoc(attrsFree).content;
-    ok(B.blocksOf(attrsFree).length === blocksOfTpl.length, `template ${tpl.kind}: blokken`);
-    ok(blocksOfTpl.some((b) => b.type === 'htmlBlock'), `template ${tpl.kind}: heeft html-blok`);
-    for (const b of blocksOfTpl) {
-      if (b.type !== 'htmlBlock') continue;
-      ok(!/\n\s*\n/.test(b.attrs.html), `template ${tpl.kind}: lege regel in html-blok`);
-      T.walk(T.parse(b.attrs.html), (el, p) => {
-        const d = P.describe(b.attrs.html, el);
-        checkFields(d.fields, b.attrs.html, el, `template ${tpl.kind} ${d.id} ${p.join('.')}`);
-        return true;
-      });
-    }
-  }
+  ok(SLIDE_TEMPLATES.length === 9, 'precies 9 templates (3x3)');
+  ok(new Set(SLIDE_TEMPLATES.map((t) => t.kind)).size === 9, 'template-kinds uniek');
+  for (const tpl of SLIDE_TEMPLATES) checkBody(slideTemplateBody(tpl.kind, { number: 7, footerText: 'Vak · Test' }), `template ${tpl.kind}`);
   const kinds = Object.fromEntries(SLIDE_TEMPLATES.map((t) => [t.kind, slideTemplateBody(t.kind)]));
   ok(/class="bleed dark"/.test(kinds.hero), 'hero: bleed dark');
   ok(/class="row"/.test(kinds.columns) && !/glr-columns/.test(kinds.columns), 'kolommen: .row/.col');
   ok((kinds.cards.match(/class="glr-card/g) || []).length === 3, '3 kernkaarten');
   ok((kinds.steps.match(/class="listrow"/g) || []).length === 3, '3 stappen');
   ok(/class="opcard"/.test(kinds.assignment) && /data-timer="15:00"/.test(kinds.assignment), 'opdracht + timer 15:00');
+  ok(/^## .{20,}/m.test(kinds.assertion) && /class="row"/.test(kinds.assertion) && /<figure/.test(kinds.assertion) && !/<ul|^- /m.test(kinds.assertion), 'assertion-evidence: stelling + .row + figure, geen bullets');
+  ok(/class="terminal-window"/.test(kinds.worked) && /data-line-numbers="1-2\|4-6"/.test(kinds.worked) && /class="row"/.test(kinds.worked), 'worked example: terminal + regel-focus');
+  ok((kinds.quiz.match(/class="glr-card/g) || []).length === 3 && (kinds.quiz.match(/glr-card--accent fragment custom/g) || []).length === 1, 'quiz: 3 opties, 1 juiste met fragment custom');
+  // Template-bouwstenen worden door de bestaande formulieren herkend.
+  const quizHtml = bodyToDoc(kinds.quiz).content.find((b) => b.type === 'htmlBlock' && /cards/.test(b.attrs.html)).attrs.html;
+  ok(P.describe(quizHtml, T.nodeAt(T.parse(quizHtml), [0])).id === 'cards', 'quiz: cards-formulier');
+  const workedHtml = bodyToDoc(kinds.worked).content.find((b) => b.type === 'htmlBlock' && /terminal/.test(b.attrs.html)).attrs.html;
+  let termPath = null; T.walk(T.parse(workedHtml), (el, p) => { if (!termPath && T.hasClass(el, 'terminal-window')) termPath = p; return true; });
+  ok(termPath && P.resolveTarget(workedHtml, termPath).comp.id === 'terminal', 'worked: terminal-formulier');
+}
+
+/* ---- (h) didactische les-flows (frameworks.js) ---- */
+{
+  const expected = { vrij: 2, gagne: 9, abt: 4, sparkline: 5, agile: 4 };
+  ok(FRAMEWORKS.length === 5 && FRAMEWORKS.every((f) => expected[f.id] === f.outline.length), '5 les-flows met outline');
+  const data = { title: 'Les "Test" & co', prefix: 'design1', cohort: '2026-2027', leerjaar: 1, periode: 2, auteur: 'Docent', tags: ['Didactiek', 'Test'] };
+  let slidesChecked = 0;
+  for (const fw of FRAMEWORKS) {
+    const md = buildDeckMarkdown(data, fw.id);
+    const deck = parseDeck(md);
+    ok(deck.slides.length === expected[fw.id], `${fw.id}: ${deck.slides.length} slides, verwacht ${expected[fw.id]}`);
+    ok(serializeDeck(deck) === md, `${fw.id}: deck-roundtrip niet byte-identiek`);
+    ok(deck.frontmatter && md.startsWith('<!-- frontmatter\ntitle: "Les \\"Test\\" & co"') && deck.frontmatter.get('leerjaar') === 1 && deck.frontmatter.get('periode') === 2, `${fw.id}: frontmatter`);
+    deck.slides.forEach((slide, i) => {
+      const where = `${fw.id} slide ${i + 1}`;
+      ok(slide.noteText.length > 10, `${where}: richtinggevende Note: ontbreekt`);
+      ok(new RegExp(`<span class="num">${String(i + 1).padStart(2, '0')}</span>`).test(slide.body), `${where}: footer met paginanummer`);
+      checkBody(slide.body, where);
+      slidesChecked += 1;
+    });
+  }
+  ok(buildDeckMarkdown(data) === buildDeckMarkdown(data, 'vrij'), 'standaard = vrije opbouw');
+  const gagne = parseDeck(buildDeckMarkdown(data, 'gagne')).slides;
+  const g = (i) => gagne[i].body;
+  ok(/class="bleed dark"/.test(gagne[0].attrs), 'gagné 1: hero');
+  ok(/<ul class="check">/.test(g(1)) && /Na deze les kun je/.test(g(1)), 'gagné 2: .check leerdoelen');
+  ok(/class="callout"/.test(g(2)), 'gagné 3: callout');
+  ok(/class="row"/.test(g(3)) && /<figure/.test(g(3)), 'gagné 4: AE');
+  ok(/data-line-numbers=/.test(g(4)) && /class="rows/.test(g(4)), 'gagné 5: worked example');
+  ok(/class="opcard"/.test(g(5)) && /data-timer="15:00"/.test(g(5)), 'gagné 6: opcard + 15:00');
+  ok(/class="cards"/.test(g(6)), 'gagné 7: cards');
+  ok(/glr-card--accent fragment custom/.test(g(7)), 'gagné 8: quiz');
+  ok(/class="defbox"/.test(g(8)), 'gagné 9: defbox');
+  const agile = parseDeck(buildDeckMarkdown(data, 'agile')).slides;
+  ok(/listrow--time/.test(agile[1].body) && /data-timer="45:00"/.test(agile[2].body) && /class="check"/.test(agile[3].body), 'agile: planning, 45:00, check');
+  const abt = parseDeck(buildDeckMarkdown(data, 'abt')).slides;
+  ok(/class="callout"/.test(abt[2].body) && /class="opcard"/.test(abt[3].body), 'abt: MAAR callout, DAAROM opcard');
+  const spark = parseDeck(buildDeckMarkdown(data, 'sparkline')).slides;
+  ok(/class="rows"/.test(spark[3].body) && /class="opcard"/.test(spark[4].body), 'sparkline: stappen + call to action');
+  console.log(`Les-flows: ${FRAMEWORKS.length} modellen, ${slidesChecked} slides gecontroleerd.`);
+
+  // Fase-herkenning op de Gagné-flow
+  const phases = gagne.map((s) => classifySlide(s).id).join(',');
+  ok(phases === 'hero,doelen,check,theorie,code,opdracht,theorie,check,theorie', `gagné fasen: ${phases}`);
+  const bal = deckBalance(gagne);
+  ok(bal.theory === 4 && bal.interaction === 3 && bal.theoryPct + bal.interactionPct === 100, 'deckBalance gagné');
+  ok(deckBalance([]).total === 0, 'deckBalance leeg');
+  // Echte decks: classificatie crasht nooit
+  for (const file of findDecks(presentationsRoot)) for (const s of parseDeck(fs.readFileSync(file, 'utf8')).slides) classifySlide(s);
+}
+
+/* ---- (i) Didactische Coach & notitie-chips ---- */
+{
+  // Segmentatie: HTML-kaarten aan/uit = origineel
+  const cardsBody = slideTemplateBody('cards');
+  const segs = C.findSegmentables(cardsBody);
+  ok(segs.length === 1 && segs[0].count === 3 && segs[0].fragments === 0, 'segment: 3 kaarten gevonden');
+  const on = C.setItemsFragment(cardsBody, segs[0], true);
+  ok((on.match(/fragment/g) || []).length === 3 && C.findSegmentables(on)[0].fragments === 3, 'segment: fragment op alle kaarten');
+  ok(C.setItemsFragment(on, C.findSegmentables(on)[0], false) === cardsBody, 'segment: uit = origineel (html)');
+  // Segmentatie: Markdown-lijst
+  const listBody = '## Titel\n\n- een\n- twee\n- drie\n\n<div class="footer"><span>x</span><span class="num">01</span></div>';
+  const ls = C.findSegmentables(listBody);
+  ok(ls.length === 1 && ls[0].md && ls[0].count === 3, 'segment: markdown-lijst gevonden');
+  const lsOn = C.setItemsFragment(listBody, ls[0], true);
+  ok((lsOn.match(/<!-- \.element: class="fragment" -->/g) || []).length === 3, 'segment: element-comments op lijstitems');
+  ok(C.setItemsFragment(lsOn, C.findSegmentables(lsOn)[0], false) === listBody, 'segment: uit = origineel (markdown)');
+  const lsHtml = renderSlideBody(lsOn, { annotate: true });
+  ok((lsHtml.match(/<li class="fragment">/g) || []).length === 3 && !lsHtml.includes('.element'), 'render: fragment op <li>');
+  ok(C.analyzeSlide({ body: cardsBody }).some((t) => t.id.startsWith('segment') && t.actions.length), 'analyse: segment-tip');
+  ok(!C.analyzeSlide({ body: on }).some((t) => t.id.startsWith('segment') && !t.quiet), 'analyse: geen segment-tip als al stapsgewijs');
+
+  // Redundantie
+  const long = 'Dit is een hele lange alinea met heel veel woorden die de docent eigenlijk gewoon hardop vertelt tijdens de les. '.repeat(4).trim();
+  const redBody = `## Titel als stelling over iets\n\n${long}\n\nKort.\n\n<div class="footer"><span>x</span><span class="num">01</span></div>`;
+  ok(C.proseWordCount(redBody) > C.REDUNDANCY_WORDS, 'redundantie: woorden geteld');
+  const red = C.analyzeSlide({ body: redBody, noteText: '' }).find((t) => t.id === 'redundancy');
+  ok(red && red.actions.length === 1, 'redundantie: tip + actie');
+  const moved = red.actions[0].run(redBody, 'Bestaande notitie');
+  ok(!moved.body.includes('hele lange alinea') && moved.body.includes('Kort.') && moved.note.startsWith('Bestaande notitie\n\n') && moved.note.includes('hele lange alinea'), 'redundantie: alinea → notities');
+  const htmlP = `<div class="row">\n  <div class="col"><p class="lede">${long}</p></div>\n  <div class="col"><p>Rest</p></div>\n</div>`;
+  const cands = C.proseCandidates(htmlP);
+  ok(cands.length === 2 && cands[0].path.join('.') === '0.0.0', 'redundantie: html-<p>-kandidaten');
+  const sel = C.selectedCandidate(cands, { blockIndex: 0, path: [0, 1, 0], highlight: [0, 1, 0] });
+  ok(sel && sel.text === 'Rest', 'redundantie: geselecteerde alinea');
+  const mv = C.moveToNotes(htmlP, '', cands[0]);
+  ok(!mv.body.includes('lede') && mv.body.includes('<p>Rest</p>') && mv.note === long, 'redundantie: html-<p> verplaatst');
+  ok(C.proseWordCount('```js\n' + 'a b c d e f g h i j\n'.repeat(20) + '```') === 0, 'redundantie: code telt niet mee');
+
+  // Signalering
+  const code12 = Array.from({ length: 12 }, (_, i) => `regel${i + 1}();`).join('\n');
+  ok(C.suggestRanges(code12) === '1-4|5-8|9-12', `suggestRanges blokken: ${C.suggestRanges(code12)}`);
+  ok(C.suggestRanges('a\nb\n\nc\nd\ne\n\nf') === '1-2|4-6|8', 'suggestRanges per alinea');
+  const mdCode = `## Code\n\n\`\`\`javascript\n${code12}\n\`\`\``;
+  const fc = C.findUnfocusedCode(mdCode);
+  ok(fc.length === 1 && fc[0].lines === 12, 'signalering: md-codeblok gevonden');
+  const focused = C.applyLineFocus(mdCode, fc[0], '1-4|5-8|9-12');
+  ok(focused.includes('```javascript [1-4|5-8|9-12]') && C.findUnfocusedCode(focused).length === 0, 'signalering: fence-highlight');
+  const termBody = slideTemplateBody('worked').replace(' data-line-numbers="1-2|4-6"', '').replace(/(<code[^>]*>)([\s\S]*?)(<\/code>)/, (m, a, c, z) => `${a}${c}\n${c}${z}`);
+  const ft = C.findUnfocusedCode(termBody);
+  ok(ft.length === 1 && ft[0].path, 'signalering: html-code gevonden');
+  const tFocus = C.analyzeSlide({ body: termBody }).find((t) => t.id.startsWith('code')).actions[0].run(termBody, '');
+  ok(/data-line-numbers="[\d|-]+"/.test(tFocus.body) && tFocus.focus && tFocus.focus.field === 'Regel-highlights', 'signalering: data-line-numbers + focus');
+
+  // AE-titel
+  ok(C.titleTip({ body: '## Databases\n\nTekst.' }), 'AE-tip bij 1-woord-titel');
+  ok(!C.titleTip({ body: '## Een index maakt zoeken honderd keer sneller\n\nTekst.' }), 'geen AE-tip bij stelling');
+  ok(!C.titleTip({ body: '<p class="kicker">Leerdoelen</p>\n\n## Leerdoelen\n\n<ul class="check"><li>a</li></ul>' }), 'geen AE-tip op doelen-slide');
+  ok(C.mainTitle('<div class="x"><h2 class="title">Twee woorden</h2></div>').path.join('.') === '0.0', 'mainTitle html');
+
+  // Notitie-chips
+  ok(NOTE_PROMPTS.length === 4, '4 notitie-chips');
+  ok(appendNotePrompt('', 'X') === 'X' && appendNotePrompt('A\n\n', 'X') === 'A\nX', 'appendNotePrompt');
+  // noteText accepteert ook `Note: tekst` op één regel (alleen de getter; serialisatie ongewijzigd)
+  const one = parseDeck('<!-- frontmatter\ntitle: "x"\n-->\n\n## A\n\nNote: Hallo\n');
+  ok(one.slides[0].noteText === 'Hallo' && serializeDeck(one) === '<!-- frontmatter\ntitle: "x"\n-->\n\n## A\n\nNote: Hallo\n', 'noteText op één regel');
 }
 
 if (!process.argv.includes('--lib')) {

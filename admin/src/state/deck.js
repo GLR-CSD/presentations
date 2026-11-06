@@ -184,7 +184,7 @@ function makeSlide(text, sep, index) {
       this.dirty = true;
     },
     get noteText() {
-      return this.note ? this.note.replace(/^Note:\r?\n?/, '').replace(/\s+$/, '') : '';
+      return this.note ? this.note.replace(/^Note:[ \t]*\r?\n?/, '').replace(/\s+$/, '') : '';
     },
   };
 }

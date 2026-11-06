@@ -182,6 +182,13 @@
 .card h3,.glr-card h3{font-size:22px;margin-bottom:8px}
 .card p,.glr-card p{font-size:17px;color:var(--ink-soft);line-height:1.3}
 .card--accent p,.glr-card--accent p{color:#243a06}
+/* Begripscheck/quiz: alle opties zichtbaar; de juiste kaart (`glr-card--accent fragment custom`)
+   oogt als gewone kaart en licht pas na een klik lime op. `custom` is het ingebouwde
+   reveal.js-fragmenttype dat het element zichtbaar laat. */
+.reveal .glr-card--accent.fragment.custom{transition:background-color .35s ease}
+.reveal .glr-card--accent.fragment.custom:not(.visible){background:var(--subtle)}
+.reveal .glr-card--accent.fragment.custom:not(.visible) .k{color:var(--muted)}
+.reveal .glr-card--accent.fragment.custom:not(.visible) p{color:var(--ink-soft)}
 
 /* ------------------------------------------------------------- callout */
 .callout{display:grid;grid-template-columns:18px 1fr;gap:20px;align-items:start;margin-top:24px}

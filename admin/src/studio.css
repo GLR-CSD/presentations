@@ -450,8 +450,9 @@ body {
 .preview-frame.is-pseudo-fullscreen { position: fixed; inset: 0; z-index: 2000; }
 
 /* ---- Template-kiezer (+ Nieuwe Slide) ---- */
-.sorter-context--types { width: 456px; max-width: calc(100vw - 16px); padding: 8px; }
-.tpl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 4px 2px 8px; }
+.sorter-context--types { width: 640px; max-width: calc(100vw - 16px); padding: 8px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 2px 8px; }
+@media (max-width: 680px) { .tpl-grid { grid-template-columns: repeat(2, 1fr); } }
 .tpl-tile {
   display: grid; grid-template-columns: 40px 1fr; grid-template-areas: "ic label" "ic hint"; column-gap: 10px; align-items: center;
   text-align: left; font: inherit; padding: 10px; border: 1px solid var(--ui-border); border-radius: 8px; background: #fff; cursor: pointer;
@@ -552,3 +553,62 @@ body {
 .glr-ed-reveal .fragment { opacity: 1 !important; visibility: visible !important; }
 .studio-pane--editor .glr-block { background: transparent; }
 .studio-pane--editor .glr-block__label { background: rgba(127, 127, 127, .16); color: inherit; opacity: .8; }
+
+/* ---- Didactiek: fase-badges & balans in de Slide Sorter ---- */
+.sorter-phase {
+  position: absolute; left: 4px; bottom: 4px; z-index: 2; font-family: 'Space Grotesk', sans-serif; font-size: 9.5px; font-weight: 600;
+  letter-spacing: .03em; line-height: 1; padding: 3px 5px; border-radius: 4px; background: rgba(255, 255, 255, .92); color: #4B5563;
+  border: 1px solid rgba(17, 17, 17, .08); pointer-events: none;
+}
+.sorter-phase--hero, .sorter-phase--doelen, .sorter-phase--agenda, .sorter-phase--pauze { color: #4B5563; }
+.sorter-phase--theorie, .sorter-phase--code { color: #1E3A8A; background: rgba(239, 243, 255, .95); }
+.sorter-phase--opdracht, .sorter-phase--check { color: #33520a; background: rgba(238, 247, 217, .96); }
+.sorter-balance { margin: 8px 2px 4px; font-size: 10.5px; color: var(--ui-muted); cursor: help; }
+.sorter-balance__bar { display: flex; height: 5px; border-radius: 999px; overflow: hidden; background: var(--ui-border); }
+.sorter-balance__theory { background: #9DB0E8; }
+.sorter-balance__interaction { background: var(--ui-lime); }
+.sorter-balance__label { display: flex; justify-content: space-between; margin-top: 3px; }
+.sorter-balance__hint { margin-top: 2px; color: var(--ui-green); }
+
+/* ---- Didactiek: notitie-chips, coach, AE-tip ---- */
+.pp-note-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 14px 8px; }
+.pp-note-chip {
+  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--ui-green); background: #F9FCF1; border: 1px dashed #B6D77A;
+  border-radius: 999px; padding: 3px 9px; cursor: pointer;
+}
+.pp-note-chip:hover { background: #EEF7D9; border-style: solid; }
+.pp-ae-tip { margin: 0 14px 10px; padding: 8px 10px; font-size: 12px; line-height: 1.45; color: var(--ui-ink-soft); background: #FBFDF5; border-left: 3px solid var(--ui-lime); border-radius: 4px; }
+.pp-coach { margin: 18px 14px 0; border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: #FCFDF9; }
+.pp-coach__sum { display: flex; align-items: center; gap: 8px; padding: 9px 11px; font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.pp-coach__sum > span:first-child { flex: 1; }
+.pp-coach__count { min-width: 18px; padding: 1px 6px; text-align: center; font-size: 11px; border-radius: 999px; background: var(--ui-lime); color: var(--ui-ink); }
+.pp-coach__body { padding: 0 11px 10px; }
+.pp-coach__undo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 6px 8px; font-size: 11.5px; color: var(--ui-ink-soft); background: #F1F8E4; border-radius: 6px; }
+.pp-coach__undo > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-tip { position: relative; margin-bottom: 8px; padding: 8px 10px; background: #fff; border: 1px solid var(--ui-border); border-radius: 7px; }
+.pp-tip--quiet { opacity: .8; }
+.pp-tip__head { display: flex; align-items: center; justify-content: space-between; }
+.pp-tip__principle { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ui-green); }
+.pp-tip__x { font: inherit; font-size: 15px; line-height: 1; color: var(--ui-muted); background: transparent; border: 0; padding: 0 2px; cursor: pointer; }
+.pp-tip__x:hover { color: var(--ui-ink); }
+.pp-tip__title { margin: 3px 0 2px; font-size: 12.5px; font-weight: 700; }
+.pp-tip__text { margin: 0 0 6px; font-size: 12px; line-height: 1.45; color: var(--ui-ink-soft); }
+.pp-tip__hint { margin: 5px 0 0; font-size: 11px; color: var(--ui-muted); }
+.pp-coach__btn {
+  display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 12px; font-weight: 600; text-align: left; padding: 6px 9px;
+  border: 1px solid var(--ui-border); border-radius: 6px; background: #fff; color: var(--ui-ink); cursor: pointer;
+}
+.pp-coach__undo .pp-coach__btn { display: inline-block; width: auto; margin: 0; flex: none; }
+.pp-coach__btn:hover { border-color: #8fe507; background: #F6FBEA; }
+.pp-coach__btn--primary { background: #F1F8E4; border-color: #C9E58F; }
+.pp-coach__empty { margin: 2px 0 6px; font-size: 12px; color: var(--ui-muted); }
+.pp-coach__foot { margin: 6px 0 0; font-size: 10.5px; color: var(--ui-muted); }
+
+/* ---- Didactiek: wizard ---- */
+.deck-form__grid > .form-row--wide { grid-column: 1 / -1; }
+.deck-form__framework { margin-top: 4px; padding: 8px 10px; font-size: 12px; color: var(--ui-ink-soft); background: #FBFDF5; border: 1px solid #E3F0C8; border-radius: 7px; }
+.deck-form__framework p { margin: 0; }
+.deck-form__outline { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; padding: 0; list-style: none; counter-reset: fw; }
+.deck-form__outline li { counter-increment: fw; font-size: 11px; padding: 2px 7px; border-radius: 999px; background: #fff; border: 1px solid var(--ui-border); }
+.deck-form__outline li::before { content: counter(fw) ". "; color: var(--ui-green); font-weight: 600; }
+.deck-form__framework-hint { color: var(--ui-muted); font-size: 11px; }
