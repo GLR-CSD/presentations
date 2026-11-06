@@ -128,7 +128,7 @@ Cloudflare Worker (`scripts/oauth-worker/`) die het OAuth-geheim bewaart. Eenmal
    *Settings → Secrets and variables → Actions → Variables* de variabele `GLR_OAUTH_URL`
    aan met de Worker-URL. `deploy.yml` geeft die door aan `npm run build:index`, dat
    `admin/studio-config.json` schrijft. Lokaal: `GLR_OAUTH_URL=https://… npm run build:index`.
-   Zonder deze variabele verbergt de Studio de knop en blijft het PAT-veld beschikbaar.
+   Zonder deze variabele toont de knop een melding dat OAuth niet is ingesteld; het PAT-veld blijft onder *Geavanceerd* beschikbaar. Dat veld is standaard dichtgeklapt en klapt alleen vanzelf open als OAuth niet werkt (geen URL, Worker onbereikbaar of `/health` meldt `configured: false`).
 
 Het token wordt gevalideerd (incl. schrijfrechten) en bewaard in `localStorage['glr-gh-token']`.
 

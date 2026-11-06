@@ -5,7 +5,7 @@
  * Gebruik:  npm run test:oauth
  */
 import worker from './oauth-worker/worker.js';
-import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig } from '../admin/src/storage/oauth.js';
+import { parseOAuthHash, isOAuthMessage, loginUrl, loadStudioConfig, checkOAuthHealth } from '../admin/src/storage/oauth.js';
 
 let failures = 0;
 const ok = (c, m) => { if (!c) { failures += 1; console.error(`✖ ${m}`); } };
@@ -107,6 +107,16 @@ try {
   ok(loginUrl('https://w.example/') === 'https://w.example/login', 'loginUrl');
   ok((await loadStudioConfig(async () => ({ ok: true, json: async () => ({ oauthUrl: w }) }))).oauthUrl === w, 'config geladen');
   ok((await loadStudioConfig(async () => { throw new Error('x'); })).oauthUrl === null, 'config fallback');
+}
+
+// --- checkOAuthHealth
+{
+  const h = (res) => async () => res;
+  ok(await checkOAuthHealth('https://w.example', h({ ok: true, json: async () => ({ ok: true, configured: true }) })), 'health: werkt');
+  ok(!await checkOAuthHealth('https://w.example', h({ ok: true, json: async () => ({ ok: true, configured: false }) })), 'health: niet geconfigureerd');
+  ok(!await checkOAuthHealth('https://w.example', h({ ok: false })), 'health: HTTP-fout');
+  ok(!await checkOAuthHealth('https://w.example', async () => { throw new Error('x'); }), 'health: onbereikbaar');
+  ok(!await checkOAuthHealth(null), 'health: geen URL');
 }
 
 if (failures) { console.error(`\n${failures} test(s) mislukt.`); process.exit(1); }

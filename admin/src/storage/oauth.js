@@ -41,3 +41,20 @@ export async function loadStudioConfig(fetchImpl = globalThis.fetch) {
     return { oauthUrl: null };
   }
 }
+
+/** Controleert `GET {worker}/health`; true alleen als de Worker bereikbaar en geconfigureerd is. */
+export async function checkOAuthHealth(workerUrl, fetchImpl = globalThis.fetch, timeoutMs = 4000) {
+  if (!workerUrl) return false;
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  try {
+    const res = await fetchImpl(`${String(workerUrl).replace(/\/+$/, '')}/health`, ctrl ? { signal: ctrl.signal } : undefined);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!(data && data.ok && data.configured);
+  } catch {
+    return false;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

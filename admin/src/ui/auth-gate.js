@@ -105,10 +105,18 @@ export class AuthGate {
     this.offlineBtn.addEventListener('click', () => { if (this.onOffline) this.onOffline(); });
   }
 
-  /** Zonder geconfigureerde Worker-URL: verberg de OAuth-knop en klap het PAT-veld open. */
+  /**
+   * Markeert of de OAuth-Worker geconfigureerd is. De knop blijft altijd zichtbaar
+   * en de PAT-foldout blijft standaard dicht; zonder URL toont de Studio bij klikken een melding.
+   */
   setOAuthEnabled(enabled) {
-    this.githubBtn.hidden = !enabled;
-    if (!enabled) this.foldout.open = true;
+    this.oauthEnabled = !!enabled;
+    this.host.dataset.oauth = enabled ? 'on' : 'off';
+  }
+
+  /** Klapt de PAT-foldout open (alleen bedoeld als OAuth niet werkt). */
+  openAdvanced() {
+    this.foldout.open = true;
   }
 
   show() { this.host.hidden = false; }
