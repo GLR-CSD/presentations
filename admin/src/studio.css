@@ -425,6 +425,9 @@ body {
 .preview-frame:not(.is-presenting) .reveal .slides section { cursor: default; }
 /* In de editor zijn animatiestappen (fragments) altijd zichtbaar; tijdens het presenteren niet. */
 .preview-frame:not(.is-presenting) .reveal .fragment { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+/* Diagrammen: pijlen van fragment-knooppunten altijd zichtbaar; de teken-animatie speelt niet bij elke toetsaanslag opnieuw. */
+.preview-frame:not(.is-presenting) .glr-dedges .is-frag-hidden { opacity: 1 !important; }
+.preview-frame:not(.is-presenting) .reveal .glr-diagram[data-draw-anim] :is(.glr-dedge, .glr-dhead, .glr-dnode, .glr-dedge-label) { animation: none !important; }
 .studio-editor .ProseMirror .is-glr-selected.glr-block { border-color: #8fe507; }
 
 /* ---- Quick-Action balk ---- */

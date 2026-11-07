@@ -11,6 +11,7 @@ import { HistoryManager, makeSnapshot, validSelection } from '../admin/src/app/h
 import * as B from '../admin/src/blocks/block-ops.js';
 import * as T from '../admin/src/blocks/html-tree.js';
 import * as P from '../admin/src/blocks/parsers.js';
+import { DIAGRAM_PRESETS, renderDiagramHtml, parseDiagramNode } from '../admin/src/blocks/diagram.js';
 
 let failures = 0;
 const ok = (c, m) => { if (!c) { failures += 1; console.error(`✖ ${m}`); } };
@@ -164,6 +165,40 @@ ok(md(mk().st) === SRC, 'fixture roundtrip');
   ok(validSelection(deck, 0, { blockIndex: 0, path: [] }) !== null, 'validSelection: bestaand blok');
   ok(validSelection(deck, 9, { blockIndex: 0, path: [] }) === null, 'validSelection: verdwenen slide');
   ok(validSelection(deck, 0, null) === null, 'validSelection: geen selectie');
+}
+
+// --- diagram (Fase 7B): repeater-wijzigingen zijn volledig undo/redo-baar
+{
+  const { st, h, rec, restore } = mk();
+  const original = md(st);
+  const dia = renderDiagramHtml(DIAGRAM_PRESETS[0].state);
+  st.deck.slides[0].setBody(`${st.deck.slides[0].body}\n\n${dia}`);
+  rec('Diagram ingevoegd');
+  const states = [original, md(st)];
+  const bi = B.blocksOf(st.deck.slides[0].body).findIndex((b) => b.type === 'htmlBlock' && /glr-diagram/.test(b.attrs.html));
+  ok(bi >= 0, 'diagram-blok aanwezig in slide');
+  const edit = (label, pick) => {
+    const html = B.htmlAt(st.deck.slides[0].body, bi);
+    const node = T.nodeAt(T.parse(html), [0]);
+    const fields = P.describe(html, node).fields;
+    st.deck.slides[0].setBody(B.setHtmlAt(st.deck.slides[0].body, bi, pick(fields, html, node)));
+    rec(label);
+    states.push(md(st));
+  };
+  edit('Knooppunt toegevoegd', (f, html, node) => { const r = f.find((x) => x.kind === 'repeater'); return r.add(html, node); });
+  edit('Knooppunt verplaatst', (f, html, node) => { const r = f.find((x) => x.kind === 'repeater'); return r.move(html, node, 3, -1); });
+  edit('Animatie gekozen', (f, html, node) => f.find((x) => x.label === 'Pijl & Data-Animatie').apply(html, node, 'stream'));
+  edit('Knooppunt verwijderd', (f, html, node) => { const r = f.find((x) => x.kind === 'repeater'); return r.remove(html, node, 0); });
+  const finalHtml = B.htmlAt(st.deck.slides[0].body, bi);
+  const fs2 = parseDiagramNode(finalHtml, T.nodeAt(T.parse(finalHtml), [0]));
+  ok(fs2.nodes.length === 3 && fs2.flowAnim === 'stream', 'diagram: eindtoestand klopt');
+  for (let i = states.length - 1; i >= 1; i -= 1) {
+    ok(restore(h.undo()) && md(st) === states[i - 1], `diagram undo ${i} byte-identiek`);
+  }
+  ok(md(st) === original, 'diagram: volledige undo = origineel');
+  for (let i = 1; i < states.length; i += 1) {
+    ok(restore(h.redo()) && md(st) === states[i], `diagram redo ${i} byte-identiek`);
+  }
 }
 
 void fs; void root;
