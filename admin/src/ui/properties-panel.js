@@ -50,8 +50,9 @@ export class PropertiesPanel {
   }
 
   /** Vraag om na de volgende render een veld te focussen (bijv. door de Didactische Coach). */
-  focusFieldAfterRender(labelPrefix) {
+  focusFieldAfterRender(labelPrefix, { select = true } = {}) {
     this.pendingFocus = labelPrefix;
+    this.pendingSelect = select;
   }
 
   applyPendingFocus() {
@@ -63,7 +64,9 @@ export class PropertiesPanel {
     if (!input) return;
     wrap.scrollIntoView({ block: 'center' });
     input.focus();
-    if (typeof input.select === 'function') input.select();
+    if (this.pendingSelect === false && typeof input.setSelectionRange === 'function' && input.type !== 'color' && input.type !== 'number') {
+      try { input.setSelectionRange(input.value.length, input.value.length); } catch { /* geen selectie-API */ }
+    } else if (typeof input.select === 'function') input.select();
   }
 
   coachApi() {
@@ -168,7 +171,7 @@ export class PropertiesPanel {
       const next = current.slice(0, start) + ta.value + current.slice(end);
       end = start + ta.value.length;
       current = next;
-      this.api.commitBody(B.setHtmlAt(this.api.getBody(), sel.blockIndex, next), { origin: 'panel' });
+      this.api.commitBody(B.setHtmlAt(this.api.getBody(), sel.blockIndex, next), { origin: 'form-input', label: 'HTML aangepast', coalesceKey: `raw:${this.state.currentIndex}:${sel.blockIndex}` });
     });
     d.appendChild(ta);
     d.appendChild(h('p', 'insp-help', 'Let op: dit is de echte HTML van het onderdeel. Wijzig dit alleen als je weet wat je doet.'));
@@ -184,7 +187,7 @@ export class PropertiesPanel {
     ta.value = blockToMarkdown(block);
     ta.addEventListener('input', () => {
       const nodes = bodyToDoc(ta.value).content;
-      this.api.commitBody(B.replaceBlock(this.api.getBody(), index, nodes.length ? nodes : [{ type: 'paragraph' }]), { origin: 'panel' });
+      this.api.commitBody(B.replaceBlock(this.api.getBody(), index, nodes.length ? nodes : [{ type: 'paragraph' }]), { origin: 'form-input', label: 'Markdown aangepast', coalesceKey: `rawmd:${this.state.currentIndex}:${index}` });
     });
     d.appendChild(ta);
     return d;
@@ -207,11 +210,11 @@ export class PropertiesPanel {
         if (!result) return;
         const { out, html, body } = result;
         if (typeof out === 'string') {
-          if (out !== html) this.api.commitBody(B.setHtmlAt(body, target.blockIndex, out), { origin: 'panel' });
+          if (out !== html) this.api.commitBody(B.setHtmlAt(body, target.blockIndex, out), this.applyOpts(f, target, redraw));
         } else if (out && out.replaceWithCode) {
           const { lang, highlight, text } = out.replaceWithCode;
           const node = { type: 'codeBlock', attrs: { lang, highlight }, content: text ? [{ type: 'text', text }] : [] };
-          this.api.commitBody(B.replaceBlock(body, target.blockIndex, node), { origin: 'panel', selection: { blockIndex: target.blockIndex, path: [], highlight: [], openItem: -1 } });
+          this.api.commitBody(B.replaceBlock(body, target.blockIndex, node), { origin: 'panel', label: 'Blok omgezet naar code', selection: { blockIndex: target.blockIndex, path: [], highlight: [], openItem: -1 } });
           return;
         }
         if (redraw) this.render();
@@ -232,14 +235,18 @@ export class PropertiesPanel {
         if (op === 'move') { highlight = shiftLast(items[i].path, dir); openItem = i + dir; }
         else if (op === 'add') { highlight = items.length ? shiftLast(items[items.length - 1].path, 1) : target.path; openItem = items.length; }
         else highlight = target.path;
+        const noun = String(rep.addLabel || '').replace(/^\+\s*/, '').replace(/\s+toevoegen$/i, '') || 'Item';
+        const verb = { add: 'toegevoegd', remove: 'verwijderd', move: 'verplaatst' }[op];
         this.api.commitBody(B.setHtmlAt(result.body, target.blockIndex, result.out), {
           origin: 'panel',
+          label: `${noun} ${verb}`,
           selection: this.state.selection ? { ...this.state.selection, highlight, openItem } : undefined,
         });
         this.render();
       },
       select: (path) => this.api.selectPath(target.blockIndex, path),
       upload: (file) => this.api.upload(file),
+      pickImage: (cur) => this.api.pickImage(cur),
     };
     return ctx;
   }
@@ -253,13 +260,22 @@ export class PropertiesPanel {
         const block = B.blocksOf(body)[index];
         if (!block || !f.applyMd) return;
         const nodes = f.applyMd(block, value);
-        this.api.commitBody(B.replaceBlock(body, index, nodes), { origin: 'panel' });
+        this.api.commitBody(B.replaceBlock(body, index, nodes), this.applyOpts(f, { blockIndex: index, path: [] }, redraw));
         if (redraw) this.render();
       },
       repeater() {},
       select() {},
       upload: (file) => this.api.upload(file),
+      pickImage: (cur) => this.api.pickImage(cur),
     };
+  }
+
+  /** commitBody-opties voor een formulierwijziging: typen (coalescend) of discrete keuze. */
+  applyOpts(f, target, redraw) {
+    if (redraw === false) {
+      return { origin: 'form-input', label: 'Tekst aangepast', coalesceKey: `p:${this.state.currentIndex}:${target.blockIndex}:${(target.path || []).join('.')}:${f.label || f.badge || ''}` };
+    }
+    return { origin: 'panel', label: 'Eigenschap aangepast' };
   }
 
   /* ----------------------------------------------- Slide & Presentatie --- */
@@ -285,7 +301,7 @@ export class PropertiesPanel {
 
     /* achtergrond */
     root.appendChild(simpleField('color', { label: 'Achtergrondkleur', badge: 'data-background-color', value: a['data-background-color'] || '#ffffff', clearable: true }, (v) => {
-      this.api.updateSlideAttrs((obj) => { if (v) obj['data-background-color'] = v; else delete obj['data-background-color']; });
+      this.api.updateSlideAttrs((obj) => { if (v) obj['data-background-color'] = v; else delete obj['data-background-color']; }, { label: 'Achtergrondkleur aangepast', origin: v ? 'form-input' : 'action', coalesceKey: 'attr:bg' });
       if (!v) this.render();
     }));
 
@@ -319,7 +335,7 @@ export class PropertiesPanel {
     /* geavanceerd */
     const adv = h('details', 'pp-adv');
     adv.appendChild(h('summary', '', 'Geavanceerd: Slide-attributen (alleen voor developers)'));
-    const set = (key) => (v) => this.api.updateSlideAttrs((obj) => { if (v === '') delete obj[key]; else obj[key] = v; });
+    const set = (key) => (v) => this.api.updateSlideAttrs((obj) => { if (v === '') delete obj[key]; else obj[key] = v; }, { label: 'Slide-attribuut aangepast', origin: 'form-input', coalesceKey: `attr:${key}` });
     adv.appendChild(simpleField('text', { label: 'Klassen', badge: 'class', value: a.class || '' }, set('class')));
     adv.appendChild(simpleField('text', { label: 'State', badge: 'data-state', value: a['data-state'] || '' }, set('data-state')));
     adv.appendChild(simpleField('text', { label: 'Zichtbaarheid', badge: 'data-visibility', value: a['data-visibility'] || '' }, set('data-visibility')));
@@ -340,7 +356,7 @@ export class PropertiesPanel {
       if (theme === 'pauze') rebuilt['data-state'] = 'pauze';
       for (const k of Object.keys(obj)) delete obj[k];
       Object.assign(obj, rebuilt);
-    });
+    }, { label: 'Slide-thema aangepast' });
   }
 
   renderFooter(root) {

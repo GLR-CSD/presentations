@@ -404,6 +404,11 @@ export class LivePreviewController {
     this._startEdit(t, bi, bp);
   }
 
+  /** Beëindigt een lopende inline-tekstbewerking (bijv. voor undo/redo). */
+  endTextEdit() {
+    if (this.editingEl) this.editingEl.blur();
+  }
+
   _startEdit(el, bi, bp) {
     this.editingEl = el;
     this._clearHover();

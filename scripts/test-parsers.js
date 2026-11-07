@@ -17,6 +17,9 @@ import { FRAMEWORKS, buildDeckMarkdown } from '../admin/src/pedagogy/frameworks.
 import { classifySlide, deckBalance } from '../admin/src/pedagogy/phases.js';
 import * as C from '../admin/src/pedagogy/coach.js';
 import { NOTE_PROMPTS, appendNotePrompt } from '../admin/src/pedagogy/note-prompts.js';
+import { TECH_ICONS, TECH_CATEGORIES, ICON_VARIANTS, techIconSvg, techIconDataUri, searchTechIcons } from '../admin/src/ui/tech-icons.js';
+import { relativeAssetPath } from '../admin/src/ui/util.js';
+import { scanMedia, mediaCategory } from './lib/media-manifest.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
@@ -392,6 +395,53 @@ function checkBody(body, where) {
   // noteText accepteert ook `Note: tekst` op één regel (alleen de getter; serialisatie ongewijzigd)
   const one = parseDeck('<!-- frontmatter\ntitle: "x"\n-->\n\n## A\n\nNote: Hallo\n');
   ok(one.slides[0].noteText === 'Hallo' && serializeDeck(one) === '<!-- frontmatter\ntitle: "x"\n-->\n\n## A\n\nNote: Hallo\n', 'noteText op één regel');
+}
+
+// --- Tech-logo's, asset-paden en media-manifest (Fase 7A)
+{
+  ok(TECH_ICONS.length >= 30, `minstens 30 tech-iconen (${TECH_ICONS.length})`);
+  ok(new Set(TECH_ICONS.map((i) => i.id)).size === TECH_ICONS.length, 'tech-icoon ids uniek');
+  for (const c of TECH_CATEGORIES) ok(TECH_ICONS.some((i) => i.category === c), `categorie ${c} gevuld`);
+  for (const must of ['html5', 'css3', 'javascript', 'typescript', 'php', 'csharp', 'python', 'sql', 'json', 'react', 'vue', 'nodejs', 'tailwind', 'threejs', 'unity', 'gamepad', 'git', 'github', 'vscode', 'docker', 'terminal', 'figma', 'browser', 'rest-api', 'server', 'mobile', 'security', 'bug', 'check-badge', 'rocket']) {
+    ok(TECH_ICONS.some((i) => i.id === must), `icoon ${must} aanwezig`);
+  }
+  for (const ic of TECH_ICONS) {
+    ok(ic.label && ic.tags.length, `${ic.id}: label en tags`);
+    for (const v of ICON_VARIANTS) {
+      const uri = techIconDataUri(ic.id, v.id);
+      ok(uri.startsWith('data:image/svg+xml;utf8,'), `${ic.id}/${v.id}: data-URI`);
+      const svg = decodeURIComponent(uri.slice('data:image/svg+xml;utf8,'.length));
+      ok(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"') && svg.endsWith('</svg>') && !/\n/.test(svg), `${ic.id}/${v.id}: zelfstandige enkelregelige SVG`);
+      ok(!/undefined|NaN/.test(svg), `${ic.id}/${v.id}: geen undefined/NaN`);
+    }
+  }
+  ok(techIconSvg('git', 'lime').includes('#8fe507'), 'lime-variant gebruikt #8fe507');
+  ok(/#fff/i.test(techIconSvg('git', 'white')) && !techIconSvg('git', 'white').includes('#F05032'), 'wit-variant zonder merkkleur');
+  ok(techIconSvg('git', 'brand').includes('#F05032'), 'merkkleur-variant');
+  ok(techIconSvg('nope') === '' && techIconDataUri('nope') === '', 'onbekend icoon = leeg');
+  ok(searchTechIcons('react').some((i) => i.id === 'react'), 'zoek op label');
+  ok(searchTechIcons('database').some((i) => i.id === 'sql'), 'zoek op tag');
+  ok(searchTechIcons('', 'Concepten').every((i) => i.category === 'Concepten') && searchTechIcons('zzzz').length === 0, 'zoek op categorie / geen resultaat');
+  // Een tech-logo werkt in een <figure>-blok en blijft in één regel (geen ongewenste slide-split)
+  const figure = `<figure><img src="${techIconDataUri('react', 'brand')}" alt="React logo"></figure>`;
+  const dd = parseDeck(`## A\n\n${figure}\n`);
+  ok(dd.slides.length === 1 && serializeDeck(dd).includes(figure), 'tech-logo in figure: verliesvrij, één slide');
+
+  const D = 'presentations/2026-2027/jaar-1/design/design1_logos/slides.md';
+  ok(relativeAssetPath(D, 'presentations/2026-2027/jaar-1/design/design1_logos/assets/x.png') === 'assets/x.png', 'relatief pad: eigen assets');
+  ok(relativeAssetPath(D, 'shared/img/glr-logo.svg') === '../../../../../shared/img/glr-logo.svg', 'relatief pad: shared');
+  ok(relativeAssetPath(D, 'presentations/2026-2027/jaar-1/design/design1_typografie/assets/a.png') === '../design1_typografie/assets/a.png', 'relatief pad: ander deck');
+  ok(relativeAssetPath('', 'shared/img/glr-logo.svg') === '/presentations/shared/img/glr-logo.svg', 'zonder deck-pad: absoluut');
+
+  ok(mediaCategory('shared/img/uploads/a.png') === 'Uploads' && mediaCategory('shared/img/glr-logo.svg') === 'Gedeeld', 'media: shared/uploads');
+  ok(mediaCategory('presentations/2026-2027/jaar-1/design/x/assets/a.png') === 'Design', 'media: design');
+  ok(mediaCategory('presentations/2026-2027/jaar-2/beroeps/beroeps2_x/assets/a.png') === 'Beroeps', 'media: beroeps');
+  ok(mediaCategory('presentations/webxr_x/assets/a.png') === 'WebXR' && mediaCategory('presentations/iets/a.png') === 'Overig', 'media: webxr/overig');
+  const media = scanMedia(root);
+  ok(media.length > 0 && media.every((m) => m.path && m.name && m.folder && m.category && m.ext), 'scanMedia: items compleet');
+  ok(media.every((m) => /^(png|jpe?g|svg|webp|gif)$/.test(m.ext) && !m.path.startsWith('/')), 'scanMedia: alleen afbeeldingen, repo-relatief');
+  ok(media.some((m) => m.path === 'shared/img/glr-logo.svg' && m.category === 'Gedeeld'), 'scanMedia: shared logo');
+  ok(media.some((m) => /\/assets\//.test(m.path)) && media.some((m) => /\/media\//.test(m.path)), 'scanMedia: assets/ en media/');
 }
 
 if (!process.argv.includes('--lib')) {

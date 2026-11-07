@@ -7,6 +7,7 @@
  * File System Access API, GitHub direct-naar-main).
  */
 import { StudioState } from './app/state.js';
+import { HistoryManager, makeSnapshot, validSelection } from './app/history.js';
 import { SlideEditor } from './editor/editor.js';
 import { setAssetBase, setSlideClasses } from './editor/schema.js';
 import { LivePreviewController } from './preview/live-preview.js';
@@ -23,7 +24,7 @@ import { PropertiesPanel } from './ui/properties-panel.js';
 import { QuickBar } from './ui/quick-actions.js';
 import { Presenter } from './preview/presenter.js';
 import { parseDeck, serializeDeck, serializeSlideAttrs } from './state/deck.js';
-import { loadManifest, fetchDeckMarkdown, fetchDeckCss } from './storage/manifest.js';
+import { loadManifest, loadMediaManifest, fetchDeckMarkdown, fetchDeckCss } from './storage/manifest.js';
 import { supportsFileSystemAccess, pickDirectory, readFileFromDir, writeFileToDir, writeBlobToDir, downloadText, pickLocalFileForWrite, writeLocalFile, listInputFiles, readInputText } from './storage/local.js';
 import * as gh from './storage/github.js';
 import { icon } from './ui/icons.js';
@@ -57,6 +58,11 @@ export class Studio {
     this.fileHandle = null;
     this.previewCss = '';
     this.auth = { mode: 'none', token: '', repo: '' };
+    this.history = new HistoryManager({ onChange: () => this.renderHistoryButtons() });
+    this._tx = 0;
+    this._txMeta = null;
+    this._restoring = false;
+    this.savedMarkdown = null;
   }
 
   async init() {
@@ -85,6 +91,8 @@ export class Studio {
       editorPane: document.getElementById('editor-pane'),
       status: document.getElementById('status-text'),
       aiBtn: document.getElementById('ai-btn'),
+      undoBtn: document.getElementById('undo-btn'),
+      redoBtn: document.getElementById('redo-btn'),
       deployStatus: document.getElementById('deploy-status'),
     };
 
@@ -116,6 +124,7 @@ export class Studio {
     this.wireTopbar();
     this.wireState();
     this.wireShortcuts();
+    this.renderHistoryButtons();
 
     this.manifest = await loadManifest();
     this.panel.render();
@@ -127,6 +136,8 @@ export class Studio {
   decorateTopbar() {
     if (this.el.openBtnIcon) this.el.openBtnIcon.innerHTML = icon('folder-open', 18);
     if (this.el.openBtnChev) this.el.openBtnChev.innerHTML = icon('chevron-down', 14);
+    if (this.el.undoBtn) this.el.undoBtn.innerHTML = icon('undo-2', 17);
+    if (this.el.redoBtn) this.el.redoBtn.innerHTML = icon('redo-2', 17);
     if (this.el.aiBtn) this.el.aiBtn.innerHTML = `${icon('sparkles', 15)}<span>AI Assistent</span>`;
     if (this.el.newDeckBtn) this.el.newDeckBtn.innerHTML = `${icon('file-plus', 15)}<span>Nieuwe Presentatie</span>`;
     if (this.el.saveBtn) this.el.saveBtn.innerHTML = `${icon('save', 15)}<span>Opslaan</span>`;
@@ -216,30 +227,36 @@ export class Studio {
       onSelect: (i) => this.state.setCurrentIndex(i),
       onReorder: (from, to) => {
         if (!this.state.deck) return;
-        this.state.deck.moveSlide(from, to);
-        this.state.markDirty();
-        this.renderSorter();
-        this.preview.rebuild();
-        this.state.setCurrentIndex(to);
-        this.renderStatus();
+        this.transact({ label: 'Slide verplaatst' }, () => {
+          this.state.deck.moveSlide(from, to);
+          this.state.markDirty();
+          this.renderSorter();
+          this.preview.rebuild();
+          this.state.setCurrentIndex(to);
+          this.renderStatus();
+        });
       },
       onAdd: (index, kind) => this.addSlide(index, kind),
       onDelete: (i) => {
         if (!this.state.deck || this.state.deck.slides.length <= 1) return;
-        this.state.deck.removeSlide(i);
-        this.state.markDirty();
-        this.renderSorter();
-        this.preview.rebuild();
-        this.state.setCurrentIndex(Math.min(i, this.state.deck.slides.length - 1));
-        this.renderStatus();
+        this.transact({ label: 'Slide verwijderd' }, () => {
+          this.state.deck.removeSlide(i);
+          this.state.markDirty();
+          this.renderSorter();
+          this.preview.rebuild();
+          this.state.setCurrentIndex(Math.min(i, this.state.deck.slides.length - 1));
+          this.renderStatus();
+        });
       },
       onDuplicate: (i) => {
-        this.state.deck.duplicateSlide(i);
-        this.state.markDirty();
-        this.renderSorter();
-        this.preview.rebuild();
-        this.state.setCurrentIndex(i + 1);
-        this.renderStatus();
+        this.transact({ label: 'Slide gedupliceerd' }, () => {
+          this.state.deck.duplicateSlide(i);
+          this.state.markDirty();
+          this.renderSorter();
+          this.preview.rebuild();
+          this.state.setCurrentIndex(i + 1);
+          this.renderStatus();
+        });
       },
     });
   }
@@ -299,6 +316,8 @@ export class Studio {
     if (this.el.openBtn) this.el.openBtn.addEventListener('click', () => this.openPresentationsBrowser());
     if (this.el.newDeckBtn) this.el.newDeckBtn.addEventListener('click', () => this.openNewDeckWizard());
     if (this.el.aiBtn) this.el.aiBtn.addEventListener('click', () => this.openAiAssistant());
+    if (this.el.undoBtn) this.el.undoBtn.addEventListener('click', () => this.undo());
+    if (this.el.redoBtn) this.el.redoBtn.addEventListener('click', () => this.redo());
     if (this.el.saveBtn) this.el.saveBtn.addEventListener('click', () => this.save());
     if (this.el.presentBtn) this.el.presentBtn.addEventListener('click', () => this.startPresentation());
     if (this.el.standaloneBtn) this.el.standaloneBtn.addEventListener('click', () => this.openStandalone());
@@ -307,6 +326,22 @@ export class Studio {
   }
 
   wireShortcuts() {
+    // Globale undo/redo: capture-fase, zodat het ook werkt in inputs, textareas,
+    // het Properties Panel, ProseMirror en CodeMirror (die hun eigen undo niet gebruiken).
+    document.addEventListener('keydown', (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const isUndo = k === 'z' && !e.shiftKey;
+      const isRedo = (k === 'z' && e.shiftKey) || (k === 'y' && !e.shiftKey);
+      if (!isUndo && !isRedo) return;
+      if (!this.state.deck || (this.presenter && this.presenter.active)) return;
+      if (document.querySelector('.modal-backdrop') || (this.el.authGate && !this.el.authGate.hidden)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (isUndo) this.undo(); else this.redo();
+    }, true);
+
     document.addEventListener('keydown', (e) => {
       if (this.presenter && this.presenter.active) return;
       const mod = e.ctrlKey || e.metaKey;
@@ -332,10 +367,10 @@ export class Studio {
 
   wireState() {
     this.state.on('deck', () => this.renderSorter());
-    this.state.on('slide', (i) => this.onSlideChange(i));
+    this.state.on('slide', (i) => { this.syncHistoryView(); this.onSlideChange(i); });
     this.state.on('mode', (m) => this.applyMode(m));
     this.state.on('dirty', () => this.renderStatus());
-    this.state.on('selection', (sel) => this.onSelectionChange(sel));
+    this.state.on('selection', (sel) => { this.syncHistoryView(); this.onSelectionChange(sel); });
   }
 
   setMode(mode) {
@@ -488,6 +523,9 @@ export class Studio {
     this.editor.loadBody(deck.slides[0].body);
     this.panel.render();
     this.renderStatus();
+    // Compleet ander deck: schone history.
+    this.savedMarkdown = meta && (meta.source === 'new' || meta.source === 'ai') ? null : this.deckMarkdown();
+    this.history.reset(makeSnapshot(deck, this.state.currentIndex, null, { label: 'Geopend' }));
   }
 
   /* ------------------------------------------------------------ wijzigingen */
@@ -510,6 +548,9 @@ export class Studio {
     const slide = this.state.currentSlide;
     slide.setBody(this.editor.getBody());
     this.state.markDirty();
+    const pe = this._editorLabel;
+    this._editorLabel = null;
+    this.recordHistory(pe ? pe.label : 'Tekst aangepast', { origin: 'editor', coalesceKey: pe ? null : `ed:${this.state.currentIndex}` });
     this.schedulePreviewUpdate();
     this.scheduleSorterThumb();
     this.renderStatus();
@@ -528,6 +569,7 @@ export class Studio {
       this.state.deck = deck;
       this.state.markDirty();
       this.state.currentIndex = Math.min(index, deck.slides.length - 1);
+      this.recordHistory('Broncode aangepast', { origin: 'source', coalesceKey: 'src' });
       this.renderSorter();
       this.preview.deck = deck;
       this.preview.rebuild();
@@ -589,12 +631,109 @@ export class Studio {
     const at = index == null ? this.state.currentIndex + 1 : Math.max(0, Math.min(index, this.state.deck.slides.length));
     const vertical = kind === 'sub';
     const body = slideTemplateBody(kind, { number: at + 1, footerText: this.deckFooterText() });
-    this.state.deck.insertSlide(at, { vertical, body });
-    this.state.markDirty();
-    this.renderSorter();
-    this.preview.rebuild();
-    this.state.setCurrentIndex(at);
-    this.renderStatus();
+    this.transact({ label: 'Slide toegevoegd' }, () => {
+      this.state.deck.insertSlide(at, { vertical, body });
+      this.state.markDirty();
+      this.renderSorter();
+      this.preview.rebuild();
+      this.state.setCurrentIndex(at);
+      this.renderStatus();
+    });
+  }
+
+  /* ------------------------------------------------------- undo / redo */
+
+  /** Voert `fn` uit en legt daarna precies één history-stap vast (buitenste meta wint). */
+  transact(meta, fn) {
+    const outer = this._tx === 0;
+    this._tx += 1;
+    if (outer) this._txMeta = meta || null;
+    else if (!this._txMeta) this._txMeta = meta || null;
+    try {
+      fn();
+    } finally {
+      this._tx -= 1;
+    }
+    if (outer) {
+      const m = this._txMeta || { label: 'Wijziging' };
+      this._txMeta = null;
+      this.recordHistory(m.label, { origin: m.origin, coalesceKey: m.coalesceKey });
+    }
+  }
+
+  recordHistory(label, { origin = 'action', coalesceKey = null } = {}) {
+    if (this._restoring || this._tx > 0 || !this.state.deck) return;
+    const snap = makeSnapshot(this.state.deck, this.state.currentIndex, this.state.selection, { label, coalesceKey });
+    this.history.record(snap, { label, origin, coalesceKey });
+    this.history.updateView({ slideIndex: this.state.currentIndex, selection: this.state.selection });
+  }
+
+  /** Slide- of selectiewissel: view van de huidige stap bijwerken (verbreekt typen-coalescing). */
+  syncHistoryView() {
+    if (this._restoring || this._tx > 0 || !this.state.deck) return;
+    this.history.updateView({ slideIndex: this.state.currentIndex, selection: this.state.selection });
+  }
+
+  undo() { this.applySnapshot(this.history.undo()); }
+
+  redo() { this.applySnapshot(this.history.redo()); }
+
+  applySnapshot(snap) {
+    if (!snap || !this.state.deck) return;
+    this._restoring = true;
+    try {
+      clearTimeout(this._sourceTimer);
+      clearTimeout(this._panelTimer);
+      clearTimeout(this._previewTimer);
+      if (this.preview.endTextEdit) this.preview.endTextEdit();
+      const active = document.activeElement;
+      const field = active && this.el.inspector.contains(active) && active.closest('[data-field-label]');
+      const fieldLabel = field ? field.dataset.fieldLabel : null;
+
+      const deck = parseDeck(snap.markdown);
+      const index = Math.max(0, Math.min(snap.slideIndex, deck.slides.length - 1));
+      const dirty = this.savedMarkdown == null || snap.markdown !== this.savedMarkdown;
+      deck.slides.forEach((sl) => { sl.dirty = dirty; });
+      this.state.deck = deck;
+      this.state.currentIndex = index;
+      this.state.selection = null;
+      this.preview.deck = deck;
+      this.preview.rebuild();
+      this.preview.gotoSlide(index);
+      this.renderSorter();
+      this.sorter.setActive(index);
+      this.applyEditorTheme();
+      this.editor.loadBody(deck.slides[index].body);
+      if (this.state.mode === 'source') this.source.setValue(snap.markdown);
+      this.el.deckname.textContent = (deck.frontmatter && deck.frontmatter.get('title')) || (this.state.deckMeta && this.state.deckMeta.path) || 'Naamloos deck';
+      this.editorBar.hide();
+      const sel = validSelection(deck, index, snap.selection);
+      if (sel && fieldLabel) this.panel.focusFieldAfterRender(fieldLabel, { select: false });
+      this.state.setSelection(sel); // rendert paneel + canvas-highlight
+      this.renderStatus();
+    } finally {
+      this._restoring = false;
+    }
+    this.renderHistoryButtons();
+  }
+
+  renderHistoryButtons() {
+    const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
+    const undoKey = mac ? '⌘Z' : 'Ctrl+Z';
+    const redoKey = mac ? '⇧⌘Z' : 'Ctrl+Y';
+    const h = this.history;
+    if (this.el && this.el.undoBtn) {
+      const t = h.canUndo ? `Ongedaan maken: ${h.undoLabel} (${undoKey})` : `Niets om ongedaan te maken (${undoKey})`;
+      this.el.undoBtn.disabled = !h.canUndo;
+      this.el.undoBtn.title = t;
+      this.el.undoBtn.setAttribute('aria-label', t);
+    }
+    if (this.el && this.el.redoBtn) {
+      const t = h.canRedo ? `Opnieuw: ${h.redoLabel} (${redoKey})` : `Niets om opnieuw te doen (${redoKey})`;
+      this.el.redoBtn.disabled = !h.canRedo;
+      this.el.redoBtn.title = t;
+      this.el.redoBtn.setAttribute('aria-label', t);
+    }
   }
 
   deckMarkdown() {
@@ -614,19 +753,24 @@ export class Studio {
       selectExact: (bi, path) => this.state.setSelection({ blockIndex: bi, path, highlight: path, openItem: -1 }),
       toggleFragment: () => this.onQuickAction('fragment'),
       upload: (file) => this.uploadImageFile(file),
-      updateSlideAttrs: (fn) => this.updateSlideAttrs(fn),
+      updateSlideAttrs: (fn, opts) => this.updateSlideAttrs(fn, opts),
+      pickImage: (current) => this.pickImage(current),
       setNote: (v) => {
-        this.state.currentSlide.setNote(v);
-        this.state.markDirty();
-        this.renderStatus();
+        this.transact({ label: 'Notitie aangepast', origin: 'form-input', coalesceKey: `note:${this.state.currentIndex}` }, () => {
+          this.state.currentSlide.setNote(v);
+          this.state.markDirty();
+          this.renderStatus();
+        });
       },
       setFrontmatter: (key, value) => {
         const fm = this.state.deck.frontmatter;
         if (!fm) return;
-        fm.set(key, value);
-        this.state.markDirty();
-        this.el.deckname.textContent = fm.get('title') || 'Naamloos deck';
-        this.renderStatus();
+        this.transact({ label: 'Lesgegevens aangepast', origin: 'form-input', coalesceKey: `fm:${key}` }, () => {
+          fm.set(key, value);
+          this.state.markDirty();
+          this.el.deckname.textContent = fm.get('title') || 'Naamloos deck';
+          this.renderStatus();
+        });
       },
       locationInfo: () => this.locationInfo(),
       moveDeck: () => this.moveDeckToTarget(),
@@ -637,7 +781,11 @@ export class Studio {
   }
 
   /** Voert een actie van de Didactische Coach uit: `{ body, note, focus? }`. */
-  applyCoach({ body, note, focus }) {
+  applyCoach(result) {
+    this.transact({ label: `Coach: ${result.label || 'tip toegepast'}` }, () => this._applyCoach(result));
+  }
+
+  _applyCoach({ body, note, focus }) {
     const slide = this.state.currentSlide;
     if (!slide) return;
     const noteChanged = note != null && note !== slide.noteText;
@@ -661,6 +809,10 @@ export class Studio {
 
   /** "Ongedaan maken" van de laatste coach-actie: body én notitie exact terugzetten. */
   restoreCoach(snap) {
+    this.transact({ label: 'Coach-actie teruggedraaid' }, () => this._restoreCoach(snap));
+  }
+
+  _restoreCoach(snap) {
     const slide = snap && snap.slide;
     if (!slide || slide !== this.state.currentSlide) return;
     slide.note = snap.note;
@@ -676,7 +828,13 @@ export class Studio {
    * Eén doorgang voor elke wijziging van de slide-inhoud (paneel, canvas,
    * quick actions, toolbar). `selection`: undefined = ongemoeid, null = wissen.
    */
-  commitBody(body, { origin = 'panel', selection } = {}) {
+  commitBody(body, opts = {}) {
+    const { origin = 'panel', label, coalesceKey } = opts;
+    const meta = { label: label || ({ 'canvas-text': 'Tekst aangepast', toolbar: 'Blok toegevoegd', 'form-input': 'Tekst aangepast' }[origin] || 'Eigenschap aangepast'), origin: origin === 'canvas-text' ? 'inline-canvas' : origin, coalesceKey };
+    this.transact(meta, () => this._commitBody(body, opts));
+  }
+
+  _commitBody(body, { origin = 'panel', selection } = {}) {
     const slide = this.state.currentSlide;
     if (!slide) return;
     if (body !== slide.body) {
@@ -726,7 +884,12 @@ export class Studio {
   }
 
   /** Slide-attributen (`<!-- .slide: … -->`) aanpassen; `mutate` krijgt een kopie van het attr-object. */
-  updateSlideAttrs(mutate) {
+  updateSlideAttrs(mutate, opts = {}) {
+    const idx = this.state.currentIndex;
+    this.transact({ label: opts.label || 'Slide-eigenschap aangepast', origin: opts.origin || 'action', coalesceKey: opts.coalesceKey ? `${opts.coalesceKey}:${idx}` : null }, () => this._updateSlideAttrs(mutate));
+  }
+
+  _updateSlideAttrs(mutate) {
     const slide = this.state.currentSlide;
     const obj = { ...slide.attrsData };
     mutate(obj);
@@ -749,7 +912,7 @@ export class Studio {
     const n = String(this.state.currentIndex + 1).padStart(2, '0');
     const html = `<div class="footer"><span>${escapeHtml(this.deckFooterText())}</span><span class="num">${n}</span></div>`;
     const r = B.insertAfterSelection(this.state.currentSlide.body, { blockIndex: B.blockCount(this.state.currentSlide.body) - 1 }, { type: 'htmlBlock', attrs: { html } });
-    this.commitBody(r.body, { origin: 'panel' });
+    this.commitBody(r.body, { origin: 'panel', label: 'Footer toegevoegd' });
   }
 
   /** Selecteer de component rond element-pad `path` van html-blok `bi` (zoals een klik op het canvas). */
@@ -816,16 +979,16 @@ export class Studio {
     const body = this.state.currentSlide.body;
     if (action === 'up' || action === 'down') {
       const r = B.moveSelection(body, sel, action === 'up' ? -1 : 1);
-      if (r.changed) this.commitBody(r.body, { origin: 'action', selection: r.selection });
+      if (r.changed) this.commitBody(r.body, { origin: 'action', selection: r.selection, label: 'Blok verplaatst' });
     } else if (action === 'fragment') {
       if (!B.canFragment(body, sel)) return toast('Dit onderdeel ondersteunt geen animatiestap.', true);
-      this.commitBody(B.toggleFragmentSelection(body, sel), { origin: 'action', selection: { ...sel } });
+      this.commitBody(B.toggleFragmentSelection(body, sel), { origin: 'action', selection: { ...sel }, label: 'Animatiestap aangepast' });
     } else if (action === 'duplicate') {
       const r = B.duplicateSelection(body, sel);
-      this.commitBody(r.body, { origin: 'action', selection: r.selection });
+      this.commitBody(r.body, { origin: 'action', selection: r.selection, label: 'Blok gedupliceerd' });
     } else if (action === 'delete') {
       const r = B.removeSelection(body, sel);
-      this.commitBody(r.body, { origin: 'action', selection: r.selection });
+      this.commitBody(r.body, { origin: 'action', selection: r.selection, label: 'Blok verwijderd' });
     }
   }
 
@@ -860,12 +1023,12 @@ export class Studio {
     if (block.type === 'htmlBlock') {
       const node = T.nodeAt(T.parse(block.attrs.html), bp);
       if (!node) return;
-      this.commitBody(B.setHtmlAt(body, blockIndex, T.setText(block.attrs.html, node, text)), { origin: 'canvas-text' });
+      this.commitBody(B.setHtmlAt(body, blockIndex, T.setText(block.attrs.html, node, text)), { origin: 'canvas-text', coalesceKey: `canvas:${this.state.currentIndex}:${blockIndex}:${(bp || []).join('.')}` });
     } else {
       const { comment } = this.mdParts(block);
       const prefix = block.type === 'heading' ? `${'#'.repeat(block.attrs.level)} ` : '';
       const nodes = bodyToDoc(`${prefix}${text}${comment ? ` ${comment}` : ''}`).content;
-      this.commitBody(B.replaceBlock(body, blockIndex, nodes.length ? nodes : [block]), { origin: 'canvas-text' });
+      this.commitBody(B.replaceBlock(body, blockIndex, nodes.length ? nodes : [block]), { origin: 'canvas-text', coalesceKey: `canvas:${this.state.currentIndex}:${blockIndex}:` });
     }
   }
 
@@ -878,15 +1041,17 @@ export class Studio {
 
   insertBlockDef(def) {
     if (!this.state.deck) return toast('Open eerst een presentatie.', true);
-    if (this.state.mode !== 'visual') { insertBlock(this.editor, def); return; }
+    if (this.state.mode !== 'visual') { this._editorLabel = { label: `${def.label || 'Blok'} toegevoegd` }; insertBlock(this.editor, def); return; }
     const node = nodeFor(def);
-    if (node) this.insertNodes(node);
+    if (node) this.insertNodes(node, `${def.label || 'Blok'} toegevoegd`);
   }
 
-  insertNodes(nodes) {
-    const r = B.insertAfterSelection(this.state.currentSlide.body, this.state.selection, nodes);
-    this.commitBody(r.body, { origin: 'toolbar' });
-    this.selectBlockDefault(r.index);
+  insertNodes(nodes, label = 'Blok toegevoegd') {
+    this.transact({ label, origin: 'toolbar' }, () => {
+      const r = B.insertAfterSelection(this.state.currentSlide.body, this.state.selection, nodes);
+      this.commitBody(r.body, { origin: 'toolbar', label });
+      this.selectBlockDefault(r.index);
+    });
   }
 
   /* ---- presenteren ---- */
@@ -925,6 +1090,7 @@ export class Studio {
   }
 
   markSaved() {
+    this.savedMarkdown = this.state.deck ? this.deckMarkdown() : null;
     if (this.state.deck) this.state.deck.slides.forEach((s) => { s.dirty = false; });
     this.renderStatus();
   }
@@ -1052,20 +1218,50 @@ export class Studio {
 
   /** Opent de afbeelding-dialoog (upload of URL) en plaatst een <figure>. */
   openImageDialog() {
+    if (!this.state.deck) return toast('Open eerst een presentatie.', true);
     showImageDialog({
-      upload: (file) => this.uploadImageFile(file),
-      onInsert: ({ src, caption }) => this.insertFigure(src, caption),
+      mode: 'insert',
+      deckPath: this.deckPathForAssets(),
+      loadMedia: () => loadMediaManifest(),
+      upload: this.canUpload() ? (file) => this.uploadImageFile(file) : undefined,
+      onPick: ({ src, alt, caption }) => this.insertFigure(src, caption, alt),
     });
   }
 
-  insertFigure(src, caption) {
+  /** Vervangt de afbeelding van het geselecteerde onderdeel (Properties Panel); Promise<{src, alt}|null>. */
+  pickImage(current) {
+    return new Promise((resolve) => {
+      showImageDialog({
+        mode: 'replace',
+        current,
+        deckPath: this.deckPathForAssets(),
+        loadMedia: () => loadMediaManifest(),
+        upload: this.canUpload() ? (file) => this.uploadImageFile(file) : undefined,
+        onPick: (data) => resolve(data),
+        onCancel: () => resolve(null),
+      });
+    });
+  }
+
+  deckPathForAssets() {
+    const p = this.state.deckMeta && this.state.deckMeta.path;
+    return p && p.startsWith('presentations/') ? p : '';
+  }
+
+  canUpload() {
+    return (this.auth.mode === 'github' && !!this.auth.token) || !!this.dirHandle;
+  }
+
+  insertFigure(src, caption, altText) {
     const safeSrc = escapeHtml(src);
     const safeCaption = escapeHtml(caption || '');
-    const html = `<figure><img src="${safeSrc}" alt="${safeCaption}">`
+    const safeAlt = escapeHtml(altText != null ? altText : (caption || ''));
+    const html = `<figure><img src="${safeSrc}" alt="${safeAlt}">`
       + (caption ? `<figcaption>${safeCaption}</figcaption>` : '')
       + '</figure>';
-    if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } });
+    if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } }, 'Afbeelding toegevoegd');
     else {
+      this._editorLabel = { label: 'Afbeelding toegevoegd' };
       this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html } }));
       this.onEditorChange();
     }

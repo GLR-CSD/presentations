@@ -51,3 +51,20 @@ export async function fetchDeckCss(entry) {
     return '';
   }
 }
+
+let mediaCache = null;
+
+/** Laadt het media-manifest (afbeeldingen-bibliotheek); gecachet, leeg bij fout. */
+export async function loadMediaManifest() {
+  if (mediaCache) return mediaCache;
+  for (const url of ['./media-manifest.json', '../media-manifest.json']) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.media)) { mediaCache = data.media; return mediaCache; }
+      }
+    } catch { /* probeer de volgende */ }
+  }
+  return [];
+}
