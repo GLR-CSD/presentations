@@ -272,6 +272,17 @@ function imageField(f, ctx) {
     row.append(btn, file);
   }
   w.appendChild(row);
+  if (ctx.pickImage) {
+    const pick = el('button', 'pp-btn pp-btn--pick', `${icon('image', 14)}<span>Kies of wijzig afbeelding</span>`);
+    pick.type = 'button';
+    pick.addEventListener('click', async () => {
+      const r = await ctx.pickImage(input.value);
+      if (!r || !r.src) return;
+      input.value = r.src;
+      ctx.apply(f, r.src, { redraw: true });
+    });
+    w.appendChild(pick);
+  }
   return w;
 }
 

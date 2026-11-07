@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildHtmlShell, shellNameFor } from './lib/html-shell.js';
+import { scanMedia } from './lib/media-manifest.js';
 import { pdfUrl, computeDeckHash, listPdfAssets, pdfStatus } from './lib/pdf-assets.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -562,6 +563,14 @@ for (const dir of [distDir, adminSrc, path.join(distDir, 'admin')]) {
   fs.writeFileSync(path.join(dir, 'presentations-manifest.json'), manifestJson);
 }
 
+// Media-bibliotheek: alle afbeeldingen in shared/img/** en presentations/**.
+const media = scanMedia(root);
+const mediaJson = `${JSON.stringify({ generatedAt: new Date().toISOString(), media }, null, 2)}\n`;
+for (const dir of [adminSrc, path.join(distDir, 'admin')]) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'media-manifest.json'), mediaJson);
+}
+
 // Studio-config (build-time): de Worker-URL voor "Inloggen met GitHub" komt uit
 // env GLR_OAUTH_URL, zodat hij niet in de code hoeft te staan. Geen geheim.
 const studioConfigJson = `${JSON.stringify({ oauthUrl: (process.env.GLR_OAUTH_URL || '').trim().replace(/\/+$/, '') || null }, null, 2)}\n`;
@@ -570,5 +579,6 @@ for (const dir of [adminSrc, path.join(distDir, 'admin')]) {
   fs.writeFileSync(path.join(dir, 'studio-config.json'), studioConfigJson);
 }
 
+console.log(`✔ Media-manifest: ${media.length} afbeelding(en)`);
 console.log(`✔ Portaalpagina gebouwd: dist/index.html (${totalPresentations} presentatie(s), ${totalFolders} map(pen))`);
 if (createdShells.length) console.log(`  ${createdShells.length} nieuwe shell(s) gegenereerd.`);

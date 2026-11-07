@@ -98,3 +98,18 @@ export function deckFolder({ cohort, leerjaar, slug }) {
   else if (/^(webxr|immersive)/.test(prefix)) vak = 'minor-immersive-design';
   return vak ? `presentations/${c}/jaar-${lj}/${vak}/${s}` : null;
 }
+
+/**
+ * Relatief pad van een deck (bijv. `presentations/…/deck/slides.md`) naar een
+ * repo-bestand (bijv. `shared/img/glr-logo.svg`). Zonder deck-pad: het publieke
+ * absolute pad `/presentations/<pad>` (zoals de uploads).
+ */
+export function relativeAssetPath(deckPath, repoPath) {
+  const target = String(repoPath || '').replace(/^\/+/, '');
+  if (!deckPath || !deckPath.includes('/')) return `/presentations/${target}`;
+  const from = deckPath.split('/').slice(0, -1);
+  const to = target.split('/');
+  let i = 0;
+  while (i < from.length && i < to.length - 1 && from[i] === to[i]) i += 1;
+  return [...Array(from.length - i).fill('..'), ...to.slice(i)].join('/');
+}

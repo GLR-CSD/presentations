@@ -77,7 +77,7 @@ export function renderCoach(host, api) {
         const before = { slide, body: slide.body, note: slide.note, gap2: slide.gap2, label: action.label };
         const result = action.run(slide.body, slide.noteText);
         lastUndo = before;
-        api.applyCoach(result);
+        api.applyCoach({ ...result, label: action.label });
       });
       card.appendChild(b);
     }
