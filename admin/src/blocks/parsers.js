@@ -488,6 +488,95 @@ export function youtubeEmbed(input) {
   m = /^[\w-]{11}$/.exec(v);
   return m ? `https://www.youtube-nocookie.com/embed/${v}` : v;
 }
+/* ---- afbeeldingsformaat (figure.img-*, --img-w, --img-pos) ---- */
+const IMG_SIZE_CLS = ['img-auto', 'img-s', 'img-m', 'img-l', 'img-full', 'fig-fill'];
+const IMG_RATIO_CLS = ['img-r16x9', 'img-r4x3', 'img-r1x1', 'img-r3x4'];
+const IMG_ALIGN_CLS = ['img-center', 'img-right'];
+const IMG_ALL_CLS = [...IMG_SIZE_CLS, 'img-cover', ...IMG_RATIO_CLS, ...IMG_ALIGN_CLS];
+const IMG_PRESET_PCT = { 'img-s': 25, 'img-m': 50, 'img-l': 75, 'img-full': 100 };
+/** Het kader van de afbeelding: de figure zelf of een figure erbinnen; null bij een kale <img>. */
+const frameOf = (n) => (n.tag === 'figure' ? n : (n.tag === 'img' ? null : byTag(n, 'figure')));
+/** Pakt een kale <img> eerst in een <figure class="img-auto">; geeft [src, figuurnode]. */
+function ensureFigure(s, nn) {
+  const f = frameOf(nn);
+  if (f) return [s, f];
+  if (nn.tag !== 'img') return [s, null];
+  const out = `${s.slice(0, nn.start)}<figure class="img-auto">${s.slice(nn.start, nn.end)}</figure>${s.slice(nn.end)}`;
+  return [out, T.nodeAt(T.parse(out), T.pathOf(nn))];
+}
+const imgWidthPct = (fr) => {
+  const w = fr && T.getStyleProp(fr, '--img-w');
+  if (w && /^\d+(\.\d+)?%$/.test(w)) return parseFloat(w);
+  const preset = fr && IMG_SIZE_CLS.find((c) => has(fr, c) && IMG_PRESET_PCT[c]);
+  return preset ? IMG_PRESET_PCT[preset] : 100;
+};
+const imgSizeOf = (fr) => {
+  if (!fr) return 'full';
+  if (T.getStyleProp(fr, '--img-w')) return 'auto';
+  const c = IMG_SIZE_CLS.find((x) => has(fr, x));
+  return c ? { 'img-auto': 'auto', 'img-s': 's', 'img-m': 'm', 'img-l': 'l', 'img-full': 'full', 'fig-fill': 'fill' }[c] : 'full';
+};
+/** Zet de grootte-klasse (en wist/zet --img-w). `pct` alleen voor een eigen breedte. */
+function setImgSize(s, nn, size, pct) {
+  const [s1, fr] = ensureFigure(s, nn);
+  if (!fr) return s;
+  const cls = { auto: 'img-auto', s: 'img-s', m: 'img-m', l: 'img-l', full: 'img-full', fill: 'fig-fill' }[size];
+  let out = T.swapClass(s1, fr, IMG_SIZE_CLS, cls);
+  out = T.setStyleProp(out, fresh(out, fr), '--img-w', pct != null ? `${pct}%` : null);
+  return out;
+}
+function imageFormatFields(src, n) {
+  const img = imgOf(n);
+  const fr = frameOf(n);
+  if (!img || (fr && hasAny(fr, ['bleed-img', 'shotwrap', 'strip-wrap', 'shot']))) return [];
+  const frameLoc = (x) => frameOf(x);
+  const sizeVal = imgSizeOf(fr);
+  const widthVal = imgWidthPct(fr);
+  const covered = !!fr && has(fr, 'img-cover');
+  const fields = [{ kind: 'section', label: 'Formaat' }];
+  fields.push({
+    kind: 'segmented', label: 'Grootte', badge: 'img-*', value: sizeVal,
+    options: [['auto', 'Auto'], ['s', 'Klein'], ['m', 'Middel'], ['l', 'Groot'], ['full', 'Breed'], ['fill', 'Vullen']],
+    apply: (s, nn, v) => (v === sizeVal ? s : setImgSize(s, nn, v, null)),
+  });
+  fields.push({
+    kind: 'range', label: 'Breedte', badge: '--img-w', value: widthVal, min: 10, max: 100, step: 1, unit: '%',
+    apply: (s, nn, v) => { const p = Math.round(Number(v)); return p === Math.round(widthVal) ? s : setImgSize(s, nn, 'auto', p); },
+  });
+  fields.push({
+    kind: 'segmented', label: 'Weergave', badge: '.img-cover', value: covered ? 'cover' : 'contain',
+    options: [['contain', 'Passend'], ['cover', 'Bijsnijden']],
+    apply: (s, nn, v) => {
+      if ((v === 'cover') === covered) return s;
+      const [s1, f] = ensureFigure(s, nn);
+      return f ? T.setClass(s1, f, 'img-cover', v === 'cover') : s;
+    },
+  });
+  if (covered) {
+    const ratio = clsSelect('Verhouding', frameLoc, [['', 'Origineel'], ['img-r16x9', '16:9'], ['img-r4x3', '4:3'], ['img-r1x1', '1:1'], ['img-r3x4', '3:4']])(src, n);
+    if (ratio) fields.push(ratio);
+    const pos = T.getStyleProp(fr, '--img-pos') || '50% 50%';
+    fields.push({
+      kind: 'focus', label: 'Focuspunt', badge: '--img-pos', value: pos,
+      apply: (s, nn, v) => { const f = frameOf(nn); return f && v !== pos ? T.setStyleProp(s, f, '--img-pos', v === '50% 50%' ? null : v) : s; },
+    });
+  }
+  const align = clsSelect('Uitlijning', frameLoc, [['', 'Links'], ['img-center', 'Midden'], ['img-right', 'Rechts']])(src, n);
+  if (align) fields.push({ ...align, kind: 'segmented', badge: '.img-center' });
+  fields.push({
+    kind: 'button', label: 'Herstel grootte',
+    apply: (s, nn, v) => {
+      if (v !== true) return s;
+      const f = frameOf(nn);
+      if (!f) return s;
+      let out = T.swapClass(s, f, IMG_ALL_CLS, 'img-auto');
+      out = T.setStyleProp(out, fresh(out, f), '--img-w', null);
+      return T.setStyleProp(out, fresh(out, f), '--img-pos', null);
+    },
+  });
+  return fields;
+}
+
 def({
   id: 'media', label: 'Afbeelding / Video', icon: 'image', structured: true,
   match: (src, n) => n.tag === 'figure' || n.tag === 'img' || n.tag === 'video' || n.tag === 'iframe' || hasAny(n, MEDIA_CLS),
@@ -497,8 +586,9 @@ def({
     const frame = iframeOf(n);
     const video = videoOf(n);
     if (img) {
-      fields.push({ kind: 'image', label: 'Afbeelding (pad of URL)', badge: 'img src', value: T.getAttr(img, 'src') || '', upload: true, apply: (s, nn, v) => { const i = imgOf(nn); return i ? T.setAttr(s, i, 'src', v) : s; } });
-      fields.push({ kind: 'textarea', label: 'Alt-tekst (beschrijving voor screenreaders)', badge: 'img alt', value: T.getAttr(img, 'alt') || '', apply: (s, nn, v) => { const i = imgOf(nn); return i ? T.setAttr(s, i, 'alt', v) : s; } });
+      const altField = { kind: 'textarea', label: 'Alt-tekst (beschrijving voor screenreaders)', badge: 'img alt', value: T.getAttr(img, 'alt') || '', apply: (s, nn, v) => { const i = imgOf(nn); return i ? T.setAttr(s, i, 'alt', v) : s; } };
+      fields.push({ kind: 'image', label: 'Afbeelding (pad of URL)', badge: 'img src', value: T.getAttr(img, 'src') || '', upload: true, altField, apply: (s, nn, v) => { const i = imgOf(nn); return i ? T.setAttr(s, i, 'src', v) : s; } });
+      fields.push(altField);
     }
     if (n.tag === 'figure' || T.findByClass(n, 'shotwrap') || byTag(n, 'figcaption') || img) {
       fields.push(tf('Bijschrift (figcaption)', tg('figcaption'), {
@@ -519,6 +609,7 @@ def({
     if (styled) {
       fields.push(clsSelect('Kaderstijl', (x) => x, [['', 'Standaard'], ['fig-fill', 'Vul de beschikbare ruimte'], ['shotwrap', 'Schermafbeelding met bijschrift'], ['bleed-img', 'Beeldvullend (bleed)'], ['strip-wrap', 'Brede strook']])(src, n));
     }
+    fields.push(...imageFormatFields(src, n));
     fields.push(clsToggle('Fragment (toon na klik)', (x) => x, 'fragment')(src, n));
     return fields.filter(Boolean);
   },

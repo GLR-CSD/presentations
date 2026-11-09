@@ -16,7 +16,7 @@ import { SourceEditor } from './source/source.js';
 import { BLOCKS, BLOCK_CATEGORIES, insertBlock, nodeFor } from './blocks/registry.js';
 import * as T from './blocks/html-tree.js';
 import * as B from './blocks/block-ops.js';
-import { resolveTarget } from './blocks/parsers.js';
+import { resolveTarget, describe } from './blocks/parsers.js';
 import { slideTemplateBody, deckFooterText } from './blocks/templates.js';
 import { buildDeckMarkdown, frameworkById } from './pedagogy/frameworks.js';
 import { blockToMarkdown, bodyToDoc } from './markdown/bridge.js';
@@ -288,6 +288,7 @@ export class Studio {
       onResolve: (bi, bp) => this.resolveHover(bi, bp),
       onAction: (a) => this.onQuickAction(a),
       getBarState: () => this.barState(),
+      onImageResize: (pct) => this.onImageResize(pct),
       canEditText: (bi, bp, el) => this.canEditText(bi, bp, el),
       onTextEdit: (p) => this.onCanvasText(p),
       onTextEditEnd: () => this.onCanvasTextEnd(),
@@ -1252,14 +1253,41 @@ export class Studio {
     return (this.auth.mode === 'github' && !!this.auth.token) || !!this.dirHandle;
   }
 
+  /** Sleep-resize op het canvas: dezelfde apply-route als het Breedte-veld (één undo-stap). */
+  onImageResize(pct) {
+    const sel = this.state.selection;
+    const slide = this.state.currentSlide;
+    if (!sel || !slide) return;
+    const body = slide.body;
+    const html = B.htmlAt(body, sel.blockIndex);
+    const node = html != null ? T.nodeAt(T.parse(html), sel.path) : null;
+    const field = node && describe(html, node).fields.find((f) => f.label === 'Breedte');
+    if (!field) return;
+    const out = field.apply(html, node, pct);
+    this.transact({ label: 'Afbeeldingsbreedte aangepast', origin: 'toolbar' }, () => {
+      if (out !== html) this.commitBody(B.setHtmlAt(body, sel.blockIndex, out), { origin: 'toolbar', label: 'Afbeeldingsbreedte aangepast' });
+      else this.preview.updateSlide(this.state.currentIndex, slide);
+    });
+    this.panel && this.panel.render && this.panel.render();
+  }
+
   insertFigure(src, caption, altText) {
     const safeSrc = escapeHtml(src);
     const safeCaption = escapeHtml(caption || '');
     const safeAlt = escapeHtml(altText != null ? altText : (caption || ''));
-    const html = `<figure><img src="${safeSrc}" alt="${safeAlt}">`
+    const html = `<figure class="img-auto"><img src="${safeSrc}" alt="${safeAlt}">`
       + (caption ? `<figcaption>${safeCaption}</figcaption>` : '')
       + '</figure>';
-    if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } }, 'Afbeelding toegevoegd');
+    const placed = this.state.mode === 'visual' && this.state.currentSlide
+      ? B.insertImageIntoSelection(this.state.currentSlide.body, this.state.selection, { src, alt: altText != null ? altText : (caption || ''), figureHtml: html })
+      : null;
+    if (placed) {
+      // laagbewust: placeholder gevuld of in de gekozen kolom/kaart geplaatst
+      this.transact({ label: 'Afbeelding toegevoegd', origin: 'toolbar' }, () => {
+        this.commitBody(placed.body, { origin: 'toolbar', label: 'Afbeelding toegevoegd' });
+        this.state.setSelection(placed.selection);
+      });
+    } else if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } }, 'Afbeelding toegevoegd');
     else {
       this._editorLabel = { label: 'Afbeelding toegevoegd' };
       this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html } }));

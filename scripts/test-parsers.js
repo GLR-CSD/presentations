@@ -260,8 +260,8 @@ function checkBody(body, where) {
 
 /* ---- (g) slide-templates: round-trip + elk onderdeel heeft een formulier ---- */
 {
-  ok(SLIDE_TEMPLATES.length === 9, 'precies 9 templates (3x3)');
-  ok(new Set(SLIDE_TEMPLATES.map((t) => t.kind)).size === 9, 'template-kinds uniek');
+  ok(SLIDE_TEMPLATES.length === 13, '13 templates (9 basis + 4 afbeelding)');
+  ok(new Set(SLIDE_TEMPLATES.map((t) => t.kind)).size === SLIDE_TEMPLATES.length, 'template-kinds uniek');
   for (const tpl of SLIDE_TEMPLATES) checkBody(slideTemplateBody(tpl.kind, { number: 7, footerText: 'Vak · Test' }), `template ${tpl.kind}`);
   const kinds = Object.fromEntries(SLIDE_TEMPLATES.map((t) => [t.kind, slideTemplateBody(t.kind)]));
   ok(/class="bleed dark"/.test(kinds.hero), 'hero: bleed dark');
@@ -442,6 +442,44 @@ function checkBody(body, where) {
   ok(media.every((m) => /^(png|jpe?g|svg|webp|gif)$/.test(m.ext) && !m.path.startsWith('/')), 'scanMedia: alleen afbeeldingen, repo-relatief');
   ok(media.some((m) => m.path === 'shared/img/glr-logo.svg' && m.category === 'Gedeeld'), 'scanMedia: shared logo');
   ok(media.some((m) => /\/assets\//.test(m.path)) && media.some((m) => /\/media\//.test(m.path)), 'scanMedia: assets/ en media/');
+}
+
+/* ---- afbeeldingsformaat ---- */
+{
+  const field = (src, label) => { const n = T.parse(src).children[0]; const d = P.describe(src, n); return [d.fields.find((f) => f.label === label), n]; };
+  const run = (src, label, v) => { const [f, n] = field(src, label); return f.apply(src, n, v); };
+  const fig = '<figure class="img-auto" style="margin-top:20px"><img src="a.png" alt="x"></figure>';
+
+  ok(T.getStyleProp(T.parse(fig).children[0], 'margin-top') === '20px', 'getStyleProp');
+  let o = run(fig, 'Breedte', 40);
+  ok(o.includes('--img-w:40%') && o.includes('margin-top:20px'), 'eigen breedte behoudt andere style-declaraties');
+  ok(run(o, 'Grootte', 'm').includes('img-m') && !run(o, 'Grootte', 'm').includes('--img-w'), 'preset wist --img-w');
+  o = run(fig, 'Weergave', 'cover');
+  ok(o.includes('img-cover'), 'bijsnijden zet img-cover');
+  ok(field(o, 'Focuspunt')[0] && field(o, 'Verhouding')[0], 'focus + verhouding verschijnen bij bijsnijden');
+  ok(run(o, 'Focuspunt', '0% 0%').includes('--img-pos:0% 0%'), 'focuspunt');
+  ok(run(fig, 'Uitlijning', 'img-center').includes('img-center'), 'uitlijning');
+  const dirty = run(run(fig, 'Breedte', 40), 'Weergave', 'cover');
+  const reset = run(dirty, 'Herstel grootte', true);
+  ok(!reset.includes('--img-w') && !reset.includes('img-cover') && reset.includes('img-auto') && reset.includes('margin-top:20px'), 'herstel grootte');
+  ok(field('<figure><img src="a.png" alt=""></figure>', 'Grootte')[0].value === 'full', 'kale figure toont Breed');
+  const bare = '<img src="a.png" alt="x">';
+  ok(run(bare, 'Grootte', 's').startsWith('<figure class="img-s">'), 'kale img wordt ingepakt');
+  ok(T.setStyleProp(fig, T.parse(fig).children[0], 'margin-top', null).includes('class="img-auto"') && !T.setStyleProp(fig, T.parse(fig).children[0], 'margin-top', null).includes('style='), 'lege style wordt verwijderd');
+}
+
+/* ---- laagbewust afbeelding invoegen ---- */
+{
+  const figureHtml = '<figure class="img-auto"><img src="n.png" alt="n"></figure>';
+  const colBody = '<div class="row">\n  <div class="col"><p class="body">A</p></div>\n  <div class="col"><p class="body">B</p></div>\n</div>';
+  const sel = { blockIndex: 0, path: [0, 1], highlight: [0, 1], openItem: -1 };
+  const r = B.insertImageIntoSelection(colBody, sel, { src: 'n.png', alt: 'n', figureHtml });
+  ok(r && B.htmlAt(r.body, 0).split('<figure').length === 2, 'afbeelding komt in de gekozen kolom');
+  ok(r && T.nodeAt(T.parse(B.htmlAt(r.body, 0)), r.selection.path).tag === 'figure', 'selectie wijst naar de nieuwe figure');
+  ok(B.insertImageIntoSelection('## T\n\nTekst', null, { src: 'n.png', alt: 'n', figureHtml }) === null, 'geen container/placeholder: null (fallback)');
+  const tpl = slideTemplateBody('imagetext');
+  const f = B.insertImageIntoSelection(tpl, null, { src: 'n.png', alt: 'Nieuw', figureHtml });
+  ok(f && /src="n\.png"/.test(f.body) && /alt="Nieuw"/.test(f.body) && !/data-placeholder/.test(f.body) && /img-cover/.test(f.body), 'placeholder wordt gevuld met behoud van klassen');
 }
 
 if (!process.argv.includes('--lib')) {

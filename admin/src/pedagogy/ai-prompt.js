@@ -38,6 +38,7 @@ export function formatRules() {
     '7. Elke inhoudsslide eindigt met een footer: `<div class="footer"><span>Vak · Onderwerp</span><span class="num">02</span></div>` (tweecijferig nummer).',
     '8. Schrijf de slidetitel als stelling (Assertion-Evidence), houd lopende tekst kort en zet uitleg in de `Note:`.',
     '9. Schrijf alles in het Nederlands (MBO-niveau 4), tenzij de docent anders vraagt.',
+    '10. Afbeeldingen: `<figure class="img-auto">` (natuurlijke grootte, past in de ruimte); formaat via `img-s|img-m|img-l|img-full`, `fig-fill`, `img-cover` (+ `img-r16x9|img-r4x3|img-r1x1`) en uitlijning `img-center|img-right`. Achtergrond: `data-background-image` in de `.slide:`-regel.',
   ].join('\n');
 }
 

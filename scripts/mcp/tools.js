@@ -239,7 +239,7 @@ export function registerTools(server, ws) {
 
   /* 9 */ reg('update_slide_properties', {
     title: 'Slide- en deck-eigenschappen aanpassen',
-    description: 'Achtergrondkleur, klassen, slide-attributen (data-*), docentnotitie en deck-frontmatter. Lege string of null verwijdert een attribuut.',
+    description: 'Achtergrondkleur, klassen, slide-attributen (data-*), docentnotitie en deck-frontmatter. Lege string of null verwijdert een attribuut. Achtergrondafbeelding via attrs: data-background-image (pad), data-background-size (cover|contain), data-background-position (bijv. "50% 0%"), data-background-opacity (0–1).',
     inputSchema: {
       path: deckPath, slide: slideNo.optional(), background: z.string().optional().describe('Hex-kleur of "" om te wissen.'), classes: z.string().optional().describe('Bijv. "dark bleed".'),
       transition: z.string().optional(), attrs: z.record(z.string(), z.union([z.string(), z.null()])).optional(),

@@ -146,6 +146,23 @@ Gebruik het door Creative Commons aanbevolen **TASL**-framework:
 ☐ Licentie gecheckt + TASL-bronvermelding toegevoegd
 ```
 
+## Afbeeldingsformaat (GLR-thema)
+
+Zet de klassen op de `<figure>`; een kale `<figure>` vult de volle breedte (oud gedrag).
+
+| Klasse / variabele | Effect |
+|---|---|
+| `img-auto` | Natuurlijke grootte, nooit groter dan de ruimte (standaard voor nieuwe afbeeldingen) |
+| `img-s` / `img-m` / `img-l` / `img-full` | 25% / 50% / 75% / 100% van de kolombreedte |
+| `style="--img-w:40%"` | Eigen breedte (met `img-auto`) |
+| `fig-fill` | Vult de resterende ruimte |
+| `img-cover` | Bijsnijden tot het kader; focuspunt via `style="--img-pos:0% 0%"` |
+| `img-r16x9` / `img-r4x3` / `img-r1x1` / `img-r3x4` | Verhouding van het kader (met `img-cover`) |
+| `img-center` / `img-right` | Uitlijning (standaard links) |
+
+Achtergrondafbeelding per slide: `<!-- .slide: data-background-image="assets/x.jpg" data-background-size="cover" data-background-opacity="0.5" -->`.
+Een `data-placeholder` op de figure markeert een leeg beeldvak dat de Studio vult bij het invoegen van een afbeelding.
+
 ---
 
 **Onthoud**: Het beste beeld is het beeld dat een concept onmiddellijk verduidelijkt zonder af te leiden. Minder beelden, beter gekozen, leren meer.

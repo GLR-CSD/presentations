@@ -105,6 +105,51 @@ export function insertAfterSelection(body, sel, nodes) {
   return { body: toBody(blocks), index: at };
 }
 
+/* ------------------------------------------------------- afbeelding invoegen --- */
+
+const IMG_CONTAINERS = ['col', 'glr-col', 'glr-card', 'card', 'opcard'];
+const isPlaceholderFig = (n) => n.tag === 'figure' && (T.hasAttr(n, 'data-placeholder')
+  || (T.elementChildren(n).find((c) => c.tag === 'img') || { attrs: [] }).attrs.some((a) => a.lname === 'src' && /Visueel(%20|\s)bewijs/.test(a.value || '')));
+
+/**
+ * Plaatst een afbeelding laagbewust: (1) vult een placeholder-figuur (bij voorkeur in het
+ * geselecteerde blok), (2) anders komt hij IN de geselecteerde kolom/kaart, (3) anders null
+ * (de aanroeper valt terug op insertAfterSelection).
+ * @returns {{ body:string, selection:{blockIndex:number,path:number[],highlight:number[],openItem:number} }|null}
+ */
+export function insertImageIntoSelection(body, sel, { src, alt, figureHtml }) {
+  const blocks = blocksOf(body);
+  const sels = (bi, path) => ({ blockIndex: bi, path, highlight: path, openItem: -1 });
+  // 1. placeholder
+  const found = [];
+  blocks.forEach((b, bi) => {
+    if (!isHtml(b)) return;
+    T.walk(T.parse(b.attrs.html), (el, p) => { if (isPlaceholderFig(el)) found.push({ bi, p }); return true; });
+  });
+  const hit = found.find((f) => sel && f.bi === sel.blockIndex) || found[0];
+  if (hit) {
+    let html = blocks[hit.bi].attrs.html;
+    const fig = () => T.nodeAt(T.parse(html), hit.p);
+    const img = () => T.elementChildren(fig()).find((c) => c.tag === 'img');
+    html = T.setAttr(html, img(), 'src', src);
+    html = T.setAttr(html, img(), 'alt', alt || '');
+    html = T.removeAttr(html, fig(), 'data-placeholder');
+    blocks[hit.bi] = { type: 'htmlBlock', attrs: { html } };
+    return { body: toBody(blocks), selection: sels(hit.bi, hit.p) };
+  }
+  // 2. container
+  if (!sel || sel.blockIndex == null || !isHtml(blocks[sel.blockIndex])) return null;
+  let html = blocks[sel.blockIndex].attrs.html;
+  let node = T.nodeAt(T.parse(html), sel.highlight && sel.highlight.length ? sel.highlight : sel.path);
+  while (node && node.type === 'el' && !IMG_CONTAINERS.some((c) => T.hasClass(node, c))) node = node.parent;
+  if (!node || node.type !== 'el') return null;
+  const cpath = T.pathOf(node);
+  html = T.appendChild(html, node, figureHtml);
+  const kids = T.elementChildren(T.nodeAt(T.parse(html), cpath));
+  blocks[sel.blockIndex] = { type: 'htmlBlock', attrs: { html } };
+  return { body: toBody(blocks), selection: sels(sel.blockIndex, [...cpath, kids.length - 1]) };
+}
+
 /* ------------------------------------------------------------ selectie-ops --- */
 
 const shiftLast = (p, d) => (p.length ? [...p.slice(0, -1), p[p.length - 1] + d] : p);

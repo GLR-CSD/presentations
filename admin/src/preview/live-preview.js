@@ -12,8 +12,9 @@
  * De preview laadt de gedeelde `glr-theme.css`, de deck-specifieke `<style>` en
  * `glr-plugins.js`, zodat timers/kleurenwielen exact zo werken als in de les.
  */
-import { renderSlideBody, slideAttrsToHtml, resolveAssets } from '../markdown/render.js';
+import { renderSlideBody, slideAttrsToHtml, resolveAssets, resolveBackground } from '../markdown/render.js';
 import { QuickBar } from '../ui/quick-actions.js';
+import { ResizeHandles } from '../ui/resize-handles.js';
 
 const REVEAL_SCRIPTS = [
   'vendor/reveal/reveal.js',
@@ -79,6 +80,10 @@ export class LivePreviewController {
       </div>`;
     this.stage = this.host.querySelector('.preview-stage');
     this.bar = new QuickBar(this.host, (action) => this.handlers.onAction && this.handlers.onAction(action));
+    this.resizer = new ResizeHandles(this.host, {
+      onCommit: (pct) => this.handlers.onImageResize && this.handlers.onImageResize(pct),
+      onDragChange: (on) => { this.resizing = on; },
+    });
 
     const styleReady = [];
     for (const href of [
@@ -226,7 +231,8 @@ export class LivePreviewController {
 
   positionBar() {
     if (!this.bar) return;
-    if (!this.selEl || this.presenting || this.editingEl) { this.bar.hide(); return; }
+    if (!this.selEl || this.presenting || this.editingEl) { this.bar.hide(); if (this.resizer) this.resizer.hide(); return; }
+    if (this.resizer) this.resizer.show(this.selEl);
     this.bar.show(this.selEl.getBoundingClientRect(), this.handlers.getBarState ? this.handlers.getBarState() : {});
   }
 
@@ -268,10 +274,10 @@ export class LivePreviewController {
       .map((group) => {
         if (group.length === 1) {
           const s = group[0];
-          return `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`;
+          return `<section ${slideAttrsToHtml(s, this.baseUrl)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`;
         }
         const inner = group
-          .map((s) => `<section ${slideAttrsToHtml(s)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`)
+          .map((s) => `<section ${slideAttrsToHtml(s, this.baseUrl)} data-block-index="${flatIndex++}">${this._renderBody(s)}</section>`)
           .join('\n');
         return `<section>\n${inner}\n</section>`;
       })
@@ -300,10 +306,13 @@ export class LivePreviewController {
   }
 
   _syncAttrs(section, slide) {
-    for (const attr of ['class', 'data-background-color', 'data-state', 'data-visibility']) {
+    for (const attr of ['class', 'data-background-color', 'data-background-image', 'data-background-size',
+      'data-background-position', 'data-background-opacity', 'data-state', 'data-visibility']) {
       section.removeAttribute(attr);
     }
-    for (const [k, v] of Object.entries(slide.attrsData || {})) section.setAttribute(k, v);
+    for (const [k, v] of Object.entries(slide.attrsData || {})) {
+      section.setAttribute(k, k === 'data-background-image' ? resolveBackground(v, this.baseUrl) : v);
+    }
   }
 
   _applyExtraCss(css) {
@@ -371,7 +380,7 @@ export class LivePreviewController {
 
   _onClick(e) {
     if (this.presenting) return;
-    if (e.target.closest('.quickbar')) return;
+    if (e.target.closest('.quickbar, .resize-handles') || this.resizing) return;
     if (this.editingEl && this.editingEl.contains(e.target)) return;
     const t = this._targetOf(e);
     if (!t) { if (this.handlers.onPick) this.handlers.onPick(null); return; }
