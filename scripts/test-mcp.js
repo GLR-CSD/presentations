@@ -6,6 +6,7 @@
  * presentaties nooit worden aangeraakt. Gebruik:  npm run test:mcp
  */
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,7 @@ import { extractDeckMarkdown } from '../admin/src/pedagogy/ai-prompt.js';
 import { buildHtmlShell } from './lib/html-shell.js';
 import { resolveFrameworkId } from '../admin/src/pedagogy/frameworks.js';
 import { extractPptx } from './mcp/input-docs.js';
+import { sanitizeMediaName, filenameFromUrl, mediaKind, buildMediaSnippet, deckMediaFiles } from './mcp/media.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let failures = 0;
@@ -97,6 +99,13 @@ const call = (client, name, args = {}) => client.callTool({ name, arguments: arg
   const nums = extractPptx(makePptx(12)).map((s) => s.slide);
   ok(nums.join(',') === '1,2,3,4,5,6,7,8,9,10,11,12', `pptx numeriek gesorteerd (${nums.join(',')})`);
   ok(extractPptx(makePptx(12))[9].notes === 'Notitie bij 10', 'pptx-notities bij het juiste slide');
+  ok(sanitizeMediaName('Foto Test.PNG') === 'foto-test.png', 'sanitizeMediaName: kebab-case + kleine-letter-extensie');
+  ok(sanitizeMediaName('../../x y!.jpeg') === 'x-y.jpeg', 'sanitizeMediaName: pad en rare tekens weg');
+  ok(sanitizeMediaName('zonder-ext') === 'zonder-ext', 'sanitizeMediaName: zonder extensie');
+  ok(filenameFromUrl('https://cdn.example.com/a/b/Logo%20Groot.png?x=1') === 'Logo Groot.png', 'filenameFromUrl: laatste segment, query eraf');
+  ok(mediaKind('webm') === 'video' && mediaKind('jpg') === 'image' && mediaKind('txt') === null, 'mediaKind: video/afbeelding/onbekend');
+  ok(buildMediaSnippet('video', 'assets/a.mp4', { caption: 'Demo' }).includes('src="assets/a.mp4"') && buildMediaSnippet('video', 'assets/a.mp4', { caption: 'Demo' }).includes('<figcaption>Demo</figcaption>'), 'buildMediaSnippet: video');
+  ok(buildMediaSnippet('image', 'assets/a.png', { alt: 'A & B' }).includes('alt="A &amp; B"'), 'buildMediaSnippet: HTML-escape in alt');
 }
 
 /* --------------------------------------------------------------- server --- */
@@ -105,10 +114,10 @@ const { client, transport } = await connect(withInput);
 try {
   // Catalogus
   const tools = (await client.listTools()).tools.map((t) => t.name);
-  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status'];
-  ok(tools.length === 15 && wantedTools.every((t) => tools.includes(t)), `15 tools aanwezig (${tools.length})`);
+  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status', 'add_media_file', 'list_media'];
+  ok(tools.length === 17 && wantedTools.every((t) => tools.includes(t)), `17 tools aanwezig (${tools.length})`);
   const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
-  ok(resources.join() === ['glr://components/catalog', 'glr://decks/manifest', 'glr://input/files', 'glr://pedagogy/guidelines'].join(), `4 resources (${resources})`);
+  ok(resources.join() === ['glr://components/catalog', 'glr://decks/manifest', 'glr://input/files', 'glr://media/library', 'glr://pedagogy/guidelines'].join(), `5 resources (${resources})`);
   const prompts = (await client.listPrompts()).prompts.map((p) => p.name).sort();
   ok(prompts.join() === ['didactische-les-review', 'maak-theorieles-gagne', 'maak-werkles-standup', 'van-input-naar-presentatie'].join(), `4 prompts (${prompts})`);
 
@@ -122,6 +131,8 @@ try {
   ok(catalog.includes('glr-card') && catalog.includes('listrow') && catalog.includes('defbox') && catalog.includes('opcard') && catalog.includes('timer'), 'component-catalogus');
   const guide = await rd('glr://pedagogy/guidelines');
   ok(guide.includes('Gagné') && guide.includes('Segmentatie'), 'pedagogie-richtlijnen');
+  const mediaRes = JSON.parse(await rd('glr://media/library'));
+  ok(Array.isArray(mediaRes.media) && mediaRes.media.every((m) => m.kind === 'image' || m.kind === 'video'), 'media-resource met soort');
 
   // Prompts
   const pr = await client.getPrompt({ name: 'maak-werkles-standup', arguments: { onderwerp: 'Git workflow', prefix: 'webxr' } });
@@ -260,6 +271,59 @@ try {
   }
   ok((await call(client, 'apply_pedagogical_fix', { path: P, slide: 1, tipId: 'bestaat-niet' })).isError, 'onbekende tip = nette fout');
 
+  // Media toevoegen: foto en video (lokaal bestand)
+  const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const photoSrc = path.join(tmp, 'Foto Test.PNG');
+  fs.writeFileSync(photoSrc, pngBytes);
+  const clipSrc = path.join(tmp, 'clip.webm');
+  fs.writeFileSync(clipSrc, Buffer.from('webm-dummy-bytes'));
+  const deckDirRel = 'presentations/2026-2027/jaar-1/design/design1_kleur-basis';
+
+  const add1 = await call(client, 'add_media_file', { path: P, source: photoSrc, alt: 'Testfoto' });
+  ok(!add1.isError, `add_media_file foto (${text(add1)})`);
+  ok(add1.structuredContent.path === `${deckDirRel}/assets/foto-test.png`, `foto-pad genormaliseerd (${add1.structuredContent.path})`);
+  ok(add1.structuredContent.reference === 'assets/foto-test.png' && add1.structuredContent.kind === 'image', 'foto: referentie + kind');
+  ok(add1.structuredContent.snippet.includes('src="assets/foto-test.png"') && add1.structuredContent.snippet.includes('alt="Testfoto"'), 'foto: kant-en-klaar snippet');
+  ok(fs.readFileSync(path.join(withInput, add1.structuredContent.path)).equals(pngBytes), 'foto-bytes op schijf identiek');
+
+  const add2 = await call(client, 'add_media_file', { path: P, source: photoSrc });
+  ok(add2.structuredContent.name === 'foto-test-2.png', `naamconflict krijgt -2 (${add2.structuredContent.name})`);
+
+  const addv = await call(client, 'add_media_file', { path: P, source: clipSrc, caption: 'Demo' });
+  ok(!addv.isError && addv.structuredContent.kind === 'video' && addv.structuredContent.snippet.includes('<video controls'), 'video toegevoegd met video-snippet');
+
+  const badExt = path.join(tmp, 'notities.txt');
+  fs.writeFileSync(badExt, 'x');
+  ok((await call(client, 'add_media_file', { path: P, source: badExt })).isError, 'onbekend bestandstype geweigerd');
+  ok((await call(client, 'add_media_file', { path: P, source: path.join(tmp, 'bestaat-niet.png') })).isError, 'ontbrekende bron = nette fout');
+  ok((await call(client, 'add_media_file', { source: photoSrc })).isError, 'target assets zonder deck = fout');
+  ok((await call(client, 'add_media_file', { path: P, source: photoSrc, url: 'https://x/y.png' })).isError, 'source + url samen geweigerd');
+  const trav = await call(client, 'add_media_file', { path: P, source: photoSrc, filename: '../../evil.png' });
+  ok(!trav.isError && trav.structuredContent.path === `${deckDirRel}/assets/evil.png`, `bestandsnaam-traversal geneutraliseerd (${trav.structuredContent.path})`);
+
+  // Gedeeld (shared/) i.p.v. de deck-map → publiek absoluut pad (zoals de Studio-uploads)
+  const shared = await call(client, 'add_media_file', { path: P, source: clipSrc, target: 'shared' });
+  ok(!shared.isError && shared.structuredContent.path.startsWith('shared/video/') && shared.structuredContent.reference === `/presentations/${shared.structuredContent.path}`, `gedeelde video (${shared.structuredContent.reference})`);
+
+  // Downloaden via URL (lokale http-server)
+  const server = http.createServer((_req, res) => { res.writeHead(200, { 'content-type': 'image/png' }); res.end(pngBytes); });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const port = server.address().port;
+    const dl = await call(client, 'add_media_file', { path: P, url: `http://127.0.0.1:${port}/remote-logo.png` });
+    ok(!dl.isError && dl.structuredContent.name === 'remote-logo.png' && dl.structuredContent.reference === 'assets/remote-logo.png', `download via URL (${text(dl)})`);
+    ok(fs.readFileSync(path.join(withInput, dl.structuredContent.path)).equals(pngBytes), 'gedownloade bytes op schijf');
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+
+  // list_media + de helper die publish gebruikt om assets te verzamelen
+  const lm = await call(client, 'list_media', { path: P });
+  ok(!lm.isError && lm.structuredContent.media.some((m) => m.reference === 'assets/foto-test.png' && m.kind === 'image'), 'list_media: deck-media met referentie');
+  ok(lm.structuredContent.media.every((m) => m.path.startsWith(`${deckDirRel}/`) || m.path.startsWith('shared/')), 'list_media: beperkt tot deck + shared');
+  const publishAssets = deckMediaFiles(withInput, deckDirRel);
+  ok(publishAssets.some((f) => f.endsWith('/assets/foto-test.png')) && publishAssets.some((f) => f.endsWith('/assets/clip.webm')), `deckMediaFiles voor publish (${publishAssets.length})`);
+
   // Verliesvrij: serialisatie van de huidige schijf is byte-gelijk
   disk = fs.readFileSync(path.join(withInput, P), 'utf8');
   ok(serializeDeck(parseDeck(disk)) === disk, 'bestand op schijf blijft byte-identiek round-trippen');
@@ -298,4 +362,4 @@ try {
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failures) { console.error(`\n${failures} fout(en).`); process.exit(1); }
-console.log(`✔ MCP: 15 tools, 4 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);
+console.log(`✔ MCP: 17 tools, 5 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);

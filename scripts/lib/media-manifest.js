@@ -1,11 +1,28 @@
 /**
- * Scant de repo op afbeeldingen voor de media-bibliotheek van de GLR Slide Studio.
+ * Scant de repo op afbeeldingen én video's voor de media-bibliotheek van de
+ * GLR Slide Studio en de MCP-server.
  * Pure Node-functies (geen build-side-effects), zodat ze testbaar zijn.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif']);
+export const VIDEO_EXTS = new Set(['mp4', 'webm', 'mov', 'm4v', 'ogv']);
+export const MEDIA_EXTS = new Set([...IMAGE_EXTS, ...VIDEO_EXTS]);
+
+/** Bestandsextensie (zonder punt, kleine letters) van een bestandsnaam of pad. */
+export function extOf(name) {
+  const m = /\.([a-z0-9]+)$/i.exec(String(name || ''));
+  return m ? m[1].toLowerCase() : '';
+}
+
+/** 'image' | 'video' | null op basis van de bestandsextensie (met of zonder punt). */
+export function mediaKind(ext) {
+  const e = String(ext || '').replace(/^\./, '').toLowerCase();
+  if (IMAGE_EXTS.has(e)) return 'image';
+  if (VIDEO_EXTS.has(e)) return 'video';
+  return null;
+}
 
 /** Bepaalt de bibliotheek-categorie op basis van het repo-relatieve pad. */
 export function mediaCategory(relPath) {
@@ -42,7 +59,7 @@ function walk(dir, root, out) {
     if (e.isDirectory()) walk(abs, root, out);
     else if (e.isFile()) {
       const ext = path.extname(e.name).slice(1).toLowerCase();
-      if (!IMAGE_EXTS.has(ext)) continue;
+      if (!MEDIA_EXTS.has(ext)) continue;
       const rel = path.relative(root, abs).split(path.sep).join('/');
       out.push({
         path: rel,
@@ -50,13 +67,14 @@ function walk(dir, root, out) {
         folder: path.posix.dirname(rel),
         category: mediaCategory(rel),
         ext,
+        kind: mediaKind(ext),
         deck: deckOf(rel),
       });
     }
   }
 }
 
-/** @returns {{path:string,name:string,folder:string,category:string,ext:string,deck:string}[]} */
+/** @returns {{path:string,name:string,folder:string,category:string,ext:string,kind:'image'|'video',deck:string}[]} */
 export function scanMedia(root) {
   const out = [];
   walk(path.join(root, 'shared', 'img'), root, out);
