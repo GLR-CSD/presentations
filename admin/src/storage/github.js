@@ -13,11 +13,24 @@ const DEFAULT_REPO = { owner: 'GLR-CSD', repo: 'presentations', branch: 'main' }
 
 let octokit = null;
 
+/**
+ * `fetch` die de HTTP-cache van de browser altijd laat hervalideren. GitHub
+ * stuurt `Cache-Control: private, max-age=60`; zonder dit geeft `getRef` tot
+ * 60 s na een commit nog de oude sha terug → "Update is not a fast forward".
+ * Ongewijzigde data komt als goedkope 304 terug (telt niet mee voor de rate-limit).
+ */
+const freshFetch = (url, opts) => fetch(url, { ...opts, cache: 'no-cache' });
+
 /** Maakt (of hergebruikt) de Octokit-client met een PAT. */
 export async function connect(token) {
   const { Octokit } = await import('octokit');
-  octokit = new Octokit({ auth: token });
+  octokit = new Octokit({ auth: token, request: { fetch: freshFetch } });
   return octokit;
+}
+
+/** Alleen voor tests: injecteert een (gestubde) client. */
+export function _setClientForTests(api) {
+  octokit = api;
 }
 
 /**
@@ -102,8 +115,41 @@ export async function readDeckMeta(path, opts = {}) {
   return fm ? fm.toObject() : {};
 }
 
+const MAX_COMMIT_ATTEMPTS = 3;
+
+function isNotFastForward(err) {
+  return !!err && err.status === 422 && /fast[- ]forward/i.test(err.message || '');
+}
+
+/**
+ * Leest de tip van de branch, bouwt daarop een tree + commit en verplaatst de
+ * ref (zonder force). Is de branch intussen verschoven (422 "not a fast
+ * forward"), dan wordt alles opnieuw op de nieuwe tip gebouwd — veilig, omdat
+ * `buildEntries` alleen paden toevoegt/vervangt/verwijdert t.o.v. `base_tree`.
+ * @param {(baseCommit: object) => Promise<object[]>|object[]} buildEntries tree-entries voor deze basis
+ * @returns {Promise<string>} commitSha
+ */
+async function commitToBranch(api, { owner, repo, branch, message, buildEntries }) {
+  for (let attempt = 1; ; attempt += 1) {
+    const ref = await api.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+    const baseSha = ref.data.object.sha;
+    const baseCommit = await api.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
+    const entries = await buildEntries(baseCommit.data);
+    const tree = await api.rest.git.createTree({ owner, repo, base_tree: baseCommit.data.tree.sha, tree: entries });
+    const commit = await api.rest.git.createCommit({ owner, repo, message, tree: tree.data.sha, parents: [baseSha] });
+    try {
+      await api.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.data.sha });
+      return commit.data.sha;
+    } catch (err) {
+      if (!isNotFastForward(err) || attempt >= MAX_COMMIT_ATTEMPTS) throw err;
+    }
+  }
+}
+
 /**
  * Schrijft meerdere bestanden in één atomaire commit naar de branch.
+ * Blobs worden eerst (één keer) geüpload, pas daarna wordt de branch-tip
+ * gelezen — zo zit een grote upload niet tussen ref-lezen en ref-update.
  * @param {string} message commit-message
  * @param {Array<{path:string,content:string,encoding?:'utf-8'|'base64'}>} files
  * @returns {Promise<string>} de `commitSha` van de nieuwe commit op de branch
@@ -112,24 +158,13 @@ export async function commitFiles(message, files, opts = {}) {
   const { owner, repo, branch } = { ...DEFAULT_REPO, ...opts };
   const api = client();
 
-  const ref = await api.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
-  const baseSha = ref.data.object.sha;
-  const baseCommit = await api.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
-
   const blobs = [];
   for (const f of files) {
-    const res = await api.rest.git.createBlob({
-      owner, repo,
-      content: f.encoding === 'base64' ? f.content : f.content,
-      encoding: f.encoding || 'utf-8',
-    });
+    const res = await api.rest.git.createBlob({ owner, repo, content: f.content, encoding: f.encoding || 'utf-8' });
     blobs.push({ path: f.path, mode: '100644', type: 'blob', sha: res.data.sha });
   }
 
-  const tree = await api.rest.git.createTree({ owner, repo, base_tree: baseCommit.data.tree.sha, tree: blobs });
-  const commit = await api.rest.git.createCommit({ owner, repo, message, tree: tree.data.sha, parents: [baseSha] });
-  await api.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.data.sha });
-  return commit.data.sha;
+  return commitToBranch(api, { owner, repo, branch, message, buildEntries: () => blobs });
 }
 
 /**
@@ -150,36 +185,34 @@ export async function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opt
   toDir = toDir.replace(/\/+$/, '');
   if (toDir === fromDir || toDir.startsWith(`${fromDir}/`)) throw new Error('Ongeldige doelmap.');
 
-  const ref = await api.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
-  const baseSha = ref.data.object.sha;
-  const baseCommit = await api.rest.git.getCommit({ owner, repo, commit_sha: baseSha });
-  const full = await api.rest.git.getTree({ owner, repo, tree_sha: baseCommit.data.tree.sha, recursive: 'true' });
-  if (full.data.truncated) throw new Error('De repo-boom is te groot om veilig te verplaatsen.');
-  const files = full.data.tree.filter((t) => t.type === 'blob');
-  if (files.some((t) => t.path.startsWith(`${toDir}/`))) throw new Error(`Doelmap bestaat al: ${toDir}`);
-  const mine = files.filter((t) => t.path.startsWith(`${fromDir}/`));
-  if (!mine.length) throw new Error(`Geen bestanden gevonden in ${fromDir}.`);
+  const buildEntries = async (baseCommit) => {
+    const full = await api.rest.git.getTree({ owner, repo, tree_sha: baseCommit.tree.sha, recursive: 'true' });
+    if (full.data.truncated) throw new Error('De repo-boom is te groot om veilig te verplaatsen.');
+    const files = full.data.tree.filter((t) => t.type === 'blob');
+    if (files.some((t) => t.path.startsWith(`${toDir}/`))) throw new Error(`Doelmap bestaat al: ${toDir}`);
+    const mine = files.filter((t) => t.path.startsWith(`${fromDir}/`));
+    if (!mine.length) throw new Error(`Geen bestanden gevonden in ${fromDir}.`);
 
-  const entries = [];
-  for (const f of mine) {
-    const rel = f.path.slice(fromDir.length + 1);
-    let sha = f.sha;
-    let text = null;
-    if (rel === 'slides.md' && extra.slidesContent != null) text = extra.slidesContent;
-    else if (rewrite && /\.(html|md|css|js)$/i.test(rel)) {
-      const old = await api.rest.git.getBlob({ owner, repo, file_sha: f.sha });
-      const cur = decodeBase64(old.data.content);
-      const next = rewrite(rel, cur);
-      if (next != null && next !== cur) text = next;
+    const entries = [];
+    for (const f of mine) {
+      const rel = f.path.slice(fromDir.length + 1);
+      let sha = f.sha;
+      let text = null;
+      if (rel === 'slides.md' && extra.slidesContent != null) text = extra.slidesContent;
+      else if (rewrite && /\.(html|md|css|js)$/i.test(rel)) {
+        const old = await api.rest.git.getBlob({ owner, repo, file_sha: f.sha });
+        const cur = decodeBase64(old.data.content);
+        const next = rewrite(rel, cur);
+        if (next != null && next !== cur) text = next;
+      }
+      if (text != null) sha = (await api.rest.git.createBlob({ owner, repo, content: text, encoding: 'utf-8' })).data.sha;
+      entries.push({ path: `${toDir}/${rel}`, mode: f.mode || '100644', type: 'blob', sha });
+      entries.push({ path: f.path, mode: f.mode || '100644', type: 'blob', sha: null });
     }
-    if (text != null) sha = (await api.rest.git.createBlob({ owner, repo, content: text, encoding: 'utf-8' })).data.sha;
-    entries.push({ path: `${toDir}/${rel}`, mode: f.mode || '100644', type: 'blob', sha });
-    entries.push({ path: f.path, mode: f.mode || '100644', type: 'blob', sha: null });
-  }
-  const tree = await api.rest.git.createTree({ owner, repo, base_tree: baseCommit.data.tree.sha, tree: entries });
-  const commit = await api.rest.git.createCommit({ owner, repo, message, tree: tree.data.sha, parents: [baseSha] });
-  await api.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.data.sha });
-  return commit.data.sha;
+    return entries;
+  };
+
+  return commitToBranch(api, { owner, repo, branch, message, buildEntries });
 }
 
 /** Is dit de deploy-workflow? Bewust soepel: pad kan licht afwijken. */
