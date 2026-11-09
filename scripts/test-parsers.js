@@ -13,6 +13,8 @@ import * as T from '../admin/src/blocks/html-tree.js';
 import { SLIDE_TEMPLATES, slideTemplateBody } from '../admin/src/blocks/templates.js';
 import * as B from '../admin/src/blocks/block-ops.js';
 import * as P from '../admin/src/blocks/parsers.js';
+import * as D from '../admin/src/blocks/diagram.js';
+import { applyComponentChanges } from './mcp/component-ops.js';
 import { FRAMEWORKS, buildDeckMarkdown } from '../admin/src/pedagogy/frameworks.js';
 import { classifySlide, deckBalance } from '../admin/src/pedagogy/phases.js';
 import * as C from '../admin/src/pedagogy/coach.js';
@@ -442,6 +444,151 @@ function checkBody(body, where) {
   ok(media.every((m) => /^(png|jpe?g|svg|webp|gif)$/.test(m.ext) && !m.path.startsWith('/')), 'scanMedia: alleen afbeeldingen, repo-relatief');
   ok(media.some((m) => m.path === 'shared/img/glr-logo.svg' && m.category === 'Gedeeld'), 'scanMedia: shared logo');
   ok(media.some((m) => /\/assets\//.test(m.path)) && media.some((m) => /\/media\//.test(m.path)), 'scanMedia: assets/ en media/');
+}
+
+// --- Flowchart & Diagram Builder (Fase 7B)
+{
+  const mk = (layout, n, flowAnim = 'none', drawAnim = false) => ({
+    layout, flowAnim, drawAnim,
+    nodes: Array.from({ length: n }, (_, i) => ({ k: `0${i + 1}`, title: `Titel ${i + 1} <b> & "x"`, text: `Tekst ${i + 1}`, variant: D.NODE_VARIANTS[i % 4][0], edgeLabel: i % 2 ? `Pijl ${i}` : '', fragment: i === 2 })),
+  });
+  const rootOf = (html) => T.nodeAt(T.parse(html), [0]);
+  let cases = 0;
+  for (const [layout] of D.DIAGRAM_LAYOUTS) {
+    for (const [anim] of D.FLOW_ANIMS) {
+      for (const draw of [false, true]) {
+        for (let n = 1; n <= D.LAYOUT_LIMITS[layout]; n += 1) {
+          const st = mk(layout, n, anim, draw);
+          const html = D.renderDiagramHtml(st);
+          const where = `diagram ${layout}/${anim}/${draw}/${n}`;
+          cases += 1;
+          ok(!/\n\s*\n/.test(html) && !/NaN|undefined|Infinity/.test(html), `${where}: geen lege regel/NaN`);
+          const node = rootOf(html);
+          ok(T.hasClass(node, 'glr-diagram') && T.getAttr(node, 'data-diagram-layout') === layout && T.getAttr(node, 'data-flow-anim') === anim, `${where}: root-attributen`);
+          ok(T.hasAttr(node, 'data-draw-anim') === draw, `${where}: draw-attribuut`);
+          ok(T.elementChildren(node).filter((c) => T.hasClass(c, 'glr-dnode')).length === n, `${where}: aantal knooppunten`);
+          const edges = html.match(/class="glr-dedge"/g) || [];
+          const wantEdges = layout === 'cycle' ? n : (layout === 'decision' || layout === 'tree' ? Math.max(0, n - 1) : n - 1);
+          ok(edges.length === wantEdges, `${where}: ${edges.length} pijlen, verwacht ${wantEdges}`);
+          const back = D.parseDiagramNode(html, node);
+          ok(JSON.stringify(back) === JSON.stringify(D.normalizeDiagram(st)), `${where}: parse(render(s)) ≠ s`);
+          ok(D.renderDiagramHtml(back) === html, `${where}: render(parse(html)) ≠ html`);
+          ok(D.writeDiagramNode(html, node, D.parseDiagramNode(html, node)) === html, `${where}: write(read) ≠ src`);
+          // geneste, ingesprongen variant
+          const nested = `<div class="row">\n  <div class="col">\n    ${D.renderDiagramHtml(st, { indent: '    ' })}\n  </div>\n</div>`;
+          const inner = T.nodeAt(T.parse(nested), [0, 0, 0]);
+          ok(D.writeDiagramNode(nested, inner, D.parseDiagramNode(nested, inner)) === nested, `${where}: write(read) genest ≠ src`);
+          const d = P.describe(nested, inner);
+          ok(d.id === 'diagram', `${where}: describe herkent diagram`);
+          checkFields(d.fields, nested, inner, where);
+        }
+      }
+    }
+  }
+  console.log(`Diagram: ${cases} combinaties gecontroleerd.`);
+
+  // flowAnim wisselen verandert exact één attribuut
+  {
+    const a = D.renderDiagramHtml(mk('linear-h', 3, 'none'));
+    const b = D.renderDiagramHtml(mk('linear-h', 3, 'packets'));
+    ok(a.replace('data-flow-anim="none"', 'data-flow-anim="packets"') === b, 'diagram: animatie kiezen wijzigt alleen data-flow-anim');
+  }
+
+  // handmatig afwijkend blok: roundtrip blijft byte-identiek, bewerken normaliseert naar canoniek
+  {
+    const odd = '<div class="glr-diagram fragment" data-diagram-layout="tree" data-flow-anim="stream" data-extra="1" style="--glr-dia-ar:2">\n<svg class="glr-dedges" viewBox="0 0 10 10"><path class="glr-dedge" d="M0 0 L5 5"></path></svg>\n<div class="glr-dnode" data-i="0"><h3>Alleen titel</h3></div><div class="glr-dnode glr-dnode--code fragment"><span class="k">K</span><p>tekst &amp; meer</p></div>\n</div>';
+    const n = rootOf(odd);
+    const st = D.parseDiagramNode(odd, n);
+    ok(D.writeDiagramNode(odd, n, st) === odd, 'diagram: afwijkend blok write(read) = src');
+    ok(st.classes.join() === 'fragment' && st.nodes[1].text === 'tekst & meer' && st.nodes[1].variant === 'code' && st.nodes[1].fragment, 'diagram: afwijkend blok correct gelezen');
+    const edited = D.writeDiagramNode(odd, n, D.diagramOps.patch(st, 0, { title: 'Nieuw' }));
+    ok(/^<div class="glr-diagram fragment"/.test(edited) && edited.includes('<h3>Nieuw</h3>') && !/\n\s*\n/.test(edited), 'diagram: bewerken behoudt root-klassen');
+  }
+
+  // Properties Panel-velden (describe) → toevoegen / wijzigen / herordenen / verwijderen
+  {
+    const base = D.renderDiagramHtml(D.DIAGRAM_PRESETS[0].state);
+    const field = (src, label) => { const nd = rootOf(src); return P.describe(src, nd).fields.find((f) => f.label === label); };
+    const rep = (src) => field(src, 'Knooppunten');
+    const apply = (src, f, v) => f.apply(src, rootOf(src), v);
+    const titles = (src) => D.parseDiagramNode(src, rootOf(src)).nodes.map((x) => x.title);
+    ok(['Diagram Indeling', 'Pijl & Data-Animatie', 'Teken lijnen live bij openen', 'Knooppunten'].every((l) => field(base, l)), 'diagram: formulier heeft alle hoofdvelden');
+    ok(rep(base).addLabel === '+ Knooppunt toevoegen' && rep(base).items.length === 3, 'diagram: repeater met 3 items');
+    const item0 = rep(base).items[0].fields.map((f) => f.label);
+    ok(!item0.includes('Tekst bij pijl') && rep(base).items[1].fields.some((f) => f.label === 'Tekst bij pijl'), 'diagram: eerste knooppunt heeft geen pijl-tekstveld');
+    ok(['Bovenlabel (.k)', 'Titel', 'Toelichting', 'Stijl', 'Verschijnt bij klik (Fragment)'].every((l) => item0.includes(l)), 'diagram: item-velden compleet');
+
+    let cur = apply(base, field(base, 'Diagram Indeling'), 'cycle');
+    ok(T.getAttr(rootOf(cur), 'data-diagram-layout') === 'cycle' && (cur.match(/class="glr-dedge"/g) || []).length === 3, 'diagram: layout wisselen');
+    ok(titles(cur).join() === titles(base).join(), 'diagram: layout wisselen behoudt inhoud');
+    cur = apply(base, field(base, 'Pijl & Data-Animatie'), 'stream');
+    ok(cur === base.replace('data-flow-anim="ping-pong"', 'data-flow-anim="stream"'), 'diagram: animatie via formulier = 1 attribuut');
+    cur = apply(cur, field(cur, 'Teken lijnen live bij openen'), true);
+    ok(T.getAttr(rootOf(cur), 'data-draw-anim') === 'true', 'diagram: drawAnim aan');
+
+    const titleF = rep(base).items[1].fields.find((f) => f.label === 'Titel');
+    cur = titleF.apply(base, rootOf(base), 'A <b> & "q"');
+    ok(titles(cur)[1] === 'A <b> & "q"' && cur.includes('A &lt;b&gt; &amp; "q"'), 'diagram: titel escapen en terug lezen');
+    const styleF = rep(base).items[0].fields.find((f) => f.label === 'Stijl');
+    cur = styleF.apply(base, rootOf(base), 'decision');
+    ok(/glr-dnode glr-dnode--decision"/.test(cur) && D.parseDiagramNode(cur, rootOf(cur)).nodes[0].variant === 'decision', 'diagram: stijl wijzigen');
+    const fragF = rep(base).items[0].fields.find((f) => f.label === 'Verschijnt bij klik (Fragment)');
+    cur = fragF.apply(base, rootOf(base), true);
+    ok(/glr-dnode[^"]* fragment"/.test(cur) && fragF.apply(cur, rootOf(cur), false) === base, 'diagram: fragment aan/uit is omkeerbaar');
+    ok(D.parseDiagramNode(cur, rootOf(cur)).nodes[0].fragment === true, 'diagram: fragment gelezen');
+
+    // toevoegen
+    cur = rep(base).add(base, rootOf(base));
+    ok(titles(cur).length === 4 && rep(cur).items.length === 4, 'diagram: knooppunt toevoegen');
+    let full = base;
+    for (let i = 0; i < 10; i += 1) full = rep(full).add(full, rootOf(full));
+    ok(titles(full).length === D.LAYOUT_LIMITS['linear-h'], 'diagram: toevoegen stopt op het maximum');
+    // herordenen: label verhuist mee
+    const labels = (src) => D.parseDiagramNode(src, rootOf(src)).nodes.map((x) => x.edgeLabel);
+    cur = rep(base).move(base, rootOf(base), 2, -1);
+    ok(titles(cur).join() === [titles(base)[0], titles(base)[2], titles(base)[1]].join(), 'diagram: omhoog verplaatsen');
+    ok(labels(cur).join() === [labels(base)[0], labels(base)[2], labels(base)[1]].join(), 'diagram: pijltekst verhuist met knooppunt');
+    ok(rep(base).move(base, rootOf(base), 0, -1) === base, 'diagram: verplaatsen voorbij het begin = geen wijziging');
+    // verwijderen
+    cur = rep(base).remove(base, rootOf(base), 1);
+    ok(titles(cur).join() === [titles(base)[0], titles(base)[2]].join(), 'diagram: knooppunt verwijderen');
+    let one = base;
+    for (let i = 0; i < 5; i += 1) one = rep(one).remove(one, rootOf(one), 0);
+    ok(titles(one).length === 1, 'diagram: laatste knooppunt blijft staan');
+
+    // hetzelfde via het MCP-pad (update_slide_component)
+    const r = applyComponentChanges(base, [0], {
+      fields: { 'Pijl & Data-Animatie': 'packets', 'Diagram Indeling': 'linear-v' },
+      repeater: { label: 'Knooppunten', ops: [{ op: 'add' }, { op: 'move', index: 3, dir: -1 }, { op: 'remove', index: 0 }], items: [{ index: 0, fields: { Titel: 'Via MCP' } }] },
+    });
+    const st = D.parseDiagramNode(r.html, rootOf(r.html));
+    ok(st.flowAnim === 'packets' && st.layout === 'linear-v' && st.nodes.length === 3 && st.nodes[0].title === 'Via MCP', 'diagram: applyComponentChanges (MCP-pad)');
+    ok(D.renderDiagramHtml(st) === r.html, 'diagram: MCP-resultaat is canoniek');
+  }
+
+  // klik op een knooppunt selecteert het diagram en opent dat item
+  {
+    const html = D.renderDiagramHtml(D.DIAGRAM_PRESETS[2].state);
+    const tree = T.parse(html);
+    const h3 = T.elementChildren(T.nodeAt(tree, [0, 3])).find((c) => c.tag === 'h3');
+    const r = P.resolveTarget(html, T.pathOf(h3));
+    ok(r.path.join() === '0' && r.comp.id === 'diagram' && r.openItem === 2, `diagram: klik op knooppunt 3 → item 2 (kreeg ${r.openItem}, ${r.comp.id})`);
+    const r2 = P.resolveTarget(html, [0, 0, 0]);
+    ok(r2.comp.id === 'diagram' && r2.openItem === -1, 'diagram: klik op de pijlen selecteert het diagram');
+  }
+
+  // markdown-roundtrip: één slide, één html-blok, verliesvrij
+  {
+    for (const pr of D.DIAGRAM_PRESETS) {
+      const html = D.renderDiagramHtml(pr.state);
+      const md = `## Titel\n\n${html}\n`;
+      const deck = parseDeck(md);
+      ok(deck.slides.length === 1 && serializeDeck(deck) === md, `diagram "${pr.label}": deck-roundtrip`);
+      const blocks2 = bodyToDoc(deck.slides[0].body).content.filter((x) => x.type === 'htmlBlock');
+      ok(blocks2.length === 1 && blocks2[0].attrs.html === html, `diagram "${pr.label}": één htmlBlock`);
+      ok(docToBody(bodyToDoc(deck.slides[0].body)).includes(html), `diagram "${pr.label}": bridge-roundtrip`);
+    }
+  }
 }
 
 if (!process.argv.includes('--lib')) {

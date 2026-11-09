@@ -7,6 +7,7 @@
  * als beschermd `htmlBlock` ingevoegd (Optie A).
  */
 import { htmlBlock, commentBlock } from './snippets.js';
+import { DIAGRAM_PRESETS, renderDiagramHtml } from './diagram.js';
 
 const para = (text) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
 const heading = (level) => () => ({ type: 'heading', attrs: { level }, content: [{ type: 'text', text: 'Nieuwe kop' }] });
@@ -50,6 +51,7 @@ export const BLOCKS = [
     { label: 'Kaarten (standaard)', icon: 'layout-grid', html: CARDS_STD },
     { label: 'Kaarten (accent)', icon: 'layout-grid', html: CARDS_ACCENT },
   ] },
+  { id: 'diagram', label: 'Flowchart / Diagram', category: 'layout', icon: 'git-branch', tooltip: 'Geanimeerd stroomschema of architectuurdiagram (.glr-diagram): proces-flow, beslisboom, boom of cyclus.', variants: DIAGRAM_PRESETS.map((p) => ({ label: p.label, icon: p.icon, html: renderDiagramHtml(p.state) })) },
   { id: 'rows', label: 'Stappenrij', category: 'layout', icon: 'rows', tooltip: 'Genummerde stappenrij (.listrow).', html: '<div class="rows">\n  <div class="listrow"><span class="n">01</span><div><h3>Stap</h3><p>Uitleg.</p></div></div>\n  <div class="listrow"><span class="n">02</span><div><h3>Stap</h3><p>Uitleg.</p></div></div>\n</div>' },
   { id: 'defbox', label: 'Definitiebox', category: 'layout', icon: 'book', tooltip: 'Kader met een begrip en de definitie (.defbox).', html: '<div class="defbox"><span class="k">Begrip</span><p>De <strong>definitie</strong> van het begrip.</p></div>' },
   { id: 'callout', label: 'Callout', category: 'layout', icon: 'info', tooltip: 'Uitgelichte waarschuwing of aanwijzing (.callout).', html: '<div class="callout"><span class="dot"></span><div><h3>Let op</h3><p>Belangrijke aanwijzing.</p></div></div>' },

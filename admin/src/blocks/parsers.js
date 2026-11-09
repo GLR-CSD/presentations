@@ -14,6 +14,7 @@
  * chips, section, repeater. De UI staat in ui/form-kit.js.
  */
 import * as T from './html-tree.js';
+import * as D from './diagram.js';
 
 const K = T.elementChildren;
 const has = T.hasClass;
@@ -196,6 +197,45 @@ def({
     clsToggle('Compact formaat (.defbox--sm)', (x) => x, 'defbox--sm'),
     clsToggle('Waarschuwingsstijl (.defbox--alert)', (x) => x, 'defbox--alert'),
   ], src, n),
+});
+
+/* 2b. Flowchart / Diagram (Fase 7B) */
+const diaItems = (n) => K(n).filter((c) => has(c, 'glr-dnode'));
+/** Leest de diagram-state, laat `fn` die aanpassen, en schrijft verliesvrij terug. */
+const diaEdit = (fn) => (s, n, v) => D.writeDiagramNode(s, n, fn(D.parseDiagramNode(s, n), v));
+const diaNodeField = (i, field) => ({ ...field, apply: diaEdit((st, v) => D.diagramOps.patch(st, i, field.patch(v))) });
+def({
+  id: 'diagram', label: 'Flowchart / Diagram', icon: 'git-branch', structured: true,
+  isRepeater: true, itemsOf: diaItems,
+  match: (src, n) => has(n, 'glr-diagram'),
+  form: (src, n) => {
+    const st = D.parseDiagramNode(src, n);
+    const els = diaItems(n);
+    const nodeFields = (nd, i) => [
+      diaNodeField(i, { kind: 'text', label: 'Bovenlabel (.k)', badge: '.k', value: nd.k, patch: (v) => ({ k: v }) }),
+      diaNodeField(i, { kind: 'text', label: 'Titel', badge: 'h3', value: nd.title, patch: (v) => ({ title: v }) }),
+      diaNodeField(i, { kind: 'textarea', label: 'Toelichting', badge: 'p', value: nd.text, patch: (v) => ({ text: v }) }),
+      diaNodeField(i, { kind: 'select', label: 'Stijl', value: nd.variant, options: D.NODE_VARIANTS, patch: (v) => ({ variant: v }) }),
+      D.hasIncoming(st.layout, i) ? diaNodeField(i, { kind: 'text', label: 'Tekst bij pijl', badge: '.glr-dedge-label', value: nd.edgeLabel, patch: (v) => ({ edgeLabel: v }) }) : null,
+      diaNodeField(i, { kind: 'toggle', label: 'Verschijnt bij klik (Fragment)', badge: '.fragment', value: nd.fragment, patch: (v) => ({ fragment: !!v }) }),
+    ].filter(Boolean);
+    return [
+      { kind: 'select', label: 'Diagram Indeling', badge: 'data-diagram-layout', value: st.layout, options: D.DIAGRAM_LAYOUTS, apply: diaEdit((s, v) => ({ ...s, layout: v })) },
+      { kind: 'select', label: 'Pijl & Data-Animatie', badge: 'data-flow-anim', value: st.flowAnim, options: D.FLOW_ANIMS, apply: diaEdit((s, v) => ({ ...s, flowAnim: v })) },
+      { kind: 'toggle', label: 'Teken lijnen live bij openen', badge: 'data-draw-anim', value: st.drawAnim, apply: diaEdit((s, v) => ({ ...s, drawAnim: !!v })) },
+      {
+        kind: 'repeater', label: 'Knooppunten', addLabel: '+ Knooppunt toevoegen',
+        items: st.nodes.map((nd, i) => ({
+          title: `${D.roleLabel(st.layout, i)} · ${(nd.title || nd.k).slice(0, 26)}`,
+          fields: nodeFields(nd, i),
+          path: T.pathOf(els[i]),
+        })),
+        add: diaEdit((s) => D.diagramOps.add(s)),
+        remove: (s, nn, i) => D.writeDiagramNode(s, nn, D.diagramOps.remove(D.parseDiagramNode(s, nn), i)),
+        move: (s, nn, i, dir) => D.writeDiagramNode(s, nn, D.diagramOps.move(D.parseDiagramNode(s, nn), i, dir)),
+      },
+    ];
+  },
 });
 
 /* 3. Kaarten */

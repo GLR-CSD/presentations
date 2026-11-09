@@ -283,10 +283,15 @@ export const toggleFragmentHtml = (src, node, on) => setClass(src, node, 'fragme
 /* --------------------------------------------------------- structure edits --- */
 
 /** Inspringing (spaties/tabs) vóór een node als die als eerste op zijn regel staat; anders null. */
-function indentOf(src, node) {
+export function indentOf(src, node) {
   const nl = src.lastIndexOf('\n', node.start - 1);
   const lead = src.slice(nl + 1, node.start);
   return nl !== -1 && /^[ \t]*$/.test(lead) ? lead : null;
+}
+
+/** Vervangt het hele element (open-tag t/m sluit-tag) door `html`. */
+export function replaceNode(src, node, html) {
+  return splice(src, node.start, node.end, html);
 }
 
 export function removeNode(src, node) {

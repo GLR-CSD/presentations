@@ -203,6 +203,26 @@ try {
   ok((await call(client, 'update_slide_component', { path: P, slide: 3, blockIndex: cardsBlock.blockIndex, fields: { 'bestaat-niet': 'x' } })).isError, 'onbekend veld = nette fout met suggesties');
   ok((await call(client, 'update_slide_component', { path: P, slide: 3, blockIndex: cardsBlock.blockIndex, fields: { a: 'b' }, html: '<p>x</p>' })).isError, 'meerdere wijzigingsmodi geweigerd');
 
+  // Flowchart / Diagram (Fase 7B): invoegen via variant, wijzigen via fields + repeater
+  {
+    const dIns = await call(client, 'insert_component_on_slide', { path: P, slide: 3, component: 'diagram', variant: 'Cyclus' });
+    ok(!dIns.isError, `insert_component_on_slide diagram (${text(dIns)})`);
+    const dBlock = (await call(client, 'get_presentation', { path: P, slide: 3 })).structuredContent.slide.blocks.find((b) => b.type === 'html' && b.components.some((c) => c.id === 'diagram'));
+    ok(!!dBlock, 'diagram-component zichtbaar in get_presentation');
+    const dComp = dBlock.components.find((c) => c.id === 'diagram');
+    ok(dComp.fields.some((f) => f.key === 'Pijl & Data-Animatie') && dComp.repeaters[0].key === 'Knooppunten' && dComp.repeaters[0].items.length === 4, 'diagram: velden en 4 knooppunten');
+    const dUpd = await call(client, 'update_slide_component', { path: P, slide: 3, blockIndex: dBlock.blockIndex, fields: { 'Pijl & Data-Animatie': 'ping-pong' } });
+    ok(!dUpd.isError, `update_slide_component diagram-veld (${text(dUpd)})`);
+    const dRep = await call(client, 'update_slide_component', {
+      path: P, slide: 3, blockIndex: dBlock.blockIndex,
+      repeater: { label: 'Knooppunten', ops: [{ op: 'add' }], items: [{ index: 4, fields: { Titel: 'Deploy' } }] },
+    });
+    ok(!dRep.isError, `update_slide_component diagram-repeater (${text(dRep)})`);
+    const dDisk = fs.readFileSync(path.join(withInput, P), 'utf8');
+    ok(dDisk.includes('data-flow-anim="ping-pong"') && dDisk.includes('<h3>Deploy</h3>'), 'diagram: wijziging op schijf');
+    ok((await call(client, 'update_slide_component', { path: P, slide: 3, blockIndex: dBlock.blockIndex, fields: { 'Pijl & Data-Animatie': 'laser' } })).isError, 'diagram: ongeldige animatie geweigerd');
+  }
+
   // markdown + html wijzigen op slide 2
   const s2 = (await call(client, 'get_presentation', { path: P, slide: 2 })).structuredContent.slide;
   const mdBlock = s2.blocks.find((b) => b.type === 'heading');
