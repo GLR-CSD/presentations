@@ -471,15 +471,34 @@ function checkBody(body, where) {
 /* ---- laagbewust afbeelding invoegen ---- */
 {
   const figureHtml = '<figure class="img-auto"><img src="n.png" alt="n"></figure>';
+  const img = { src: 'n.png', alt: 'n', figureHtml };
   const colBody = '<div class="row">\n  <div class="col"><p class="body">A</p></div>\n  <div class="col"><p class="body">B</p></div>\n</div>';
-  const sel = { blockIndex: 0, path: [0, 1], highlight: [0, 1], openItem: -1 };
-  const r = B.insertImageIntoSelection(colBody, sel, { src: 'n.png', alt: 'n', figureHtml });
-  ok(r && B.htmlAt(r.body, 0).split('<figure').length === 2, 'afbeelding komt in de gekozen kolom');
-  ok(r && T.nodeAt(T.parse(B.htmlAt(r.body, 0)), r.selection.path).tag === 'figure', 'selectie wijst naar de nieuwe figure');
-  ok(B.insertImageIntoSelection('## T\n\nTekst', null, { src: 'n.png', alt: 'n', figureHtml }) === null, 'geen container/placeholder: null (fallback)');
+  // klik op de tekst in kolom 2 → afbeelding komt in kolom 2
+  const sel = { blockIndex: 0, path: [0, 1, 0], highlight: [0, 1, 0], openItem: -1 };
+  ok(JSON.stringify(B.containerPathFor(B.htmlAt(colBody, 0), [0, 1, 0])) === '[0,1]', 'containerPathFor vindt de kolom');
+  ok(B.containerPathFor(B.htmlAt(colBody, 0), [0]) === null, 'rij zelf is geen vak');
+  const r = B.insertImageIntoSelection(colBody, sel, img);
+  const rh = r && B.htmlAt(r.body, 0);
+  ok(r && T.nodeAt(T.parse(rh), [0, 1]).children.some((c) => c.tag === 'figure'), 'afbeelding komt in de gekozen kolom');
+  ok(r && T.nodeAt(T.parse(rh), r.selection.path).tag === 'figure', 'selectie wijst naar de nieuwe figure');
+  ok(B.insertImageIntoSelection('## T\n\nTekst', null, img) === null, 'geen vak/placeholder: null (fallback)');
+  // expliciet vak (panelknop) + tekst toevoegen
+  const c1 = B.insertImageInContainer(colBody, 0, [0, 0], img);
+  ok(c1 && T.nodeAt(T.parse(B.htmlAt(c1.body, 0)), [0, 0]).children.filter((c) => c.type === 'el').length === 2, 'insertImageInContainer: kolom 1');
+  const t1 = B.appendToContainer(colBody, 0, [0, 1], '<p class="body">Nieuwe tekst</p>');
+  ok(t1 && /B<\/p><p class="body">Nieuwe tekst<\/p>/.test(B.htmlAt(t1.body, 0)), 'appendToContainer: tekst in kolom 2');
+  // rastercellen zijn ook vakken
+  const grid = '<div class="grid2">\n  <div><p>A</p></div>\n  <div><p>B</p></div>\n</div>';
+  ok(JSON.stringify(B.containerPathFor(B.htmlAt(grid, 0), [0, 1, 0])) === '[0,1]', 'rastercel is een vak');
+  // placeholders
   const tpl = slideTemplateBody('imagetext');
-  const f = B.insertImageIntoSelection(tpl, null, { src: 'n.png', alt: 'Nieuw', figureHtml });
+  const f = B.insertImageIntoSelection(tpl, null, { ...img, alt: 'Nieuw' });
   ok(f && /src="n\.png"/.test(f.body) && /alt="Nieuw"/.test(f.body) && !/data-placeholder/.test(f.body) && /img-cover/.test(f.body), 'placeholder wordt gevuld met behoud van klassen');
+  // panel: kolomsecties krijgen knoppen
+  const rowDesc = P.describe(B.htmlAt(colBody, 0), T.parse(B.htmlAt(colBody, 0)).children[0]);
+  ok(rowDesc.fields.filter((x) => x.kind === 'section' && x.actions && x.actions.includes('image')).length === 2, 'beide kolomsecties hebben Afbeelding/Tekst-knoppen');
+  const colDesc = P.describe(B.htmlAt(colBody, 0), T.nodeAt(T.parse(B.htmlAt(colBody, 0)), [0, 0]));
+  ok(colDesc.fields.some((x) => x.kind === 'section' && x.actions), 'losse kolom heeft toevoegknoppen');
 }
 
 if (!process.argv.includes('--lib')) {

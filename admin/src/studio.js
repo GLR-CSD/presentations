@@ -756,6 +756,7 @@ export class Studio {
       upload: (file) => this.uploadImageFile(file),
       updateSlideAttrs: (fn, opts) => this.updateSlideAttrs(fn, opts),
       pickImage: (current) => this.pickImage(current),
+      addToContainer: (bi, path, kind) => this.addToContainer(bi, path, kind),
       setNote: (v) => {
         this.transact({ label: 'Notitie aangepast', origin: 'form-input', coalesceKey: `note:${this.state.currentIndex}` }, () => {
           this.state.currentSlide.setNote(v);
@@ -960,7 +961,16 @@ export class Studio {
       fragmentEnabled: B.canFragment(body, sel),
       canMoveUp: B.canMove(body, sel, -1),
       canMoveDown: B.canMove(body, sel, 1),
+      canAddImage: !!this.containerOfSelection(),
     };
+  }
+
+  /** Pad van de kolom/kaart/rastercel rond de selectie, of null. */
+  containerOfSelection() {
+    const sel = this.state.selection;
+    const html = sel && this.state.currentSlide ? B.htmlAt(this.state.currentSlide.body, sel.blockIndex) : null;
+    if (html == null) return null;
+    return B.containerPathFor(html, sel.highlight && sel.highlight.length ? sel.highlight : sel.path);
   }
 
   /** Quick-Action balk boven het geselecteerde blok in de Tiptap-editor (Split/Broncode). */
@@ -987,6 +997,9 @@ export class Studio {
     } else if (action === 'duplicate') {
       const r = B.duplicateSelection(body, sel);
       this.commitBody(r.body, { origin: 'action', selection: r.selection, label: 'Blok gedupliceerd' });
+    } else if (action === 'image') {
+      const cpath = this.containerOfSelection();
+      if (cpath) this.addToContainer(sel.blockIndex, cpath, 'image');
     } else if (action === 'delete') {
       const r = B.removeSelection(body, sel);
       this.commitBody(r.body, { origin: 'action', selection: r.selection, label: 'Blok verwijderd' });
@@ -1218,14 +1231,14 @@ export class Studio {
   /* -------------------------------------------------------- afbeelding */
 
   /** Opent de afbeelding-dialoog (upload of URL) en plaatst een <figure>. */
-  openImageDialog() {
+  openImageDialog(target = null) {
     if (!this.state.deck) return toast('Open eerst een presentatie.', true);
     showImageDialog({
       mode: 'insert',
       deckPath: this.deckPathForAssets(),
       loadMedia: () => loadMediaManifest(),
       upload: this.canUpload() ? (file) => this.uploadImageFile(file) : undefined,
-      onPick: ({ src, alt, caption }) => this.insertFigure(src, caption, alt),
+      onPick: ({ src, alt, caption }) => this.insertFigure(src, caption, alt, target),
     });
   }
 
@@ -1271,29 +1284,47 @@ export class Studio {
     this.panel && this.panel.render && this.panel.render();
   }
 
-  insertFigure(src, caption, altText) {
-    const safeSrc = escapeHtml(src);
-    const safeCaption = escapeHtml(caption || '');
-    const safeAlt = escapeHtml(altText != null ? altText : (caption || ''));
-    const html = `<figure class="img-auto"><img src="${safeSrc}" alt="${safeAlt}">`
-      + (caption ? `<figcaption>${safeCaption}</figcaption>` : '')
+  /**
+   * Plaatst een gekozen afbeelding. Met `target` ({ blockIndex, containerPath }) komt hij in dat
+   * vak (kolom/kaart/rastercel); anders laagbewust t.o.v. de selectie, en als laatste redmiddel
+   * als nieuw blok na de selectie.
+   */
+  insertFigure(src, caption, altText, target = null) {
+    const alt = altText != null ? altText : (caption || '');
+    const figureHtml = `<figure class="img-auto"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`
+      + (caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '')
       + '</figure>';
-    const placed = this.state.mode === 'visual' && this.state.currentSlide
-      ? B.insertImageIntoSelection(this.state.currentSlide.body, this.state.selection, { src, alt: altText != null ? altText : (caption || ''), figureHtml: html })
-      : null;
+    const slide = this.state.currentSlide;
+    if (!slide) return;
+    const img = { src, alt, figureHtml };
+    const placed = target
+      ? B.insertImageInContainer(slide.body, target.blockIndex, target.containerPath, img)
+      : B.insertImageIntoSelection(slide.body, this.state.selection, img);
     if (placed) {
-      // laagbewust: placeholder gevuld of in de gekozen kolom/kaart geplaatst
-      this.transact({ label: 'Afbeelding toegevoegd', origin: 'toolbar' }, () => {
-        this.commitBody(placed.body, { origin: 'toolbar', label: 'Afbeelding toegevoegd' });
-        this.state.setSelection(placed.selection);
-      });
-    } else if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html } }, 'Afbeelding toegevoegd');
+      this.commitBody(placed.body, { origin: 'toolbar', label: 'Afbeelding toegevoegd', selection: placed.selection });
+      toast(target || B.containerPathFor(B.htmlAt(placed.body, placed.selection.blockIndex) || '', placed.selection.path) ? 'Afbeelding in het vak geplaatst.' : 'Afbeelding toegevoegd.');
+      return;
+    }
+    if (this.state.mode === 'visual') this.insertNodes({ type: 'htmlBlock', attrs: { html: figureHtml } }, 'Afbeelding toegevoegd');
     else {
       this._editorLabel = { label: 'Afbeelding toegevoegd' };
-      this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html } }));
+      this.editor.run((c) => c.insertContent({ type: 'htmlBlock', attrs: { html: figureHtml } }));
       this.onEditorChange();
     }
     toast('Afbeelding toegevoegd.');
+  }
+
+  /** Voegt iets toe IN een vak (kolom/kaart/rastercel): 'image' opent de mediakiezer, 'text' een tekstregel. */
+  addToContainer(blockIndex, containerPath, kind) {
+    const slide = this.state.currentSlide;
+    if (!slide || !containerPath) return;
+    if (kind === 'image') { this.openImageDialog({ blockIndex, containerPath }); return; }
+    if (kind === 'text') {
+      const r = B.appendToContainer(slide.body, blockIndex, containerPath, '<p class="body">Nieuwe tekst</p>');
+      if (!r) return;
+      this.panel.focusFieldAfterRender('Tekst');
+      this.commitBody(r.body, { origin: 'toolbar', label: 'Tekst toegevoegd', selection: r.selection });
+    }
   }
 
   /** Uploadt een afbeeldingsbestand naar shared/img/uploads/ (GitHub of lokaal). */

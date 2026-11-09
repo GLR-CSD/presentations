@@ -402,6 +402,29 @@ function repeaterField(f, ctx) {
   return w;
 }
 
+const SECTION_ACTIONS = {
+  image: ['image', 'Afbeelding', 'Afbeelding in dit vak plaatsen'],
+  text: ['type', 'Tekst', 'Tekstregel in dit vak toevoegen'],
+};
+
+/** Sectiekop; met `f.actions` komen er knoppen bij om iets IN dat vak (kolom/kaart) te zetten. */
+function sectionField(f, ctx) {
+  const title = el('div', `pp-section-title${f.first ? ' pp-section-title--first' : ''}`, escapeHtml(f.label));
+  if (!f.actions || !f.actions.length || !ctx.containerAction) return title;
+  const w = el('div', 'pp-section');
+  const bar = el('div', 'pp-section-actions');
+  for (const id of f.actions) {
+    const [ic, label, hint] = SECTION_ACTIONS[id] || ['plus', id, id];
+    const b = el('button', 'pp-btn pp-btn--add', `${icon('plus', 13)}${icon(ic, 13)}<span>${escapeHtml(label)}</span>`);
+    b.type = 'button';
+    b.title = `${hint} (${f.label})`;
+    b.addEventListener('click', () => ctx.containerAction(id, f.path));
+    bar.appendChild(b);
+  }
+  w.append(title, bar);
+  return w;
+}
+
 /** Render een lijst veld-specificaties in `container`. */
 export function renderFields(container, fields, ctx) {
   for (const f of fields) {
@@ -423,7 +446,7 @@ export function renderFields(container, fields, ctx) {
       case 'button': node = buttonField(f, ctx); break;
       case 'chips': node = chipsField(f, ctx); break;
       case 'repeater': node = repeaterField(f, ctx); break;
-      case 'section': node = el('div', `pp-section-title${f.first ? ' pp-section-title--first' : ''}`, escapeHtml(f.label)); break;
+      case 'section': node = sectionField(f, ctx); break;
       default: break;
     }
     if (node) container.appendChild(node);

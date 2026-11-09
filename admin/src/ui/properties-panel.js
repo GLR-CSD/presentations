@@ -131,6 +131,19 @@ export class PropertiesPanel {
     }
     this.host.appendChild(head);
 
+    // Zit de selectie in een kolom/kaart/rastercel? Dan kun je daar direct iets aan toevoegen.
+    if (isHtml) {
+      const html = block.attrs.html;
+      const cpath = B.containerPathFor(html, sel.path);
+      const node = T.nodeAt(T.parse(html), sel.path);
+      if (cpath && !B.isContainer(node)) {
+        const cnode = T.nodeAt(T.parse(html), cpath);
+        const box = h('div', 'pp-container-add');
+        renderFields(box, [{ kind: 'section', label: `Toevoegen aan ${crumbLabel(html, cnode)}`, path: cpath, first: true, actions: ['image', 'text'] }], this.htmlCtx({ blockIndex: sel.blockIndex, path: sel.path }, sel));
+        this.host.appendChild(box);
+      }
+    }
+
     // universele animatiestap-schakelaar
     if (B.canFragment(body, sel)) {
       const f = { kind: 'toggle', label: 'Toon pas na klik tijdens presentatie (Animatiestap / Fragment)', badge: '.fragment', value: B.isFragment(body, sel) };
@@ -247,6 +260,7 @@ export class PropertiesPanel {
       select: (path) => this.api.selectPath(target.blockIndex, path),
       upload: (file) => this.api.upload(file),
       pickImage: (cur) => this.api.pickImage(cur),
+      containerAction: (id, path) => this.api.addToContainer(target.blockIndex, path, id),
     };
     return ctx;
   }

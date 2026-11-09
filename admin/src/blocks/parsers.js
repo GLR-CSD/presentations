@@ -643,6 +643,7 @@ def({
         },
       });
     }
+    if (isAddTarget(n)) fields.push({ kind: 'section', label: 'Deze kolom', path: T.pathOf(n), first: true, actions: CONTAINER_ACTIONS });
     const centerEls = hasAny(n, ['col', 'glr-col']) ? [n] : (cols.length ? cols : [n]);
     fields.push({
       kind: 'toggle', label: 'Verticaal gecentreerd (.vcenter)', badge: '.vcenter',
@@ -763,7 +764,7 @@ export function extract(src, root, opts = {}) {
     for (const k of kids) {
       if (opts.sections && isRoot) {
         const idx = kids.indexOf(k);
-        out.push({ kind: 'section', label: sectionLabel(k, idx), path: T.pathOf(k), first: firstSection });
+        out.push(sectionField(k, idx, firstSection));
         firstSection = false;
       }
       visit(k, false);
@@ -771,13 +772,26 @@ export function extract(src, root, opts = {}) {
   };
   if (opts.includeRoot) visit(root, true);
   else for (const [i, k] of K(root).entries()) {
-    if (opts.sections) out.push({ kind: 'section', label: sectionLabel(k, i), path: T.pathOf(k), first: i === 0 });
+    if (opts.sections) out.push(sectionField(k, i, i === 0));
     visit(k, false);
   }
   return out;
 }
+/** Vak waarin de Studio een afbeelding/tekst kan toevoegen (kolom, kaart, rastercel). */
+const CONTAINER_ACTIONS = ['image', 'text'];
+function isAddTarget(el) {
+  if (hasAny(el, ['col', 'glr-col', 'opcard']) || isCard(el)) return true;
+  const p = el.parent;
+  return !!(p && p.type === 'el' && hasAny(p, ['grid2', 'glr-columns']) && el.tag !== 'figure');
+}
+const sectionField = (el, i, first) => ({
+  kind: 'section', label: sectionLabel(el, i), path: T.pathOf(el), first,
+  ...(isAddTarget(el) ? { actions: CONTAINER_ACTIONS } : {}),
+});
+
 function sectionLabel(el, i) {
   if (hasAny(el, ['col', 'glr-col'])) return `Kolom ${i + 1}`;
+  if (el.parent && el.parent.type === 'el' && hasAny(el.parent, ['grid2', 'glr-columns'])) return `Vak ${i + 1}`;
   if (isCard(el)) return `Kaart ${i + 1}`;
   return `Onderdeel ${i + 1}`;
 }

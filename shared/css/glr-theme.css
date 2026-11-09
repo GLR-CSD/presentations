@@ -222,25 +222,26 @@ figcaption{font-size:16px;color:var(--muted);margin-top:10px;line-height:1.3;fle
 /* ------------------------------------------------- afbeeldingsformaat
    Opt-in: alleen figuren met een img-*-klasse. Kale <figure>s (oude decks)
    behouden de vul-de-breedte-weergave hierboven.
-   --img-w = eigen breedte (bijv. 40%), --img-pos = focuspunt bij bijsnijden. */
-figure:is(.img-auto,.img-s,.img-m,.img-l,.img-full){
+   --img-w = eigen breedte (bijv. 40%), --img-pos = focuspunt bij bijsnijden.
+   Onder .reveal: expliciete formaatklassen winnen van generieke deck-regels als `.row figure{flex:1}`. */
+.reveal figure:is(.img-auto,.img-s,.img-m,.img-l,.img-full){
   flex:0 1 auto;width:var(--img-w,auto);max-width:100%;min-height:0;align-self:flex-start}
-figure.img-s{--img-w:25%}
-figure.img-m{--img-w:50%}
-figure.img-l{--img-w:75%}
-figure.img-full{--img-w:100%}
-figure:is(.img-auto,.img-s,.img-m,.img-l,.img-full) img{
+.reveal figure.img-s{--img-w:25%}
+.reveal figure.img-m{--img-w:50%}
+.reveal figure.img-l{--img-w:75%}
+.reveal figure.img-full{--img-w:100%}
+.reveal figure:is(.img-auto,.img-s,.img-m,.img-l,.img-full) img{
   width:100%;height:auto;max-width:100%;max-height:100%;flex:0 1 auto;object-fit:contain}
 /* bijsnijden: vult het kader, focuspunt via --img-pos */
-figure.img-cover img{object-fit:cover;object-position:var(--img-pos,50% 50%);height:100%;flex:1 1 auto}
-figure.img-cover:not([class*="img-r"]){min-height:0}
-figure.img-r16x9 img{aspect-ratio:16/9;height:auto}
-figure.img-r4x3 img{aspect-ratio:4/3;height:auto}
-figure.img-r1x1 img{aspect-ratio:1/1;height:auto}
-figure.img-r3x4 img{aspect-ratio:3/4;height:auto}
+.reveal figure.img-cover img{object-fit:cover;object-position:var(--img-pos,50% 50%);height:100%;flex:1 1 auto}
+.reveal figure.img-cover:not([class*="img-r"]){min-height:0}
+.reveal figure.img-r16x9 img{aspect-ratio:16/9;height:auto}
+.reveal figure.img-r4x3 img{aspect-ratio:4/3;height:auto}
+.reveal figure.img-r1x1 img{aspect-ratio:1/1;height:auto}
+.reveal figure.img-r3x4 img{aspect-ratio:3/4;height:auto}
 /* uitlijning */
-figure.img-center{align-self:center}
-figure.img-right{align-self:flex-end}
+.reveal figure.img-center{align-self:center}
+.reveal figure.img-right{align-self:flex-end}
 /* beeldvullende strook (voorheen alleen deck-lokaal) */
 .strip-wrap{display:flex;justify-content:center;margin-top:22px;flex:1;min-height:0;align-items:center}
 .strip-wrap img{max-width:660px;max-height:100%;object-fit:contain;border-radius:6px}
