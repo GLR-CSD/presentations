@@ -1,8 +1,9 @@
 /**
- * Live GitHub Pages build-indicator in de Studio-topbar.
+ * Live GitHub Pages build-indicator als zwevende overlay in de Studio.
  *
  * `DeployPoller` bevat alleen logica (timers, polling, fasen) en meldt via
- * `onUpdate(view)`; `mountDeployIndicator` tekent dat in de topbar. Zo is de
+ * `onUpdate(view)`; `mountDeployIndicator` tekent dat in de overlay
+ * (`#deploy-status`, onderaan gecentreerd). Zo is de
  * logica zonder DOM testbaar (scripts/test-deploy-poller.js).
  *
  * Gedrag: elke 5 s de workflow-run ophalen (max. 3 min). Heeft het token geen
@@ -111,7 +112,7 @@ export class DeployPoller {
 
 const SPIN_PHASES = new Set(['queued', 'in_progress', 'fallback']);
 
-/** Tekent de indicator in `host`; geeft een `DeployPoller` terug. */
+/** Tekent de indicator in `host` (zwevende overlay onderaan); geeft een `DeployPoller` terug. */
 export function mountDeployIndicator(host, { fetchRun, actionsUrl }) {
   let poller;
   const render = (view) => {

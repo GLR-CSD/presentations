@@ -42,8 +42,6 @@
         <button type="button" data-mode="source" title="Ruwe Markdown/HTML (voor developers)">&lt;/&gt; Broncode</button>
       </div>
 
-      <div class="deploy-status" id="deploy-status" hidden aria-live="polite"></div>
-
       <div class="studio-actions">
         <button type="button" class="studio-btn studio-btn--ai" id="ai-btn" title="AI Les-Assistent (Claude, Gemini, ChatGPT)"></button>
         <button type="button" class="studio-btn studio-btn--icon" id="standalone-btn" title="Open de standalone Reveal.js-presentatie in een apart venster" aria-label="Open standalone presentatie in apart venster"></button>
@@ -78,6 +76,10 @@
     </div>
 
     <footer class="studio-status" id="status"><span id="status-text">Klaar.</span></footer>
+
+    <!-- GitHub Pages build-indicator: zwevende pill onderaan het scherm, bewust buiten de topbar-flow
+         zodat een lange statusmelding nooit de topbar-breedte (en dus de layout) kan oprekken. -->
+    <div class="deploy-status" id="deploy-status" hidden aria-live="polite"></div>
   </div>
 
   <div id="modal-root"></div>

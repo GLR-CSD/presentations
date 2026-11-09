@@ -653,16 +653,20 @@ body {
 .deck-form__outline li::before { content: counter(fw) ". "; color: var(--ui-green); font-weight: 600; }
 .deck-form__framework-hint { color: var(--ui-muted); font-size: 11px; }
 
-/* ------------------------------------------------- build-indicator (topbar) --- */
+/* ------------------------------------------- build-indicator (zwevende overlay) --- */
 .studio-btn--ai { background: transparent; border-color: #444; color: #fff; }
 .studio-btn--ai:hover { border-color: var(--ui-lime); }
 .studio-btn--ai .glr-icon { color: var(--ui-lime); }
 .deploy-status {
-  position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 560px;
-  padding: 5px 30px 8px 11px; font-size: 12px; line-height: 1.25; border-radius: 8px;
+  position: fixed; left: 50%; transform: translateX(-50%);
+  /* Boven de statustitel (--ui-status) én boven de toast (bottom:40px) zodat ze elkaar nooit overlappen. */
+  bottom: calc(var(--ui-status) + 62px); z-index: 80;
+  display: flex; align-items: center; gap: 8px; min-width: 0; max-width: min(600px, calc(100vw - 32px));
+  padding: 8px 30px 11px 12px; font-size: 12px; line-height: 1.35; border-radius: 8px;
   background: #1E1E1E; border: 1px solid #333; color: #E8E8E8; overflow: hidden;
+  box-shadow: 0 12px 32px rgba(17, 17, 17, .3);
 }
-.deploy-status__text { min-width: 0; }
+.deploy-status__text { min-width: 0; overflow-wrap: anywhere; }
 .deploy-status__time { font-variant-numeric: tabular-nums; color: #9A9A9A; }
 .deploy-status a { color: var(--ui-lime); font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
 .deploy-status a:hover { text-decoration: underline; }
