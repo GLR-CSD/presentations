@@ -270,6 +270,7 @@ hebben een token nodig.
 | `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/`, en bundelt de GLR Slide Studio (esbuild) naar `admin/vendor/` — alles offline |
 | `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie), genereert ontbrekende `.html`-shells voor losse `.md`-decks, schrijft het deck-manifest (`presentations-manifest.json`) en kopieert `admin/` + `shared/img/uploads/` naar `dist/` |
 | `npm run build` | `vendor` + `build:index` |
+| `npm test` | Draait alle testsuites hieronder op een rij (roundtrip, bridge, parsers, oauth, deploy, commit, history, mcp) — dit is wat `ci.yml` in CI doet |
 | `npm run test:roundtrip` | Verifieert dat de deck-parser elke `slides.md` byte-identiek terugschrijft (verliesvrij) |
 | `npm run test:bridge` | Meet de Markdown ↔ ProseMirror-fidelity van de visuele editor |
 | `npm run test:parsers` | Test de HTML-boom, formulier-parsers, templates en didactische modules |
@@ -298,16 +299,15 @@ tabblad en staat een korte uitleg met een link naar de reveal.js-documentatie.
 
 ## Deployment (CI/CD)
 
-Twee onafhankelijke workflows, elk met `paths`-filters zodat ze alleen draaien als dat nodig is:
+Drie workflows: `ci.yml` draait altijd; `deploy.yml` en `pdfs.yml` hebben elk `paths`-filters zodat ze alleen draaien als dat nodig is:
 
 | Workflow | Draait bij wijzigingen in | Doet | Duur |
 |---|---|---|---|
+| `ci.yml` (tests) | élke pull request en elke push naar `main` (geen `paths`-filter) | `npm ci` + `npm test`: alle offline testsuites (deck-parser, editor-brug, formulieren, OAuth-worker, deployments, MCP) | ~1-2 min |
 | `deploy.yml` (site) | `presentations/`, `shared/`, `admin/`, `scripts/build-index.js`, `scripts/lib/`, vendor-scripts, `package*.json` | bouwt `dist/` + portaalpagina en deployt naar **GitHub Pages**; wacht nooit op PDF's | ~30-45 s |
 | `pdfs.yml` (PDF's) | `presentations/`, `shared/`, `scripts/lib/`, export-/vendor-scripts, `package-lock.json` | rendert alleen verouderde decks (parallel, DeckTape) en uploadt ze naar de **GitHub Release `pdfs`** | ~10 s (niets te doen) tot ~2 min (alles) |
 
-Alleen README/docs/tests/MCP-wijzigingen starten geen van beide. Via *Actions → Build PDFs →
-Run workflow* (optie `force`) bouw je alle PDF's opnieuw. De Studio-build-indicator volgt
-alleen `deploy.yml`; de PDF volgt enkele minuten later.
+`ci.yml` draait altijd — ook voor README/docs/MCP-wijzigingen — zodat een gebroken test de merge blokkeert. `deploy.yml` en `pdfs.yml` slaan zulke wijzigingen juist over. Via *Actions → Build PDFs → Run workflow* (optie `force`) bouw je alle PDF's opnieuw. De Studio-build-indicator volgt alleen `deploy.yml`; de PDF volgt enkele minuten later.
 
 ### PDF's op een GitHub Release
 

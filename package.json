@@ -12,6 +12,7 @@
     "vendor": "node scripts/vendor-reveal.js && node scripts/vendor-plugins.js && node scripts/vendor-editor.js",
     "build:index": "node scripts/build-index.js",
     "build": "npm run vendor && npm run build:index",
+    "test": "npm run test:roundtrip && npm run test:bridge && npm run test:parsers && npm run test:oauth && npm run test:deploy && npm run test:commit && npm run test:history && npm run test:mcp",
     "export:pdf": "node scripts/export-pdf.js",
     "test:roundtrip": "node scripts/test-roundtrip.js",
     "test:bridge": "node scripts/test-bridge.js",
