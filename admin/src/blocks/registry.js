@@ -63,6 +63,10 @@ export const BLOCKS = [
   { id: 'terminal', label: 'Terminalvenster', category: 'code', icon: 'terminal', tooltip: 'Terminalvenster met een commando (.terminal-window).', html: '<div class="terminal-window">\n  <div class="terminal-window__bar"><span class="dot"></span><span class="dot"></span><span class="dot dot--lime"></span><span class="title">bash</span></div>\n  <pre><code>npm run serve</code></pre>\n</div>' },
   { id: 'image', label: 'Afbeelding', category: 'code', icon: 'image', tooltip: 'Afbeelding toevoegen (uploaden vanaf computer of via URL).', upload: true,
     html: `<figure class="img-auto" data-placeholder>\n  <img src="${EVIDENCE_PLACEHOLDER}" alt="Beschrijf hier wat de afbeelding laat zien.">\n</figure>` },
+  { id: 'video', label: 'Video', category: 'code', icon: 'play', tooltip: 'Video toevoegen: een videobestand (mp4/webm) of een YouTube-embed.', variants: [
+    { label: 'Videobestand (mp4/webm)', icon: 'play', html: '<figure class="video-wrap">\n  <video controls preload="metadata" src="assets/video.mp4" title="Beschrijf hier wat de video laat zien"></video>\n</figure>' },
+    { label: 'YouTube / embed', icon: 'play', html: '<figure class="embed">\n  <iframe data-src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Titel van de video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>\n</figure>' },
+  ] },
   { id: 'bar', label: 'Accentbalk', category: 'code', icon: 'bar', tooltip: 'Lime accentbalk als visueel anker (.bar).', html: '<div class="bar"></div>' },
   { id: 'pill', label: 'Pill', category: 'code', icon: 'pill', tooltip: 'Klein label in een pill-vorm.', html: '<p><span class="pill">Label</span></p>' },
 

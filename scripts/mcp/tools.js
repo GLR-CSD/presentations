@@ -1,4 +1,4 @@
-/** De 14 MCP-tools van de GLR Slide Studio. */
+/** De 19 MCP-tools van de GLR Slide Studio. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
@@ -8,20 +8,25 @@ import * as B from '../../admin/src/blocks/block-ops.js';
 import { BLOCKS, nodeFor } from '../../admin/src/blocks/registry.js';
 import { htmlBlock } from '../../admin/src/blocks/snippets.js';
 import { SLIDE_TEMPLATES, slideTemplateBody, deckFooterText } from '../../admin/src/blocks/templates.js';
-import { serializeSlideAttrs } from '../../admin/src/state/deck.js';
+import { parseDeck, serializeSlideAttrs } from '../../admin/src/state/deck.js';
 import { buildDeckMarkdown, resolveFrameworkId, FRAMEWORK_INPUTS } from '../../admin/src/pedagogy/frameworks.js';
 import { classifySlide, deckBalance, headingOf } from '../../admin/src/pedagogy/phases.js';
 import { analyzeSlide } from '../../admin/src/pedagogy/coach.js';
 import { extractDeckMarkdown } from '../../admin/src/pedagogy/ai-prompt.js';
 import { describeBuildRun, isPermissionError } from '../../admin/src/storage/build-status.js';
 import * as gh from '../../admin/src/storage/github.js';
-import { slugify, SLUG_RE, deckFolder } from '../../admin/src/ui/util.js';
-import { deckDepth } from '../lib/rewrite-prefix.js';
+import { slugify, SLUG_RE, deckFolder, relativeAssetPath } from '../../admin/src/ui/util.js';
+import { deckDepth, rewriteShellPrefix } from '../lib/rewrite-prefix.js';
 import { buildHtmlShell } from '../lib/html-shell.js';
+import { scanMedia } from '../lib/media-manifest.js';
 import { slideAt } from './workspace.js';
 import { InputDocs } from './input-docs.js';
 import { deckView, slideView, outline } from './deck-view.js';
 import { componentPath, applyComponentChanges } from './component-ops.js';
+import {
+  IMAGE_EXTS, VIDEO_EXTS, extOf, mediaKind, sanitizeMediaName, filenameFromUrl,
+  downloadMedia, deckMediaFiles, buildMediaSnippet,
+} from './media.js';
 
 const ok = (text, structured) => ({ content: [{ type: 'text', text }], ...(structured ? { structuredContent: structured } : {}) });
 const fail = (text) => ({ content: [{ type: 'text', text }], isError: true });
@@ -210,7 +215,7 @@ export function registerTools(server, ws) {
 
   /* 8 */ reg('insert_component_on_slide', {
     title: 'Component toevoegen aan een slide',
-    description: `Voegt een component in (standaard boven de footer). Component-id's: ${BLOCKS.filter((b) => !b.inlineOnly && (b.html || b.node)).map((b) => b.id).join(', ')}; of geef eigen \`html\`.`,
+    description: `Voegt een component in (standaard boven de footer). Component-id's: ${BLOCKS.filter((b) => !b.inlineOnly && (b.html || b.node || b.variants)).map((b) => b.id).join(', ')}; of geef eigen \`html\`. Bij varianten (zoals cards, heading, video) kies je met \`variant\` (index of label).`,
     inputSchema: {
       path: deckPath, slide: slideNo, component: z.string().optional(), variant: z.union([z.number().int().min(0), z.string()]).optional().describe('Bij varianten (cards, heading): index of label.'),
       html: z.string().optional(), afterBlockIndex: z.number().int().min(0).optional().describe('Invoegen na dit blok (0-gebaseerd).'),
@@ -333,7 +338,7 @@ export function registerTools(server, ws) {
 
   /* 13 */ reg('publish_deck_to_github', {
     title: 'Deck publiceren naar GitHub',
-    description: 'Commit slides.md + index.html in één atomaire commit naar main. Geeft commitSha en de live GitHub Pages-URL; bouwen duurt daarna nog ~45-90 seconden (volg met check_github_build_status).',
+    description: 'Commit slides.md + index.html én de mediabestanden uit de deck-map (assets/, media/, …) in één atomaire commit naar main. Geeft commitSha en de live GitHub Pages-URL; bouwen duurt daarna nog ~45-90 seconden (volg met check_github_build_status).',
     inputSchema: { path: deckPath, message: z.string().optional() },
   }, async ({ path: p, message }) => {
     const { token, opts } = githubConfig();
@@ -345,14 +350,19 @@ export function registerTools(server, ws) {
     const html = ws.exists(htmlRel)
       ? fs.readFileSync(ws.abs(htmlRel), 'utf8')
       : buildHtmlShell({ prefix: '../'.repeat(dir.split('/').length), mdFile: 'slides.md', title });
+    const mediaRel = deckMediaFiles(ws.root, dir);
     await gh.connect(token);
     const commitSha = await gh.commitFiles(message || `feat: update ${path.posix.basename(dir)} via GLR MCP`, [
       { path: rel, content: source, encoding: 'utf-8' },
       { path: htmlRel, content: html, encoding: 'utf-8' },
+      ...mediaRel.map((rp) => ({ path: rp, content: fs.readFileSync(ws.abs(rp)).toString('base64'), encoding: 'base64' })),
     ], opts);
     const url = gh.pagesUrl(rel, opts);
-    return ok(`Gepubliceerd naar main (commit ${commitSha.slice(0, 7)}).\nLive URL (zodra de build klaar is): ${url}\nHet bouwen op GitHub Pages duurt nog circa 45-90 seconden; vraag met check_github_build_status (commitSha ${commitSha}) of het live staat.\nLet op: lokale afbeeldingen in assets/ worden niet mee gepubliceerd.`,
-      { commitSha, url, actionsUrl: gh.actionsUrl(opts), buildSecondsEstimate: [45, 90] });
+    const mediaNote = mediaRel.length
+      ? `\n${mediaRel.length} mediabestand(en) meegepubliceerd: ${mediaRel.join(', ')}.`
+      : '\nGeen mediabestanden in de deck-map gevonden.';
+    return ok(`Gepubliceerd naar main (commit ${commitSha.slice(0, 7)}).\nLive URL (zodra de build klaar is): ${url}\nHet bouwen op GitHub Pages duurt nog circa 45-90 seconden; vraag met check_github_build_status (commitSha ${commitSha}) of het live staat.${mediaNote}`,
+      { commitSha, url, actionsUrl: gh.actionsUrl(opts), media: mediaRel, buildSecondsEstimate: [45, 90] });
   });
 
   /* 14 */ reg('check_github_build_status', {
@@ -371,5 +381,178 @@ export function registerTools(server, ws) {
       if (isPermissionError(err)) return ok('Geen toegang tot de build-status (HTTP ' + err.status + '): het token mist het recht "Actions: read". De update staat meestal binnen ~1 minuut na het publiceren live op GitHub Pages.', { phase: 'unknown', permission: false });
       throw err;
     }
+  });
+
+  /* 15 */ reg('add_media_file', {
+    title: 'Foto of video toevoegen aan de repo',
+    description: 'Neemt een mediabestand op in de repo: kopieert een lokaal bestand (`source`) of downloadt van een URL (`url`). Standaard in de `assets/`-map van het deck (target "assets"; verhuist mee en wordt meegepubliceerd) of gedeeld in `shared/img/uploads/` (foto) of `shared/video/` (video) met target "shared". Geeft het repo-pad, het pad voor slides.md en een kant-en-klaar HTML-snippet terug. Voor een achtergrondafbeelding gebruik je dat pad daarna in update_slide_properties (attrs: data-background-image).',
+    inputSchema: {
+      path: deckPath.optional().describe('Pad of mapnaam van het deck (verplicht bij target "assets").'),
+      source: z.string().optional().describe('Lokaal bestandspad: absoluut, of relatief t.o.v. de repo-root.'),
+      url: z.string().optional().describe('URL om te downloaden (alternatief voor `source`).'),
+      filename: z.string().optional().describe('Bestandsnaam in de repo; standaard afgeleid uit source of url.'),
+      target: z.enum(['assets', 'shared']).default('assets').describe('"assets" = in de deck-map; "shared" = gedeeld (shared/img/uploads of shared/video).'),
+      alt: z.string().optional().describe('Alt-tekst / beschrijving voor het voorstel-snippet.'),
+      caption: z.string().optional().describe('Bijschrift voor het voorstel-snippet.'),
+      overwrite: z.boolean().optional().describe('Overschrijf een bestaand bestand met dezelfde naam (standaard: -2, -3, … achter de naam).'),
+    },
+  }, async (a) => {
+    if ((a.source ? 1 : 0) + (a.url ? 1 : 0) !== 1) {
+      return fail('Geef precies één van `source` (lokaal bestandspad) of `url` (download) op.');
+    }
+    const srcName = a.filename || (a.source ? path.basename(a.source) : filenameFromUrl(a.url));
+    const kind = mediaKind(extOf(srcName));
+    if (!kind) {
+      return fail(`Bestandstype niet ondersteund: "${srcName}". Afbeeldingen: ${[...IMAGE_EXTS].join(', ')}; video's: ${[...VIDEO_EXTS].join(', ')}.`);
+    }
+    let bytes;
+    if (a.source) {
+      const abs = path.isAbsolute(a.source) ? a.source : ws.abs(a.source);
+      if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
+        return fail(`Lokale bron niet gevonden: ${a.source}. Geef een bestaand bestandspad op (absoluut, of relatief t.o.v. de repo-root).`);
+      }
+      bytes = fs.readFileSync(abs);
+    } else {
+      bytes = await downloadMedia(a.url);
+    }
+    let deckRel = null;
+    if (a.target === 'assets') {
+      if (!a.path) return fail('Geef `path` (het deck) op om media in de deck-map te plaatsen, of gebruik target "shared".');
+      deckRel = ws.deckRel(a.path);
+    }
+    const dir = a.target === 'assets'
+      ? `${path.posix.dirname(deckRel)}/assets`
+      : (kind === 'video' ? 'shared/video' : 'shared/img/uploads');
+    const desired = sanitizeMediaName(a.filename || srcName);
+    const ext = path.posix.extname(desired);
+    const stem = desired.slice(0, desired.length - ext.length);
+    let name = desired;
+    if (!a.overwrite) {
+      let i = 2;
+      while (ws.exists(`${dir}/${name}`)) { name = `${stem}-${i}${ext}`; i += 1; }
+    }
+    const repoPath = `${dir}/${name}`;
+    ws.writeFile(repoPath, bytes);
+    const reference = deckRel ? relativeAssetPath(deckRel, repoPath) : `/presentations/${repoPath}`;
+    const snippet = buildMediaSnippet(kind, reference, { alt: a.alt || '', caption: a.caption || '' });
+    const kb = Math.max(1, Math.round(bytes.length / 1024));
+    const hint = a.target === 'assets'
+      ? 'Dit bestand zit in de deck-map: `publish_deck_to_github` neemt het mee.'
+      : 'Dit bestand staat gedeeld in shared/ en hoort niet bij één deck.';
+    return ok(
+      `Toegevoegd: ${repoPath} (${kind}, ${kb} KB).\nPad voor slides.md: ${reference}\nVoorstel voor een slide:\n${snippet}\n${hint}`,
+      { path: repoPath, name, kind, target: a.target, reference, snippet, bytes: bytes.length },
+    );
+  });
+
+  /* 16 */ reg('list_media', {
+    title: 'Media in de repository tonen',
+    description: 'Alle afbeeldingen en video\'s in shared/ en presentations/ (naam, type en categorie). Met `path` beperk je het tot dat deck + de gedeelde map en krijg je per bestand het deck-relatieve pad voor slides.md.',
+    inputSchema: {
+      path: deckPath.optional().describe('Beperk tot dit deck en geef deck-relatieve paden terug.'),
+      query: z.string().optional().describe('Filter op tekst in pad of bestandsnaam.'),
+    },
+  }, async ({ path: p, query }) => {
+    let items = scanMedia(ws.root);
+    let deckRel = null;
+    if (p) {
+      deckRel = ws.deckRel(p);
+      const dir = path.posix.dirname(deckRel);
+      items = items.filter((m) => m.path.startsWith(`${dir}/`) || m.path.startsWith('shared/'));
+    }
+    if (query) {
+      const q = query.toLowerCase();
+      items = items.filter((m) => `${m.path} ${m.name}`.toLowerCase().includes(q));
+    }
+    const media = items.map((m) => (deckRel ? { ...m, reference: relativeAssetPath(deckRel, m.path) } : m));
+    if (!media.length) return ok(`Geen mediabestanden gevonden${query ? ` voor "${query}"` : ''}.`, { media: [] });
+    const lines = media.slice(0, 200).map((m) => `- ${m.path} (${m.kind}, ${m.category})${m.reference ? ` → ${m.reference}` : ''}`);
+    const more = media.length > 200 ? `\n… en nog ${media.length - 200}.` : '';
+    return ok(`${media.length} mediabestand(en):\n${lines.join('\n')}${more}`, { media });
+  });
+
+  /* 17 */ reg('list_github_decks', {
+    title: 'Presentaties op GitHub tonen',
+    description: 'Lijst alle decks op de GitHub-repo (main). Standaard alleen de paden; met `withMeta` ook titel, cohort, leerjaar, periode, auteur, tags en het aantal slides (extra API-verzoeken, trager). Vereist GITHUB_TOKEN.',
+    inputSchema: {
+      query: z.string().optional().describe('Filter op tekst in het pad of de titel.'),
+      withMeta: z.boolean().optional().describe('Haal ook de frontmatter en het aantal slides op (max. 200 decks, langzamer).'),
+    },
+  }, async ({ query, withMeta }) => {
+    const { token, opts } = githubConfig();
+    if (!token) return fail(NO_TOKEN);
+    await gh.connect(token);
+    let decks = await gh.listDecks(opts);
+    if (query) {
+      const q = query.toLowerCase();
+      decks = decks.filter((d) => `${d.md} ${d.title}`.toLowerCase().includes(q));
+    }
+    const total = decks.length;
+    let out = decks;
+    let truncated = false;
+    if (withMeta) {
+      const cap = 200;
+      truncated = decks.length > cap;
+      out = [];
+      for (const d of decks.slice(0, cap)) {
+        try {
+          const { text } = await gh.readTextFile(d.md, opts);
+          const parsed = parseDeck(text);
+          const fm = parsed.frontmatter ? parsed.frontmatter.toObject() : {};
+          out.push({ ...d, ...fm, slides: parsed.slides.length });
+        } catch {
+          out.push({ ...d, slides: null });
+        }
+      }
+    }
+    if (!out.length) return ok('Geen decks gevonden op GitHub.', { decks: [], total: 0 });
+    const lines = out.map((d) => (withMeta
+      ? `- ${d.md} — ${d.title || d.md} (lj ${d.leerjaar ?? '?'}, p ${d.periode ?? '?'}, ${d.slides ?? '?'} slides)`
+      : `- ${d.md}`));
+    const tail = truncated ? `\n(Alleen de eerste ${out.length} van ${total} deck(s) voorzien van metadata.)` : '';
+    return ok(`${out.length} deck(s) op GitHub:\n${lines.join('\n')}${tail}`, { decks: out, total });
+  });
+
+  /* 18 */ reg('move_presentation_on_github', {
+    title: 'Presentatie op GitHub verplaatsen',
+    description: 'Verplaatst een deck op GitHub in één atomaire commit (main): de hele map incl. mediabestanden, met het herschrijven van de ../-prefix in index.html. Zonder `folder` wordt de doelmap afgeleid uit cohort, leerjaar en slug-prefix in de frontmatter. De lokale kopie blijft ongemoeid; werk die bij met move_presentation. Let op: de live-URL en PDF-naam veranderen. Vereist GITHUB_TOKEN.',
+    inputSchema: {
+      path: deckPath,
+      folder: z.string().optional().describe('Doelmap op GitHub, bv. presentations/2026-2027/jaar-1/beroeps/beroeps1_x. Optioneel.'),
+      message: z.string().optional(),
+    },
+  }, async (a) => {
+    const { token, opts } = githubConfig();
+    if (!token) return fail(NO_TOKEN);
+    const { rel, source, deck } = ws.loadDeck(a.path);
+    const fromDir = path.posix.dirname(rel);
+    let target = a.folder;
+    if (!target) {
+      const fm = deck.frontmatter ? deck.frontmatter.toObject() : {};
+      const slug = rel.split('/').slice(-2)[0];
+      target = deckFolder({ cohort: fm.cohort, leerjaar: fm.leerjaar, slug });
+      if (!target) return fail('Kan de doelmap niet afleiden uit cohort/leerjaar/prefix. Geef `folder` expliciet op.');
+    }
+    const toDir = path.posix.dirname(ws.deckRel(target));
+    if (toDir === 'presentations') return fail('Kies een doelmap met een vak, niet direct onder presentations/.');
+    if (toDir === fromDir) return fail(`Het deck staat al in ${fromDir}.`);
+    if (toDir.startsWith(`${fromDir}/`)) return fail('Het doel mag niet binnen het deck zelf liggen.');
+    await gh.connect(token);
+    const depth = deckDepth(`${toDir}/x`);
+    const commitSha = await gh.moveDeck(
+      a.message || `refactor: verplaats ${path.posix.basename(fromDir)} naar ${toDir} via GLR MCP`,
+      fromDir,
+      toDir,
+      (rp, text) => (/\.html$/i.test(rp) ? rewriteShellPrefix(text, depth) : null),
+      { slidesContent: source },
+      opts,
+    );
+    const url = gh.pagesUrl(`${toDir}/slides.md`, opts);
+    return ok(
+      `Op GitHub verplaatst: ${fromDir} → ${toDir} (commit ${commitSha.slice(0, 7)}).\n`
+      + `Nieuwe live URL (zodra de build klaar is): ${url}\n`
+      + `Let op: de live-URL en PDF-naam zijn veranderd. Werk je lokale kopie bij met move_presentation (folder "${toDir}").`,
+      { from: fromDir, dir: toDir, path: `${toDir}/slides.md`, commitSha, url },
+    );
   });
 }

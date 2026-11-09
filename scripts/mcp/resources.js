@@ -1,11 +1,13 @@
-/** De 4 MCP-resources. */
+/** De 5 MCP-resources. */
 import fs from 'node:fs';
 import { COMPONENT_LIST } from '../../admin/src/blocks/parsers.js';
+import { BLOCKS } from '../../admin/src/blocks/registry.js';
 import { SLIDE_TEMPLATES } from '../../admin/src/blocks/templates.js';
 import { FRAMEWORKS } from '../../admin/src/pedagogy/frameworks.js';
 import { PHASES } from '../../admin/src/pedagogy/phases.js';
 import { SEGMENT_MIN_ITEMS, REDUNDANCY_WORDS, CODE_MIN_LINES } from '../../admin/src/pedagogy/coach.js';
 import { componentCheatSheet, formatRules } from '../../admin/src/pedagogy/ai-prompt.js';
+import { scanMedia } from '../lib/media-manifest.js';
 import { InputDocs } from './input-docs.js';
 
 const json = (uri, data) => ({ contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(data, null, 2) }] });
@@ -22,14 +24,27 @@ export function registerResources(server, ws) {
     title: 'Brondocumenten (input/)', description: 'Bestanden in de lokale input/ map, of een melding dat die alleen lokaal te lezen is.', mimeType: 'application/json',
   }, (uri) => json(uri.href, input.list()));
 
+  server.registerResource('media-library', 'glr://media/library', {
+    title: 'Mediabibliotheek', description: 'Alle afbeeldingen en video\'s in shared/ en presentations/ (met type en categorie).', mimeType: 'application/json',
+  }, (uri) => json(uri.href, { generatedAt: new Date().toISOString(), media: scanMedia(ws.root) }));
+
   server.registerResource('components-catalog', 'glr://components/catalog', {
     title: 'GLR-componenten', description: 'Beschikbare componenten, slide-templates en de opmaakregels van slides.md.', mimeType: 'text/markdown',
   }, (uri) => md(uri.href, [
     '# GLR-componenten', '',
     '## Herkende componenten (Properties Panel)',
     ...COMPONENT_LIST.map((c) => `- \`${c.id}\` — ${c.label}`),
+    '', '## Invoegbare blokken (insert_component_on_slide)',
+    ...BLOCKS.filter((b) => !b.inlineOnly).map((b) => `- \`${b.id}\` — ${b.label}${b.variants ? ` (varianten: ${b.variants.map((v) => v.label).join(', ')})` : ''}`),
     '', '## Slide-templates (add_slide)', ...SLIDE_TEMPLATES.map((t) => `- \`${t.kind}\` — ${t.label}: ${t.hint}`),
     '', '## Opmaakregels', formatRules(), '', '## HTML-voorbeelden', componentCheatSheet(),
+    '', '## Media & opmaak',
+    '- **Foto\'s en video\'s**: neem ze op met `add_media_file` (lokaal bestand of URL) en gebruik het teruggegeven pad; bekijk wat er al is met `list_media` of de resource `glr://media/library`.',
+    '- **Afbeelding**: `<figure class="img-auto"><img src="assets/foto.jpg" alt="beschrijving"></figure>`',
+    '- **Video**: `<figure class="video-wrap"><video controls src="assets/clip.mp4"></video></figure>`',
+    '- **YouTube/embed**: `<figure class="embed"><iframe data-src="https://www.youtube-nocookie.com/embed/ID" title="Titel" allowfullscreen></iframe></figure>`',
+    '- **Achtergrondafbeelding**: zet `data-background-image` (optioneel `data-background-size`/`-position`/`-opacity`) met `update_slide_properties` (`attrs`) of in de `.slide:`-regel.',
+    '- **Inline opmaak**: Markdown **vet**, *cursief*, `code` en `<span class="highlight">kernbegrip</span>`.',
   ].join('\n')));
 
   server.registerResource('pedagogy-guidelines', 'glr://pedagogy/guidelines', {

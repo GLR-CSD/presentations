@@ -1,0 +1,37 @@
+name: CI (tests)
+
+# Test-flow: draait de offline testsuites op elke pull request en op pushes naar
+# main, zodat regressies in de deck-parser, de Studio-editor, de MCP-server en de
+# OAuth-worker niet ongemerkt naar Pages of de PDF-release gaan.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test

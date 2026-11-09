@@ -242,12 +242,21 @@ AI-assistent-modal bevat kopieerbare configuraties.
 
 | Onderdeel | Inhoud |
 |---|---|
-| Resources | `glr://decks/manifest`, `glr://input/files`, `glr://components/catalog`, `glr://pedagogy/guidelines` |
+| Resources | `glr://decks/manifest`, `glr://input/files`, `glr://media/library`, `glr://components/catalog`, `glr://pedagogy/guidelines` |
 | Tools (invoer) | `list_input_documents`, `read_input_document` (md, txt, html, **pptx**, **pdf**) — alleen lokaal; online volgt een melding om de tekst in de chat te plakken |
-| Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
+| Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `move_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
+| Tools (media) | `add_media_file` — neemt een **foto of video** op (lokaal bestand via `source` of download via `url`) in de `assets/`-map van het deck (standaard) of gedeeld in `shared/img/uploads/` / `shared/video/`; geeft het repo-pad, het pad voor `slides.md` en een kant-en-klaar HTML-snippet terug. `list_media` toont alle bestaande afbeeldingen en video's (met deck-relatieve paden) |
 | Tools (didactiek) | `analyze_presentation_pedagogy`, `apply_pedagogical_fix` |
-| Tools (GitHub) | `publish_deck_to_github` (atomaire commit + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status` |
+| Tools (GitHub) | `publish_deck_to_github` (atomaire commit van `slides.md` + `index.html` **plus de mediabestanden uit de deck-map** + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status`, `list_github_decks` (decks op GitHub; optioneel met metadata), `move_presentation_on_github` (verplaatst een deck op GitHub in één atomaire commit) |
 | Prompts | `van-input-naar-presentatie`, `maak-theorieles-gagne`, `maak-werkles-standup`, `didactische-les-review` |
+
+Foto's en video's zet je in `slides.md` met een pad als `assets/foto.jpg` (deck-eigen) of
+`/presentations/shared/img/uploads/foto.jpg` (gedeeld); `add_media_file` rekent dat pad voor je uit.
+Gebruik voor een video een `<figure class="video-wrap"><video controls src="assets/clip.mp4"></video></figure>`
+of de YouTube-variant `<figure class="embed"><iframe data-src="https://www.youtube-nocookie.com/embed/…"></iframe></figure>`
+(die twee staan ook als blok "Video" in `insert_component_on_slide`). Een achtergrondafbeelding zet je met
+`update_slide_properties` (`attrs: { "data-background-image": … }`); inline opmaak gewoon in Markdown
+(`**vet**`, `*cursief*`, `<span class="highlight">kernbegrip</span>`).
 
 Omgevingsvariabelen: `GLR_REPO_ROOT` (andere werkmap), `GITHUB_TOKEN` of `GLR_GITHUB_TOKEN`,
 `GLR_GITHUB_REPO` (`owner/repo`, standaard `GLR-CSD/presentations`). Slides zijn 1-gebaseerd,
@@ -261,6 +270,7 @@ hebben een token nodig.
 | `npm run vendor` | Zet reveal.js en KaTeX (uit `node_modules`) plus de chalkboard/customcontrols-plugins klaar in `shared/vendor/`, en bundelt de GLR Slide Studio (esbuild) naar `admin/vendor/` — alles offline |
 | `npm run build:index` | Bouwt de portaalpagina `dist/index.html` (opvouwbare directory-tree met zoekfunctie), genereert ontbrekende `.html`-shells voor losse `.md`-decks, schrijft het deck-manifest (`presentations-manifest.json`) en kopieert `admin/` + `shared/img/uploads/` naar `dist/` |
 | `npm run build` | `vendor` + `build:index` |
+| `npm test` | Draait alle testsuites hieronder op een rij (roundtrip, bridge, parsers, oauth, deploy, commit, history, mcp) — dit is wat `ci.yml` in CI doet |
 | `npm run test:roundtrip` | Verifieert dat de deck-parser elke `slides.md` byte-identiek terugschrijft (verliesvrij) |
 | `npm run test:bridge` | Meet de Markdown ↔ ProseMirror-fidelity van de visuele editor |
 | `npm run test:parsers` | Test de HTML-boom, formulier-parsers, templates en didactische modules |
@@ -289,16 +299,15 @@ tabblad en staat een korte uitleg met een link naar de reveal.js-documentatie.
 
 ## Deployment (CI/CD)
 
-Twee onafhankelijke workflows, elk met `paths`-filters zodat ze alleen draaien als dat nodig is:
+Drie workflows: `ci.yml` draait altijd; `deploy.yml` en `pdfs.yml` hebben elk `paths`-filters zodat ze alleen draaien als dat nodig is:
 
 | Workflow | Draait bij wijzigingen in | Doet | Duur |
 |---|---|---|---|
+| `ci.yml` (tests) | élke pull request en elke push naar `main` (geen `paths`-filter) | `npm ci` + `npm test`: alle offline testsuites (deck-parser, editor-brug, formulieren, OAuth-worker, deployments, MCP) | ~1-2 min |
 | `deploy.yml` (site) | `presentations/`, `shared/`, `admin/`, `scripts/build-index.js`, `scripts/lib/`, vendor-scripts, `package*.json` | bouwt `dist/` + portaalpagina en deployt naar **GitHub Pages**; wacht nooit op PDF's | ~30-45 s |
 | `pdfs.yml` (PDF's) | `presentations/`, `shared/`, `scripts/lib/`, export-/vendor-scripts, `package-lock.json` | rendert alleen verouderde decks (parallel, DeckTape) en uploadt ze naar de **GitHub Release `pdfs`** | ~10 s (niets te doen) tot ~2 min (alles) |
 
-Alleen README/docs/tests/MCP-wijzigingen starten geen van beide. Via *Actions → Build PDFs →
-Run workflow* (optie `force`) bouw je alle PDF's opnieuw. De Studio-build-indicator volgt
-alleen `deploy.yml`; de PDF volgt enkele minuten later.
+`ci.yml` draait altijd — ook voor README/docs/MCP-wijzigingen — zodat een gebroken test de merge blokkeert. `deploy.yml` en `pdfs.yml` slaan zulke wijzigingen juist over. Via *Actions → Build PDFs → Run workflow* (optie `force`) bouw je alle PDF's opnieuw. De Studio-build-indicator volgt alleen `deploy.yml`; de PDF volgt enkele minuten later.
 
 ### PDF's op een GitHub Release
 

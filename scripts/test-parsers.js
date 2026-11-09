@@ -4,6 +4,7 @@
  * Gebruik:  npm run test:parsers
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDeck, serializeDeck } from '../admin/src/state/deck.js';
@@ -19,7 +20,7 @@ import * as C from '../admin/src/pedagogy/coach.js';
 import { NOTE_PROMPTS, appendNotePrompt } from '../admin/src/pedagogy/note-prompts.js';
 import { TECH_ICONS, TECH_CATEGORIES, ICON_VARIANTS, techIconSvg, techIconDataUri, searchTechIcons } from '../admin/src/ui/tech-icons.js';
 import { relativeAssetPath } from '../admin/src/ui/util.js';
-import { scanMedia, mediaCategory } from './lib/media-manifest.js';
+import { scanMedia, mediaCategory, mediaKind, extOf } from './lib/media-manifest.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presentationsRoot = path.join(root, 'presentations');
@@ -439,9 +440,27 @@ function checkBody(body, where) {
   ok(mediaCategory('presentations/webxr_x/assets/a.png') === 'WebXR' && mediaCategory('presentations/iets/a.png') === 'Overig', 'media: webxr/overig');
   const media = scanMedia(root);
   ok(media.length > 0 && media.every((m) => m.path && m.name && m.folder && m.category && m.ext), 'scanMedia: items compleet');
-  ok(media.every((m) => /^(png|jpe?g|svg|webp|gif)$/.test(m.ext) && !m.path.startsWith('/')), 'scanMedia: alleen afbeeldingen, repo-relatief');
+  ok(media.every((m) => ['image', 'video'].includes(m.kind) && !m.path.startsWith('/')), 'scanMedia: alleen media, repo-relatief');
   ok(media.some((m) => m.path === 'shared/img/glr-logo.svg' && m.category === 'Gedeeld'), 'scanMedia: shared logo');
   ok(media.some((m) => /\/assets\//.test(m.path)) && media.some((m) => /\/media\//.test(m.path)), 'scanMedia: assets/ en media/');
+
+  // video-herkenning (losse fixture: in de repo staan alleen afbeeldingen)
+  ok(mediaKind('mp4') === 'video' && mediaKind('.webm') === 'video' && mediaKind('PNG') === 'image' && mediaKind('mp3') === null, 'mediaKind: video/afbeelding/onbekend');
+  ok(extOf('assets/Clip.MP4') === 'mp4' && extOf('geen-extensie') === '', 'extOf: extensie kleine letters');
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'glr-media-'));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, 'shared/img'), { recursive: true });
+    fs.mkdirSync(path.join(tmpRoot, 'presentations/x/assets'), { recursive: true });
+    fs.writeFileSync(path.join(tmpRoot, 'shared/img/logo.png'), 'x');
+    fs.writeFileSync(path.join(tmpRoot, 'presentations/x/assets/clip.mp4'), 'x');
+    fs.writeFileSync(path.join(tmpRoot, 'presentations/x/assets/notes.txt'), 'x');
+    const m2 = scanMedia(tmpRoot);
+    ok(m2.length === 2, `scanMedia-fixture: alleen media (${m2.length})`);
+    ok(m2.some((m) => m.ext === 'mp4' && m.kind === 'video' && m.deck === 'presentations/x'), 'scanMedia: video met kind en deck');
+    ok(m2.some((m) => m.ext === 'png' && m.kind === 'image'), 'scanMedia: afbeelding met kind');
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 }
 
 /* ---- afbeeldingsformaat ---- */

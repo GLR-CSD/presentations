@@ -19,7 +19,7 @@ export function createGlrServer({ root } = {}) {
   const ws = new Workspace(root);
   const server = new McpServer(
     { name: 'glr-slides', version: '1.0.0' },
-    { instructions: 'Tools om GLR Reveal.js-presentaties te maken en te verbeteren. Lees eerst de resources glr://components/catalog en glr://pedagogy/guidelines. Slides zijn 1-gebaseerd, blockIndex is 0-gebaseerd. De input/ map bestaat alleen lokaal.' },
+    { instructions: 'Tools om GLR Reveal.js-presentaties te maken en te verbeteren. Lees eerst de resources glr://components/catalog en glr://pedagogy/guidelines. Slides zijn 1-gebaseerd, blockIndex is 0-gebaseerd. Foto\'s en video\'s voeg je toe met add_media_file (lokaal bestand of URL); bekijk bestaande media met list_media of de resource glr://media/library. De input/ map bestaat alleen lokaal.' },
   );
   registerTools(server, ws);
   registerResources(server, ws);
