@@ -90,7 +90,24 @@ Note: Fase 1/2 DIM — doeloriëntatie. Toon het contrast tussen statisch vormge
 
 <p class="kicker">Even opwarmen · denk – deel · 2 minuten</p>
 <p class="big-q">Welke app of game opende jij vanochtend?</p>
-<p class="lede" style="font-size:26px;max-width:900px;margin-top:24px">Vertel je buur: wat was de <strong>Input</strong> (jouw actie), wat deed de <strong>Code</strong> en wat zág je als <strong>Output</strong>?</p>
+<p class="lede" style="font-size:26px;max-width:900px;margin-top:20px">Vertel je buur: wat was de <strong>Input</strong> (jouw actie), wat deed de <strong>Code</strong> en wat zág je als <strong>Output</strong>?</p>
+<div style="margin-top:26px">
+  <svg width="780" height="118" viewBox="0 0 780 118" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline: Input, Code, Output">
+    <rect x="8" y="28" width="220" height="60" rx="6" fill="#F4F4F6" stroke="#111111" stroke-width="2"/>
+    <text x="118" y="54" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111" letter-spacing="1">INPUT</text>
+    <text x="118" y="75" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#555555">jouw muis · je toetsen</text>
+    <line x1="234" y1="58" x2="278" y2="58" stroke="#A6E22E" stroke-width="3"/>
+    <polygon points="286,58 274,51 274,65" fill="#A6E22E"/>
+    <rect x="294" y="28" width="192" height="60" rx="6" fill="#A6E22E" stroke="#111111" stroke-width="2"/>
+    <text x="390" y="54" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111" letter-spacing="1">CODE</text>
+    <text x="390" y="75" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#111111">p5.js draait</text>
+    <line x1="492" y1="58" x2="536" y2="58" stroke="#A6E22E" stroke-width="3"/>
+    <polygon points="544,58 532,51 532,65" fill="#A6E22E"/>
+    <rect x="552" y="28" width="220" height="60" rx="6" fill="#F4F4F6" stroke="#111111" stroke-width="2"/>
+    <text x="662" y="54" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111" letter-spacing="1">OUTPUT</text>
+    <text x="662" y="75" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#555555">wat je ziet gebeuren</text>
+  </svg>
+</div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">03</span></div>
 
 Note: Fase 1 DIM — voorkennis activeren. Bewust laagdrempelig: geen 'juiste' voorkennis nodig. Introduceer het Input → Code → Output denken: jouw muis/toets = input, de pagina/game = code, wat je ziet = output. Haal 3 à 4 antwoorden op en benoem telkens de link: 'dat is óók programmeren!' Houd het positief en zonder oordeel.
@@ -100,11 +117,11 @@ Note: Fase 1 DIM — voorkennis activeren. Bewust laagdrempelig: geen 'juiste' v
 <p class="kicker">Route · 4 sessies · 220 min netto + 20 min pauze</p>
 <h2 class="title title--md">Vandaag bouw je drie dingen, in vier sprints</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">1</span><div><h3>🎨 Sessie 1.1 · VJ-kaleidoscoop</h3><p>55 min · lijnen spiegelen en je eigen penselen via <code>keyPressed</code>.</p></div></div>
-  <div class="listrow"><span class="n">2</span><div><h3>💥 Sessie 1.2 · Vuurwerk &amp; zwaartekracht</h3><p>55 min · 60 deeltjes per klik die ontploffen en stuiteren.</p></div></div>
-  <div class="listrow"><span class="n">–</span><div><h3>☕ Pauze</h3><p>20 min · na 110 minuten werken.</p></div></div>
-  <div class="listrow"><span class="n">3</span><div><h3>🎯 Sessie 1.3 · Arcade Aim-Trainer</h3><p>55 min · scope kiezen en een game met timer bouwen.</p></div></div>
-  <div class="listrow"><span class="n">4</span><div><h3>🖼️ Sessie 1.4 · Gallery Walk &amp; evaluatie</h3><p>55 min · elkaars game testen en je quests afvinken.</p></div></div>
+  <div class="listrow"><span class="n">1</span><div><h3>Sessie 1.1 · VJ-kaleidoscoop</h3><p>55 min · lijnen spiegelen en je eigen penselen via <code>keyPressed</code>.</p></div></div>
+  <div class="listrow"><span class="n">2</span><div><h3>Sessie 1.2 · Vuurwerk &amp; zwaartekracht</h3><p>55 min · 60 deeltjes per klik die ontploffen en stuiteren.</p></div></div>
+  <div class="listrow"><span class="n">–</span><div><h3>Pauze</h3><p>20 min · na 110 minuten werken.</p></div></div>
+  <div class="listrow"><span class="n">3</span><div><h3>Sessie 1.3 · Arcade Aim-Trainer</h3><p>55 min · scope kiezen en een game met timer bouwen.</p></div></div>
+  <div class="listrow"><span class="n">4</span><div><h3>Sessie 1.4 · Gallery Walk &amp; evaluatie</h3><p>55 min · elkaars game testen en je quests afvinken.</p></div></div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">04</span></div>
 
@@ -114,10 +131,29 @@ Note: Fase 2 DIM — informeer over de opzet. Elke sprint duurt 55 min en verloo
 
 <p class="kicker">Sessie 1.1 · kijk mee (ik doe voor)</p>
 <h2 class="title title--md">Elke sketch heeft twee helften: <code>setup()</code> en <code>draw()</code></h2>
-<div class="rows">
-  <div class="listrow"><span class="n">01</span><div><h3><code>setup()</code> · één keer</h3><p>Canvas, kleurmodus en achtergrond — draait één keer bij de start.</p></div></div>
-  <div class="listrow"><span class="n">02</span><div><h3><code>draw()</code> · 60× per seconde</h3><p>Hier teken je elk frame opnieuw, dus ook de lijn die je muis volgt.</p></div></div>
-  <div class="listrow"><span class="n">03</span><div><h3><code>line(pmouseX, pmouseY, mouseX, mouseY)</code></h3><p>Van je vorige muispositie naar je huidige: zo krijg je een spoor.</p></div></div>
+<div class="row" style="margin-top:12px;align-items:center">
+  <div class="col" style="flex:1 1 60%">
+    <div class="rows">
+      <div class="listrow"><span class="n">01</span><div><h3><code>setup()</code> · één keer</h3><p>Canvas, kleurmodus en achtergrond — draait één keer bij de start.</p></div></div>
+      <div class="listrow"><span class="n">02</span><div><h3><code>draw()</code> · 60× per seconde</h3><p>Hier teken je elk frame opnieuw, dus ook de lijn die je muis volgt.</p></div></div>
+      <div class="listrow"><span class="n">03</span><div><h3><code>line(pmouseX, pmouseY, mouseX, mouseY)</code></h3><p>Van je vorige muispositie naar je huidige: zo krijg je een spoor.</p></div></div>
+    </div>
+  </div>
+  <div class="col" style="flex:1 1 40%;text-align:center">
+    <svg width="300" height="240" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="setup draait eenmaal, draw herhaalt in een lus">
+      <rect x="80" y="18" width="140" height="56" rx="6" fill="#F4F4F6" stroke="#111111" stroke-width="2"/>
+      <text x="150" y="43" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111">setup()</text>
+      <text x="150" y="62" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#555555">draait 1×</text>
+      <line x1="150" y1="74" x2="150" y2="102" stroke="#A6E22E" stroke-width="3"/>
+      <polygon points="150,109 143,97 157,97" fill="#A6E22E"/>
+      <rect x="80" y="116" width="140" height="56" rx="6" fill="#A6E22E" stroke="#111111" stroke-width="2"/>
+      <text x="150" y="141" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111">draw()</text>
+      <text x="150" y="160" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#111111">elk frame</text>
+      <path d="M 220 156 C 268 156 268 78 224 78" fill="none" stroke="#A6E22E" stroke-width="3"/>
+      <polygon points="216,78 229,72 229,84" fill="#A6E22E"/>
+      <text x="286" y="126" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" fill="#555555">60×/s</text>
+    </svg>
+  </div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">05</span></div>
 
@@ -152,12 +188,31 @@ Note: Fase 5 DIM — begeleide inoefening ('We do'). Laat de klas letterlijk met
 ---
 
 <p class="kicker">Sessie 1.1 · jij alleen · 2-staps makersprint</p>
-<h2 class="title title--md">🎨 Tier 1 · De Neon Laser Kaleidoscoop</h2>
-<div class="rows">
-  <div class="listrow"><span class="n">A</span><div><h3>🛠️ Stap A · Code-Fix (<code>TODO 2–3</code>)</h3><p>Maak de 4-voudige spiegeling af: <code>width - mouseX</code> én <code>height - mouseY</code>.</p></div></div>
-  <div class="listrow"><span class="n">B</span><div><h3>✨ Stap B · Studio Design-Briefing (<code>TODO 4</code>)</h3><p>Bouw <code>keyPressed()</code>: toets <code>1</code> dunne laser, <code>2</code> dikke kwast, <code>3</code> cirkels, <code>spatie</code> veegt schoon.</p></div></div>
+<h2 class="title title--md">Tier 1 · De Neon Laser Kaleidoscoop</h2>
+<div class="row" style="margin-top:10px;align-items:center">
+  <div class="col" style="flex:1 1 58%">
+    <div class="rows">
+      <div class="listrow"><span class="n">A</span><div><h3>Stap A · Code-Fix (<code>TODO 2–3</code>)</h3><p>Maak de 4-voudige spiegeling af: <code>width - mouseX</code> én <code>height - mouseY</code>.</p></div></div>
+      <div class="listrow"><span class="n">B</span><div><h3>Stap B · Studio Design-Briefing (<code>TODO 4</code>)</h3><p>Bouw <code>keyPressed()</code>: toets <code>1</code> dunne laser, <code>2</code> dikke kwast, <code>3</code> cirkels, <code>spatie</code> veegt schoon.</p></div></div>
+    </div>
+    <p class="body" style="margin-top:14px">Klaar? Vink <strong>Quest 1.1</strong> af en laat je buur je sneltoetsen testen.</p>
+  </div>
+  <div class="col" style="flex:1 1 42%;text-align:center">
+    <svg width="290" height="290" viewBox="0 0 290 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vier spiegels rond je muis">
+      <rect x="0" y="0" width="290" height="290" fill="#0D0E12" stroke="#333333" stroke-width="2"/>
+      <line x1="145" y1="0" x2="145" y2="290" stroke="#A6E22E" stroke-width="1.2" stroke-dasharray="5 5"/>
+      <line x1="0" y1="145" x2="290" y2="145" stroke="#A6E22E" stroke-width="1.2" stroke-dasharray="5 5"/>
+      <circle cx="90" cy="90" r="9" fill="#A6E22E"/>
+      <text x="90" y="72" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" fill="#A6E22E">jij</text>
+      <circle cx="200" cy="90" r="9" fill="#FF0055"/>
+      <text x="200" y="72" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="11" fill="#FF0055">width - x</text>
+      <circle cx="90" cy="200" r="9" fill="#002BFF"/>
+      <text x="90" y="232" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="11" fill="#002BFF">height - y</text>
+      <circle cx="200" cy="200" r="9" fill="#FFE600"/>
+      <text x="200" y="232" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="11" fill="#FFE600">beide</text>
+    </svg>
+  </div>
 </div>
-<p class="body" style="margin-top:20px">Klaar? Vink <strong>Quest 1.1</strong> af en laat je buur je sneltoetsen testen.</p>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">08</span></div>
 
 Note: Fase 6 DIM — zelfstandige verwerking. De reader (tab 01) bevat de volledige Tier 1 startcode + uitklapbaar spiekbriefje. Stap A garandeert een snelle succeservaring (iedereen kan de spiegeling afmaken), Stap B daagt snelle studenten uit met keyPressed. Loop rond met didactisch coachen (verdiepende vragen, geen antwoorden voorkauwen).
@@ -181,10 +236,10 @@ Note: Fase 6 DIM — dit kader projecteer en benoem je aan het begin van élke z
 ---
 
 <p class="kicker">Sessie 1.2 · particle-fysica</p>
-<h2 class="title title--md">💥 Tier 2 · Vuurwerk, zwaartekracht &amp; stuiteren</h2>
+<h2 class="title title--md">Tier 2 · Vuurwerk, zwaartekracht &amp; stuiteren</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">A</span><div><h3>🛠️ Stap A · Code-Fix (<code>TODO 1–3</code>)</h3><p>Zwaartekracht <code>p.vy += 0.22</code> en een explosie van <code>60</code> deeltjes per muisklik.</p></div></div>
-  <div class="listrow"><span class="n">B</span><div><h3>✨ Stap B · Design-Briefing (<code>TODO 4</code>)</h3><p>Vloer-stuiter: <code>p.y &gt; height - 10</code> → <code>p.vy *= -0.78</code>.</p></div></div>
+  <div class="listrow"><span class="n">A</span><div><h3>Stap A · Code-Fix (<code>TODO 1–3</code>)</h3><p>Zwaartekracht <code>p.vy += 0.22</code> en een explosie van <code>60</code> deeltjes per muisklik.</p></div></div>
+  <div class="listrow"><span class="n">B</span><div><h3>Stap B · Design-Briefing (<code>TODO 4</code>)</h3><p>Vloer-stuiter: <code>p.y &gt; height - 10</code> → <code>p.vy *= -0.78</code>.</p></div></div>
 </div>
 <p class="body" style="margin-top:20px">Zwaartekracht + stuiter = het kernidee achter elk spel: <strong>beweging + krachten</strong>.</p>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">10</span></div>
@@ -207,13 +262,13 @@ Note: Pauze na 110 minuten (tussen Sessie 1.2 en 1.3). Laat deze slide staan. Ch
 <div class="row" style="margin-top:14px">
   <div class="col" style="flex:1 1 50%">
     <div class="defbox" style="min-height:160px">
-      <span class="k">🎉 Scope A · Festival VJ-Deck</span>
+      <span class="k">Scope A · Festival VJ-Deck</span>
       <p>Bouw je kaleidoscoop + vuurwerk uit tot één live VJ-instrument met meerdere penselen.</p>
     </div>
   </div>
   <div class="col" style="flex:1 1 50%">
     <div class="defbox" style="min-height:160px">
-      <span class="k">🎯 Scope B · Arcade Aim-Trainer met Timer</span>
+      <span class="k">Scope B · Arcade Aim-Trainer met Timer</span>
       <p>Een klikbaar doelwit met score én een krimpend doelwit tegen de klok.</p>
     </div>
   </div>
@@ -226,10 +281,10 @@ Note: Kerntaak P1-K1 (plannen) — de student kiest én onderbouwt één haalbar
 ---
 
 <p class="kicker">Sessie 1.3 · jij alleen</p>
-<h2 class="title title--md">🎯 Tier 3 · Aim-Trainer met 30-seconden timer</h2>
+<h2 class="title title--md">Tier 3 · Aim-Trainer met 30-seconden timer</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">A</span><div><h3>🛠️ Stap A · Code-Fix (<code>TODO 1–3</code>)</h3><p>Klikbaar doelwit via <code>dist(mouseX, mouseY, doelX, doelY)</code> + live score.</p></div></div>
-  <div class="listrow"><span class="n">B</span><div><h3>✨ Stap B · Design-Briefing (<code>TODO 4</code>)</h3><p>⏱️ 30s countdown (<code>frameCount % 60</code>) én een krimpend doelwit: <code>doelStraal *= 0.94</code>. Herstart met <code>R</code>.</p></div></div>
+  <div class="listrow"><span class="n">A</span><div><h3>Stap A · Code-Fix (<code>TODO 1–3</code>)</h3><p>Klikbaar doelwit via <code>dist(mouseX, mouseY, doelX, doelY)</code> + live score.</p></div></div>
+  <div class="listrow"><span class="n">B</span><div><h3>Stap B · Design-Briefing (<code>TODO 4</code>)</h3><p>30s countdown (<code>frameCount % 60</code>) én een krimpend doelwit: <code>doelStraal *= 0.94</code>. Herstart met <code>R</code>.</p></div></div>
 </div>
 <p class="body" style="margin-top:20px">Test je game goed — straks laat je hem aan <strong>drie</strong> klasgenoten zien.</p>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">13</span></div>
@@ -241,9 +296,9 @@ Note: Fase 6 DIM — zelfstandige verwerking met WHHTUK + 3B. De timer + krimpen
 <p class="kicker">Sessie 1.4 · Arcade Gallery Walk</p>
 <h2 class="title title--md">Laat je game testen door drie klasgenoten</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">01</span><div><h3>💬 Vertel kort wat je hebt gebouwd</h3><p>Welke scope en wat heb je zelf toegevoegd?</p></div></div>
-  <div class="listrow"><span class="n">02</span><div><h3>👀 Laat drie testers spelen</h3><p>Ze noteren: speelt het, en wat kan beter?</p></div></div>
-  <div class="listrow"><span class="n">03</span><div><h3>🤝 Geef terug: één compliment + één tip</h3><p>Bij elke game die jij test: één progressie + één discrepantie.</p></div></div>
+  <div class="listrow"><span class="n">01</span><div><h3>Vertel kort wat je hebt gebouwd</h3><p>Welke scope en wat heb je zelf toegevoegd?</p></div></div>
+  <div class="listrow"><span class="n">02</span><div><h3>Laat drie testers spelen</h3><p>Ze noteren: speelt het, en wat kan beter?</p></div></div>
+  <div class="listrow"><span class="n">03</span><div><h3>Geef terug: één compliment + één tip</h3><p>Bij elke game die jij test: één progressie + één discrepantie.</p></div></div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">14</span></div>
 
