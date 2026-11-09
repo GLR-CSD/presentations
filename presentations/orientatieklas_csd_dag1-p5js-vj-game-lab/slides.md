@@ -48,19 +48,92 @@ Note: Laat deze slide staan terwijl studenten binnenkomen; de animatie speelt va
 
 <div class="row" style="margin-top:36px;align-items:center">
   <div class="col" style="flex:0 0 260px">
-    <figure class="img-auto"><figure class="img-full"><img src="../../shared/img/uploads/1794239015952-melvin.png" alt="1794239015952 melvin"></figure></figure>
+    <div style="width:230px;height:230px;border:2px dashed #C9CBD1;background:#F4F4F6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#A0A2A8;font-family:'Space Grotesk',sans-serif;">
+      <span style="font-size:38px;line-height:1">&#128247;</span>
+      <span style="font-size:14px;text-transform:uppercase;letter-spacing:0.14em">Foto</span>
+    </div>
   </div>
   <div class="col" style="flex:1 1 auto;text-align:left">
     <p class="kicker">Even voorstellen</p>
-    <h2 class="title" style="font-size:80px;line-height:1;margin:12px 0 18px">Meneer Loos</h2>
+    <h2 class="title" style="font-size:80px;line-height:1;margin:12px 0 18px">Dhr. Loos</h2>
     <p class="body" style="font-size:23px;margin:0">Docent <strong>Creative Software Developer</strong></p>
-    <p class="body" style="font-size:19px;color:#6B6E76;margin-top:8px">Grafisch Lyceum Rotterdam · deze week laat ik je zien dat code net zo creatief is als een penseel.</p>
+    <p class="body" style="font-size:19px;color:#6B6E76;max-width:600px;margin-top:8px">Grafisch Lyceum Rotterdam · deze week laat ik je zien dat code net zo creatief is als een penseel.</p>
   </div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
 
 Note: Stel jezelf in ±2 minuten voor. Zet een (pas)foto of ander plaatje in het fotovlak links en vervang de tekst met je eigen gegevens (voornaam, rol, een kort persoonlijk feitje). Houd het beknopt.
 
+---
+
+<p class="kicker">Vooruitblik · wat je deze week allemaal kunt gaan maken</p>
+<h2 class="title title--md">Drie dagen, drie manieren om te maken</h2>
+<div class="row" style="margin-top:14px">
+  <div class="col" style="flex:1 1 33%;text-align:left">
+    <svg width="176" height="104" viewBox="0 0 176 104" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="p5.js neon-tekening">
+      <rect width="176" height="104" fill="#0D0E12"/>
+      <path d="M10 96 C 30 40 55 20 88 50" fill="none" stroke="#A6E22E" stroke-width="2.5"/>
+      <path d="M10 46 C 35 78 70 84 92 48" fill="none" stroke="#FF0055" stroke-width="2.5"/>
+      <path d="M118 18 C 130 52 150 62 166 34" fill="none" stroke="#00AAFF" stroke-width="2.5"/>
+      <circle cx="140" cy="82" r="5" fill="#A6E22E"/>
+      <circle cx="84" cy="88" r="6" fill="#FFE600"/>
+      <circle cx="52" cy="60" r="4" fill="#FF0055"/>
+      <circle cx="118" cy="52" r="3" fill="#00AAFF"/>
+    </svg>
+    <h3 style="margin:10px 0 4px;font-size:18px">Dag 1 · p5.js — 2D</h3>
+    <p style="font-size:15px;line-height:1.45;margin:0;color:#555">Teken met code: neon-kaleidoscoop, vuurwerk en een eigen game.</p>
+    <a href="https://editor.p5js.org/" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;background:#A6E22E;color:#111;border:2px solid #111;padding:4px 12px;font-weight:700;font-size:13px;text-decoration:none;font-family:'Space Grotesk',sans-serif">Probeer live &rarr;</a>
+  </div>
+  <div class="col" style="flex:1 1 33%;text-align:left">
+    <svg width="176" height="104" viewBox="0 0 176 104" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A-Frame 3D-wereld">
+      <rect width="176" height="104" fill="#0D0E12"/>
+      <line x1="0" y1="88" x2="176" y2="88" stroke="#333333" stroke-width="1"/>
+      <line x1="0" y1="74" x2="176" y2="74" stroke="#262626" stroke-width="1"/>
+      <polygon points="66,42 104,42 104,70 66,70" fill="none" stroke="#A6E22E" stroke-width="2"/>
+      <polygon points="66,42 80,32 118,32 104,42" fill="none" stroke="#00AAFF" stroke-width="2"/>
+      <line x1="104" y1="42" x2="118" y2="32" stroke="#00AAFF" stroke-width="2"/>
+      <line x1="66" y1="70" x2="80" y2="60" stroke="#444444" stroke-width="1.5"/>
+      <line x1="104" y1="70" x2="118" y2="60" stroke="#444444" stroke-width="1.5"/>
+      <circle cx="30" cy="40" r="3" fill="#FF0055"/>
+    </svg>
+    <h3 style="margin:10px 0 4px;font-size:18px">Dag 2 · A-Frame + Quest 2 — VR</h3>
+    <p style="font-size:15px;line-height:1.45;margin:0;color:#555">Bouw een 3D-wereld in de browser en stap er zelf in met de VR-bril.</p>
+    <a href="https://aframe.io/" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;background:#A6E22E;color:#111;border:2px solid #111;padding:4px 12px;font-weight:700;font-size:13px;text-decoration:none;font-family:'Space Grotesk',sans-serif">Probeer live &rarr;</a>
+  </div>
+  <div class="col" style="flex:1 1 33%;text-align:left">
+    <svg width="176" height="104" viewBox="0 0 176 104" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Micro:bit met draadloze radio">
+      <rect width="176" height="104" fill="#0D0E12"/>
+      <rect x="46" y="32" width="66" height="40" rx="6" fill="#111522" stroke="#A6E22E" stroke-width="2"/>
+      <circle cx="58" cy="44" r="2.4" fill="#A6E22E"/><circle cx="79" cy="44" r="2.4" fill="#A6E22E"/><circle cx="100" cy="44" r="2.4" fill="#FF0055"/>
+      <circle cx="58" cy="54" r="2.4" fill="#A6E22E"/><circle cx="79" cy="54" r="2.4" fill="#FF0055"/><circle cx="100" cy="54" r="2.4" fill="#A6E22E"/>
+      <circle cx="58" cy="64" r="2.4" fill="#FF0055"/><circle cx="79" cy="64" r="2.4" fill="#A6E22E"/><circle cx="100" cy="64" r="2.4" fill="#A6E22E"/>
+      <path d="M120 46 q 10 -16 20 0" fill="none" stroke="#00AAFF" stroke-width="1.6"/>
+      <path d="M120 58 q 14 -26 28 0" fill="none" stroke="#00AAFF" stroke-width="1.6" opacity="0.55"/>
+      <line x1="50" y1="30" x2="58" y2="30" stroke="#FFFF00" stroke-width="3" stroke-linecap="square"/>
+    </svg>
+    <h3 style="margin:10px 0 4px;font-size:18px">Dag 3 · Micro:bit — fysiek</h3>
+    <p style="font-size:15px;line-height:1.45;margin:0;color:#555">Programmeer een echt apparaat en laat twee bits draadloos praten.</p>
+    <a href="https://makecode.microbit.org/?lang=nl" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;background:#A6E22E;color:#111;border:2px solid #111;padding:4px 12px;font-weight:700;font-size:13px;text-decoration:none;font-family:'Space Grotesk',sans-serif">Probeer live &rarr;</a>
+  </div>
+</div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
+
+Note:
+Vooruitblik op de hele week. Laat de drie thumbnails zien en klik er één of twee live open (p5.js-editor, aframe.io, makecode) zodat studenten direct iets bewegends zien wat ze straks zélf kunnen bouwen. Rode draad: vandaag 2D tekenen, morgen 3D/VR, woensdag een fysiek apparaat. Houd het kort (±2-3 min) — het is een teaser, geen demo.
+---
+
+<p class="kicker">De module · Creative Software Developer · deze week</p>
+<h2 class="title title--md">Aan het einde van deze week kun je …</h2>
+<div class="rows">
+  <div class="listrow"><span class="n">01</span><div><h3>Met p5.js een interactieve 2D-visual én een mini-game bouwen</h3><p>Dag 1 · neon-kaleidoscoop, vuurwerk en je eigen aim-trainer.</p></div></div>
+  <div class="listrow"><span class="n">02</span><div><h3>Met A-Frame een 3D-wereld bouwen en die op een VR-bril testen</h3><p>Dag 2 · een eigen scène die je binnenstapt met de Meta Quest 2.</p></div></div>
+  <div class="listrow"><span class="n">03</span><div><h3>Met de Micro:bit een fysiek apparaat programmeren en draadloos koppelen</h3><p>Dag 3 · een game én een radio-hack tussen twee echte Micro:bits.</p></div></div>
+  <div class="listrow"><span class="n">04</span><div><h3>Onderbouwd kiezen of Creative Software Developer bij jou past</h3><p>Elke dag · via het Studiekeuze-Kompas.</p></div></div>
+</div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
+
+Note:
+Module-leerdoelen voor de hele week. Lees ze voor of laat studenten ze hardop lezen, en koppel elk doel aan de dag. Zo ervaren ze het hele beroepsbeeld van een CSD: van visuele code (Dag 1) via ruimtelijk/XR (Dag 2) naar fysieke hardware (Dag 3), plus de studiekeuze-check via het Kompas. Vier doelen, geen technisch jargon.
 ---
 
 <p class="kicker">Wat is een Creative Software Developer?</p>
