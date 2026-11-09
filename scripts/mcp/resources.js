@@ -38,6 +38,13 @@ export function registerResources(server, ws) {
     ...BLOCKS.filter((b) => !b.inlineOnly).map((b) => `- \`${b.id}\` — ${b.label}${b.variants ? ` (varianten: ${b.variants.map((v) => v.label).join(', ')})` : ''}`),
     '', '## Slide-templates (add_slide)', ...SLIDE_TEMPLATES.map((t) => `- \`${t.kind}\` — ${t.label}: ${t.hint}`),
     '', '## Opmaakregels', formatRules(), '', '## HTML-voorbeelden', componentCheatSheet(),
+    '', '## Media & opmaak',
+    '- **Foto\'s en video\'s**: neem ze op met `add_media_file` (lokaal bestand of URL) en gebruik het teruggegeven pad; bekijk wat er al is met `list_media` of de resource `glr://media/library`.',
+    '- **Afbeelding**: `<figure class="img-auto"><img src="assets/foto.jpg" alt="beschrijving"></figure>`',
+    '- **Video**: `<figure class="video-wrap"><video controls src="assets/clip.mp4"></video></figure>`',
+    '- **YouTube/embed**: `<figure class="embed"><iframe data-src="https://www.youtube-nocookie.com/embed/ID" title="Titel" allowfullscreen></iframe></figure>`',
+    '- **Achtergrondafbeelding**: zet `data-background-image` (optioneel `data-background-size`/`-position`/`-opacity`) met `update_slide_properties` (`attrs`) of in de `.slide:`-regel.',
+    '- **Inline opmaak**: Markdown **vet**, *cursief*, `code` en `<span class="highlight">kernbegrip</span>`.',
   ].join('\n')));
 
   server.registerResource('pedagogy-guidelines', 'glr://pedagogy/guidelines', {

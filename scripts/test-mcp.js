@@ -114,8 +114,8 @@ const { client, transport } = await connect(withInput);
 try {
   // Catalogus
   const tools = (await client.listTools()).tools.map((t) => t.name);
-  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status', 'add_media_file', 'list_media'];
-  ok(tools.length === 17 && wantedTools.every((t) => tools.includes(t)), `17 tools aanwezig (${tools.length})`);
+  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status', 'add_media_file', 'list_media', 'list_github_decks', 'move_presentation_on_github'];
+  ok(tools.length === 19 && wantedTools.every((t) => tools.includes(t)), `19 tools aanwezig (${tools.length})`);
   const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
   ok(resources.join() === ['glr://components/catalog', 'glr://decks/manifest', 'glr://input/files', 'glr://media/library', 'glr://pedagogy/guidelines'].join(), `5 resources (${resources})`);
   const prompts = (await client.listPrompts()).prompts.map((p) => p.name).sort();
@@ -337,6 +337,10 @@ try {
   ok(pub.isError && text(pub).includes('GITHUB_TOKEN'), 'publish zonder token = heldere fout');
   const chk = await call(client, 'check_github_build_status', {});
   ok(chk.isError && text(chk).includes('GITHUB_TOKEN'), 'build-status zonder token = heldere fout');
+  const lgd = await call(client, 'list_github_decks', {});
+  ok(lgd.isError && text(lgd).includes('GITHUB_TOKEN'), 'list_github_decks zonder token = heldere fout');
+  const mgm = await call(client, 'move_presentation_on_github', { path: P, folder: 'presentations/2026-2027/jaar-1/design/design1_verplaatst' });
+  ok(mgm.isError && text(mgm).includes('GITHUB_TOKEN'), 'move_presentation_on_github zonder token = heldere fout');
 
   const stderr = transport.stderr ? await new Promise((res) => { let b = ''; transport.stderr.on('data', (d) => { b += d; }); setTimeout(() => res(b), 50); }) : '';
   ok(!stderr.includes('Error:'), 'geen onverwachte serverfouten op stderr');
@@ -362,4 +366,4 @@ try {
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failures) { console.error(`\n${failures} fout(en).`); process.exit(1); }
-console.log(`✔ MCP: 17 tools, 5 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);
+console.log(`✔ MCP: 19 tools, 5 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);

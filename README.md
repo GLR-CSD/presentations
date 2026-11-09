@@ -247,14 +247,16 @@ AI-assistent-modal bevat kopieerbare configuraties.
 | Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `move_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
 | Tools (media) | `add_media_file` — neemt een **foto of video** op (lokaal bestand via `source` of download via `url`) in de `assets/`-map van het deck (standaard) of gedeeld in `shared/img/uploads/` / `shared/video/`; geeft het repo-pad, het pad voor `slides.md` en een kant-en-klaar HTML-snippet terug. `list_media` toont alle bestaande afbeeldingen en video's (met deck-relatieve paden) |
 | Tools (didactiek) | `analyze_presentation_pedagogy`, `apply_pedagogical_fix` |
-| Tools (GitHub) | `publish_deck_to_github` (atomaire commit van `slides.md` + `index.html` **plus de mediabestanden uit de deck-map** + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status` |
+| Tools (GitHub) | `publish_deck_to_github` (atomaire commit van `slides.md` + `index.html` **plus de mediabestanden uit de deck-map** + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status`, `list_github_decks` (decks op GitHub; optioneel met metadata), `move_presentation_on_github` (verplaatst een deck op GitHub in één atomaire commit) |
 | Prompts | `van-input-naar-presentatie`, `maak-theorieles-gagne`, `maak-werkles-standup`, `didactische-les-review` |
 
 Foto's en video's zet je in `slides.md` met een pad als `assets/foto.jpg` (deck-eigen) of
 `/presentations/shared/img/uploads/foto.jpg` (gedeeld); `add_media_file` rekent dat pad voor je uit.
 Gebruik voor een video een `<figure class="video-wrap"><video controls src="assets/clip.mp4"></video></figure>`
 of de YouTube-variant `<figure class="embed"><iframe data-src="https://www.youtube-nocookie.com/embed/…"></iframe></figure>`
-(die twee staan ook als blok "Video" in `insert_component_on_slide`).
+(die twee staan ook als blok "Video" in `insert_component_on_slide`). Een achtergrondafbeelding zet je met
+`update_slide_properties` (`attrs: { "data-background-image": … }`); inline opmaak gewoon in Markdown
+(`**vet**`, `*cursief*`, `<span class="highlight">kernbegrip</span>`).
 
 Omgevingsvariabelen: `GLR_REPO_ROOT` (andere werkmap), `GITHUB_TOKEN` of `GLR_GITHUB_TOKEN`,
 `GLR_GITHUB_REPO` (`owner/repo`, standaard `GLR-CSD/presentations`). Slides zijn 1-gebaseerd,
