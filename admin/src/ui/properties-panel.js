@@ -131,6 +131,19 @@ export class PropertiesPanel {
     }
     this.host.appendChild(head);
 
+    // Zit de selectie in een kolom/kaart/rastercel? Dan kun je daar direct iets aan toevoegen.
+    if (isHtml) {
+      const html = block.attrs.html;
+      const cpath = B.containerPathFor(html, sel.path);
+      const node = T.nodeAt(T.parse(html), sel.path);
+      if (cpath && !B.isContainer(node)) {
+        const cnode = T.nodeAt(T.parse(html), cpath);
+        const box = h('div', 'pp-container-add');
+        renderFields(box, [{ kind: 'section', label: `Toevoegen aan ${crumbLabel(html, cnode)}`, path: cpath, first: true, actions: ['image', 'text'] }], this.htmlCtx({ blockIndex: sel.blockIndex, path: sel.path }, sel));
+        this.host.appendChild(box);
+      }
+    }
+
     // universele animatiestap-schakelaar
     if (B.canFragment(body, sel)) {
       const f = { kind: 'toggle', label: 'Toon pas na klik tijdens presentatie (Animatiestap / Fragment)', badge: '.fragment', value: B.isFragment(body, sel) };
@@ -247,6 +260,7 @@ export class PropertiesPanel {
       select: (path) => this.api.selectPath(target.blockIndex, path),
       upload: (file) => this.api.upload(file),
       pickImage: (cur) => this.api.pickImage(cur),
+      containerAction: (id, path) => this.api.addToContainer(target.blockIndex, path, id),
     };
     return ctx;
   }
@@ -305,6 +319,10 @@ export class PropertiesPanel {
       if (!v) this.render();
     }));
 
+    /* achtergrondafbeelding */
+    root.appendChild(h('div', 'pp-section-title', 'Achtergrondafbeelding'));
+    this.renderBackgroundImage(root, a);
+
     /* footer */
     root.appendChild(h('div', 'pp-section-title', 'Footer'));
     this.renderFooter(root);
@@ -340,6 +358,33 @@ export class PropertiesPanel {
     adv.appendChild(simpleField('text', { label: 'State', badge: 'data-state', value: a['data-state'] || '' }, set('data-state')));
     adv.appendChild(simpleField('text', { label: 'Zichtbaarheid', badge: 'data-visibility', value: a['data-visibility'] || '' }, set('data-visibility')));
     root.appendChild(adv);
+  }
+
+  /** Achtergrondafbeelding via reveal's data-background-*-attributen (`<!-- .slide: -->`). */
+  renderBackgroundImage(root, a) {
+    const set = (key, v) => this.api.updateSlideAttrs((obj) => { if (v === '' || v == null) delete obj[key]; else obj[key] = String(v); }, { label: 'Achtergrondafbeelding aangepast', origin: 'form-input', coalesceKey: `attr:${key}` });
+    const has = !!a['data-background-image'];
+    const opacity = a['data-background-opacity'] != null ? Math.round(parseFloat(a['data-background-opacity']) * 100) : 100;
+    const fields = [
+      { kind: 'image', label: 'Afbeelding (pad of URL)', badge: 'data-background-image', value: a['data-background-image'] || '', upload: true, set: (v) => set('data-background-image', v) },
+    ];
+    if (has) {
+      fields.push(
+        { kind: 'segmented', label: 'Weergave', badge: 'data-background-size', value: a['data-background-size'] || 'cover', options: [['cover', 'Vullen'], ['contain', 'Passend']], set: (v) => set('data-background-size', v) },
+        { kind: 'focus', label: 'Focuspunt', badge: 'data-background-position', value: a['data-background-position'] || '50% 50%', set: (v) => set('data-background-position', v === '50% 50%' ? '' : v) },
+        { kind: 'range', label: 'Dekking', badge: 'data-background-opacity', value: opacity, min: 0, max: 100, step: 5, unit: '%', set: (v) => set('data-background-opacity', Number(v) >= 100 ? '' : (Number(v) / 100).toFixed(2).replace(/0$/, '')) },
+        { kind: 'button', label: 'Achtergrondafbeelding verwijderen', set: () => { for (const k of ['data-background-image', 'data-background-size', 'data-background-position', 'data-background-opacity']) set(k, ''); } },
+      );
+    }
+    const form = h('div', 'pp-form');
+    renderFields(form, fields, {
+      openItem: -1, select() {}, repeater() {},
+      upload: (file) => this.api.upload(file),
+      pickImage: (cur) => this.api.pickImage(cur),
+      apply: (f, v, { redraw } = {}) => { f.set(v); if (redraw) this.render(); },
+    });
+    root.appendChild(form);
+    root.appendChild(h('p', 'insp-help', 'Combineer met het thema Donker en een lagere dekking voor leesbare tekst.'));
   }
 
   setTheme(theme) {

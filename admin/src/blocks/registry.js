@@ -7,6 +7,7 @@
  * als beschermd `htmlBlock` ingevoegd (Optie A).
  */
 import { htmlBlock, commentBlock } from './snippets.js';
+import { EVIDENCE_PLACEHOLDER } from './templates.js';
 
 const para = (text) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
 const heading = (level) => () => ({ type: 'heading', attrs: { level }, content: [{ type: 'text', text: 'Nieuwe kop' }] });
@@ -60,7 +61,8 @@ export const BLOCKS = [
   /* ----------------------------------------------------------- Code & Media */
   { id: 'code', label: 'Codeblok', category: 'code', icon: 'code', tooltip: 'Codeblok met syntaxmarkering en line-highlighting.', action: (c) => c.insertContent({ type: 'codeBlock', attrs: { lang: 'javascript', highlight: '' }, content: [{ type: 'text', text: 'const antwoord = 42;' }] }), node: () => ({ type: 'codeBlock', attrs: { lang: 'javascript', highlight: '' }, content: [{ type: 'text', text: 'const antwoord = 42;' }] }) },
   { id: 'terminal', label: 'Terminalvenster', category: 'code', icon: 'terminal', tooltip: 'Terminalvenster met een commando (.terminal-window).', html: '<div class="terminal-window">\n  <div class="terminal-window__bar"><span class="dot"></span><span class="dot"></span><span class="dot dot--lime"></span><span class="title">bash</span></div>\n  <pre><code>npm run serve</code></pre>\n</div>' },
-  { id: 'image', label: 'Afbeelding', category: 'code', icon: 'image', tooltip: 'Afbeelding toevoegen (uploaden vanaf computer of via URL).', upload: true },
+  { id: 'image', label: 'Afbeelding', category: 'code', icon: 'image', tooltip: 'Afbeelding toevoegen (uploaden vanaf computer of via URL).', upload: true,
+    html: `<figure class="img-auto" data-placeholder>\n  <img src="${EVIDENCE_PLACEHOLDER}" alt="Beschrijf hier wat de afbeelding laat zien.">\n</figure>` },
   { id: 'bar', label: 'Accentbalk', category: 'code', icon: 'bar', tooltip: 'Lime accentbalk als visueel anker (.bar).', html: '<div class="bar"></div>' },
   { id: 'pill', label: 'Pill', category: 'code', icon: 'pill', tooltip: 'Klein label in een pill-vorm.', html: '<p><span class="pill">Label</span></p>' },
 

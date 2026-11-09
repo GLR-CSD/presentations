@@ -72,14 +72,23 @@ function applyElementComment(open, inline) {
 /** Maakt relatieve `src`/`data-src`/`poster`-paden absoluut t.o.v. `base` (alleen voor preview/miniaturen). */
 export function resolveAssets(html, base) {
   if (!base) return html;
-  return html.replace(/(\s(?:src|data-src|poster)=")(?!(?:[a-z][a-z0-9+.-]*:|\/|#|data:))([^"]+)"/gi, (m, pre, url) => `${pre}${base}${url}"`);
+  return html.replace(/(\s(?:src|data-src|poster|data-background-image)=")(?!(?:[a-z][a-z0-9+.-]*:|\/|#|data:))([^"]+)"/gi, (m, pre, url) => `${pre}${base}${url}"`);
+}
+
+/** Relatief achtergrondpad → absoluut t.o.v. `base` (alleen voor preview/miniaturen). */
+export function resolveBackground(url, base) {
+  if (!base || !url || /^(?:[a-z][a-z0-9+.-]*:|\/|#|data:)/i.test(url)) return url;
+  return `${base}${url}`;
 }
 
 /** Zet de `<!-- .slide: ... -->`-attributen om naar HTML-attributen. */
-export function slideAttrsToHtml(slide) {
+export function slideAttrsToHtml(slide, base = '') {
   const attrs = slide.attrsData || {};
   return Object.entries(attrs)
-    .map(([key, value]) => (value === '' ? key : `${key}="${escapeAttr(value)}"`))
+    .map(([key, raw]) => {
+      const value = key === 'data-background-image' ? resolveBackground(raw, base) : raw;
+      return value === '' ? key : `${key}="${escapeAttr(value)}"`;
+    })
     .join(' ');
 }
 

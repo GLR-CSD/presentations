@@ -427,6 +427,24 @@ body {
 .preview-frame:not(.is-presenting) .reveal .fragment { opacity: 1 !important; visibility: visible !important; transform: none !important; }
 .studio-editor .ProseMirror .is-glr-selected.glr-block { border-color: #8fe507; }
 
+/* ---- Sleep-handvatten voor afbeeldingen ---- */
+.resize-handles { position: absolute; z-index: 25; pointer-events: none; }
+.resize-handle {
+  position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid #8fe507; border-radius: 3px;
+  pointer-events: auto; touch-action: none; box-sizing: border-box;
+}
+.resize-handle::after { content: ""; position: absolute; inset: -16px; } /* 44px raakvlak */
+.resize-handle--nw { left: -6px; top: -6px; cursor: nwse-resize; }
+.resize-handle--ne { right: -6px; top: -6px; cursor: nesw-resize; }
+.resize-handle--sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.resize-handle--se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.resize-handle--w { left: -6px; top: calc(50% - 6px); cursor: ew-resize; }
+.resize-handle--e { right: -6px; top: calc(50% - 6px); cursor: ew-resize; }
+.resize-handles__badge {
+  position: absolute; left: 50%; top: -30px; transform: translateX(-50%); padding: 2px 8px; border-radius: 6px;
+  background: #111; color: #8fe507; font: 600 12px/1.5 system-ui, sans-serif; pointer-events: none;
+}
+
 /* ---- Quick-Action balk ---- */
 .quickbar {
   position: absolute; z-index: 30; display: flex; gap: 2px; padding: 3px; background: #111; border-radius: 9px;
@@ -437,6 +455,7 @@ body {
   display: grid; place-items: center; width: 30px; height: 28px; padding: 0; border: 0; border-radius: 6px;
   background: transparent; color: #EDEDED; cursor: pointer;
 }
+.quickbar__btn[hidden] { display: none; }
 .quickbar__btn:hover:not(:disabled) { background: rgba(255, 255, 255, .14); }
 .quickbar__btn:disabled { opacity: .3; cursor: default; }
 .quickbar__btn.is-active { background: #8fe507; color: #111; }
@@ -492,6 +511,11 @@ body {
 .pp-section-title { font-family: 'Space Grotesk', sans-serif; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ui-green); margin: 18px 14px 8px; }
 .pp-form .pp-section-title { margin-left: 0; margin-right: 0; }
 .pp-section-title--first { margin-top: 14px; }
+.pp-section { display: flex; flex-direction: column; }
+.pp-container-add { padding: 0 14px; border-bottom: 1px solid var(--ui-border); }
+.pp-container-add .pp-section-title { margin: 12px 0 8px; }
+.pp-section-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 10px; }
+.pp-section-actions .pp-btn { flex: 1 1 0; width: auto; min-width: 0; margin: 0; display: inline-flex; justify-content: center; align-items: center; gap: 3px; padding: 5px 9px; font-size: 12px; }
 .studio-inspector.pp > .pp-field, .studio-inspector.pp > .pp-toggle, .studio-inspector.pp > .pp-seg, .studio-inspector.pp > .pp-btn, .studio-inspector.pp > .pp-link, .studio-inspector.pp > .insp-help { margin-left: 14px; margin-right: 14px; }
 .pp-field { margin-bottom: 12px; }
 .pp-field__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
@@ -527,6 +551,13 @@ body {
 .pp-hue { aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent; cursor: pointer; opacity: .45; }
 .pp-hue[aria-pressed="true"] { opacity: 1; border-color: #111; box-shadow: 0 0 0 2px #fff inset; }
 .pp-imgrow { display: flex; gap: 6px; }
+.pp-rangerow { display: flex; align-items: center; gap: 8px; }
+.pp-rangerow .pp-range { flex: 1; min-width: 0; }
+.pp-rangerow .pp-input--num { width: 64px; flex: 0 0 auto; }
+.pp-unit { font-size: 12px; color: var(--ui-muted, #666); }
+.pp-focus { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px; }
+.pp-focus__pt { width: 26px; height: 26px; border-radius: 4px; border: 1px solid var(--ui-border, #ccc); background: transparent; cursor: pointer; padding: 0; }
+.pp-focus__pt.is-active { background: var(--ui-accent, #8bc926); border-color: var(--ui-accent, #8bc926); }
 .pp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: 12.5px; font-weight: 600; padding: 7px 11px; border: 1px solid var(--ui-border); border-radius: 6px; background: #fff; cursor: pointer; white-space: nowrap; }
 .pp-btn:hover:not(:disabled) { border-color: #8fe507; background: #F6FBEA; }
 .pp-btn--add { width: 100%; margin-top: 8px; color: var(--ui-green); border-style: dashed; border-color: #B6D77A; background: #F9FCF1; }

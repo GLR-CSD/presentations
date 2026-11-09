@@ -9,7 +9,7 @@
 import * as T from '../../admin/src/blocks/html-tree.js';
 import { describe, resolveTarget } from '../../admin/src/blocks/parsers.js';
 
-const EDITABLE = new Set(['text', 'number', 'textarea', 'rich', 'code', 'select', 'toggle', 'color']);
+const EDITABLE = new Set(['text', 'number', 'textarea', 'rich', 'code', 'select', 'toggle', 'color', 'image', 'segmented', 'range', 'focus']);
 const clip = (v, n = 400) => (typeof v === 'string' && v.length > n ? `${v.slice(0, n)}…` : v);
 
 /** Geeft elk bewerkbaar veld een unieke key. */
@@ -39,7 +39,7 @@ function repeatersOf(fields) {
 
 const fieldView = ({ key, f }) => {
   const v = { key, kind: f.kind, value: clip(f.value) };
-  if (f.kind === 'select') v.options = (f.options || []).map((o) => (Array.isArray(o) ? o[0] : o.value ?? o));
+  if (f.kind === 'select' || f.kind === 'segmented') v.options = (f.options || []).map((o) => (Array.isArray(o) ? o[0] : o.value ?? o));
   return v;
 };
 
@@ -76,7 +76,16 @@ function fresh(html, path) {
 function coerce(f, value) {
   if (f.kind === 'toggle') return value === true || value === 'true';
   if (f.kind === 'number') return Number(value);
-  if (f.kind === 'select') {
+  if (f.kind === 'range') {
+    const n = Number(value);
+    if (!Number.isFinite(n)) throw new Error(`Ongeldige waarde "${value}" (getal verwacht).`);
+    return Math.min(f.max ?? 100, Math.max(f.min ?? 0, n));
+  }
+  if (f.kind === 'focus') {
+    if (!/^(0|50|100)% (0|50|100)%$/.test(String(value))) throw new Error(`Ongeldig focuspunt "${value}". Gebruik bijv. "50% 50%" of "0% 100%".`);
+    return String(value);
+  }
+  if (f.kind === 'select' || f.kind === 'segmented') {
     const allowed = (f.options || []).map((o) => String(Array.isArray(o) ? o[0] : o.value ?? o));
     if (!allowed.includes(String(value))) throw new Error(`Ongeldige keuze "${value}". Toegestaan: ${allowed.map((a) => `"${a}"`).join(', ')}.`);
     return String(value);

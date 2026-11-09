@@ -105,6 +105,96 @@ export function insertAfterSelection(body, sel, nodes) {
   return { body: toBody(blocks), index: at };
 }
 
+/* ------------------------------------------------------- afbeelding invoegen --- */
+
+const CONTAINER_CLS = ['col', 'glr-col', 'glr-card', 'card', 'opcard'];
+const GRID_CLS = ['grid2', 'glr-columns'];
+const isPlaceholderFig = (n) => n.tag === 'figure' && (T.hasAttr(n, 'data-placeholder')
+  || (T.elementChildren(n).find((c) => c.tag === 'img') || { attrs: [] }).attrs.some((a) => a.lname === 'src' && /Visueel(%20|\s)bewijs/.test(a.value || '')));
+
+/** Is dit element een vak waar je iets in kunt zetten (kolom, kaart, rastercel)? */
+export function isContainer(node) {
+  if (!node || node.type !== 'el') return false;
+  if (CONTAINER_CLS.some((c) => T.hasClass(node, c))) return true;
+  const p = node.parent;
+  return !!(p && p.type === 'el' && GRID_CLS.some((c) => T.hasClass(p, c)) && node.tag !== 'figure');
+}
+
+/** Pad van het dichtstbijzijnde vak rond (of op) `path`, of null. */
+export function containerPathFor(html, path) {
+  let node = path && path.length ? T.nodeAt(T.parse(html), path) : null;
+  while (node && node.type === 'el' && !isContainer(node)) node = node.parent;
+  return node && node.type === 'el' ? T.pathOf(node) : null;
+}
+
+const selOf = (bi, path) => ({ blockIndex: bi, path, highlight: path, openItem: -1 });
+
+/** Vult een placeholder-figuur (src/alt) en haalt de markering weg. */
+function fillPlaceholder(html, figPath, src, alt) {
+  let out = html;
+  const fig = () => T.nodeAt(T.parse(out), figPath);
+  const img = () => T.elementChildren(fig()).find((c) => c.tag === 'img');
+  out = T.setAttr(out, img(), 'src', src);
+  out = T.setAttr(out, img(), 'alt', alt || '');
+  return T.removeAttr(out, fig(), 'data-placeholder');
+}
+
+/**
+ * Zet `html` als laatste kind in het vak op `containerPath` van blok `blockIndex`.
+ * @returns {{ body:string, selection:object }|null}
+ */
+export function appendToContainer(body, blockIndex, containerPath, html) {
+  const blocks = blocksOf(body);
+  if (!isHtml(blocks[blockIndex])) return null;
+  let src = blocks[blockIndex].attrs.html;
+  const node = T.nodeAt(T.parse(src), containerPath);
+  if (!node) return null;
+  src = T.appendChild(src, node, html);
+  const kids = T.elementChildren(T.nodeAt(T.parse(src), containerPath));
+  blocks[blockIndex] = { type: 'htmlBlock', attrs: { html: src } };
+  return { body: toBody(blocks), selection: selOf(blockIndex, [...containerPath, kids.length - 1]) };
+}
+
+/**
+ * Plaatst een afbeelding in een vak: een lege placeholder in dat vak wordt gevuld,
+ * anders komt de figuur onderaan het vak.
+ */
+export function insertImageInContainer(body, blockIndex, containerPath, { src, alt, figureHtml }) {
+  const html = htmlAt(body, blockIndex);
+  if (html == null) return null;
+  const node = T.nodeAt(T.parse(html), containerPath);
+  if (!node) return null;
+  let ph = null;
+  T.walk(node, (el, p) => { if (!ph && isPlaceholderFig(el)) ph = [...containerPath, ...p]; return !ph; });
+  if (ph) return { body: setHtmlAt(body, blockIndex, fillPlaceholder(html, ph, src, alt)), selection: selOf(blockIndex, ph) };
+  return appendToContainer(body, blockIndex, containerPath, figureHtml);
+}
+
+/**
+ * Plaatst een afbeelding laagbewust: (1) IN de geselecteerde kolom/kaart/rastercel (een lege
+ * placeholder daarin wordt gevuld), (2) anders vult hij een placeholder op de slide (bij
+ * voorkeur in het geselecteerde blok), (3) anders null (aanroeper valt terug op insertAfterSelection).
+ * @returns {{ body:string, selection:{blockIndex:number,path:number[],highlight:number[],openItem:number} }|null}
+ */
+export function insertImageIntoSelection(body, sel, img) {
+  const blocks = blocksOf(body);
+  // 1. geselecteerd vak
+  if (sel && sel.blockIndex != null && isHtml(blocks[sel.blockIndex])) {
+    const cpath = containerPathFor(blocks[sel.blockIndex].attrs.html, sel.highlight && sel.highlight.length ? sel.highlight : sel.path);
+    if (cpath) return insertImageInContainer(body, sel.blockIndex, cpath, img);
+  }
+  // 2. placeholder op de slide
+  const found = [];
+  blocks.forEach((b, bi) => {
+    if (!isHtml(b)) return;
+    T.walk(T.parse(b.attrs.html), (el, p) => { if (isPlaceholderFig(el)) found.push({ bi, p }); return true; });
+  });
+  const hit = found.find((f) => sel && f.bi === sel.blockIndex) || found[0];
+  if (!hit) return null;
+  blocks[hit.bi] = { type: 'htmlBlock', attrs: { html: fillPlaceholder(blocks[hit.bi].attrs.html, hit.p, img.src, img.alt) } };
+  return { body: toBody(blocks), selection: selOf(hit.bi, hit.p) };
+}
+
 /* ------------------------------------------------------------ selectie-ops --- */
 
 const shiftLast = (p, d) => (p.length ? [...p.slice(0, -1), p[p.length - 1] + d] : p);

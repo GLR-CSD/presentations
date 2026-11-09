@@ -260,8 +260,8 @@ function checkBody(body, where) {
 
 /* ---- (g) slide-templates: round-trip + elk onderdeel heeft een formulier ---- */
 {
-  ok(SLIDE_TEMPLATES.length === 9, 'precies 9 templates (3x3)');
-  ok(new Set(SLIDE_TEMPLATES.map((t) => t.kind)).size === 9, 'template-kinds uniek');
+  ok(SLIDE_TEMPLATES.length === 13, '13 templates (9 basis + 4 afbeelding)');
+  ok(new Set(SLIDE_TEMPLATES.map((t) => t.kind)).size === SLIDE_TEMPLATES.length, 'template-kinds uniek');
   for (const tpl of SLIDE_TEMPLATES) checkBody(slideTemplateBody(tpl.kind, { number: 7, footerText: 'Vak · Test' }), `template ${tpl.kind}`);
   const kinds = Object.fromEntries(SLIDE_TEMPLATES.map((t) => [t.kind, slideTemplateBody(t.kind)]));
   ok(/class="bleed dark"/.test(kinds.hero), 'hero: bleed dark');
@@ -442,6 +442,63 @@ function checkBody(body, where) {
   ok(media.every((m) => /^(png|jpe?g|svg|webp|gif)$/.test(m.ext) && !m.path.startsWith('/')), 'scanMedia: alleen afbeeldingen, repo-relatief');
   ok(media.some((m) => m.path === 'shared/img/glr-logo.svg' && m.category === 'Gedeeld'), 'scanMedia: shared logo');
   ok(media.some((m) => /\/assets\//.test(m.path)) && media.some((m) => /\/media\//.test(m.path)), 'scanMedia: assets/ en media/');
+}
+
+/* ---- afbeeldingsformaat ---- */
+{
+  const field = (src, label) => { const n = T.parse(src).children[0]; const d = P.describe(src, n); return [d.fields.find((f) => f.label === label), n]; };
+  const run = (src, label, v) => { const [f, n] = field(src, label); return f.apply(src, n, v); };
+  const fig = '<figure class="img-auto" style="margin-top:20px"><img src="a.png" alt="x"></figure>';
+
+  ok(T.getStyleProp(T.parse(fig).children[0], 'margin-top') === '20px', 'getStyleProp');
+  let o = run(fig, 'Breedte', 40);
+  ok(o.includes('--img-w:40%') && o.includes('margin-top:20px'), 'eigen breedte behoudt andere style-declaraties');
+  ok(run(o, 'Grootte', 'm').includes('img-m') && !run(o, 'Grootte', 'm').includes('--img-w'), 'preset wist --img-w');
+  o = run(fig, 'Weergave', 'cover');
+  ok(o.includes('img-cover'), 'bijsnijden zet img-cover');
+  ok(field(o, 'Focuspunt')[0] && field(o, 'Verhouding')[0], 'focus + verhouding verschijnen bij bijsnijden');
+  ok(run(o, 'Focuspunt', '0% 0%').includes('--img-pos:0% 0%'), 'focuspunt');
+  ok(run(fig, 'Uitlijning', 'img-center').includes('img-center'), 'uitlijning');
+  const dirty = run(run(fig, 'Breedte', 40), 'Weergave', 'cover');
+  const reset = run(dirty, 'Herstel grootte', true);
+  ok(!reset.includes('--img-w') && !reset.includes('img-cover') && reset.includes('img-auto') && reset.includes('margin-top:20px'), 'herstel grootte');
+  ok(field('<figure><img src="a.png" alt=""></figure>', 'Grootte')[0].value === 'full', 'kale figure toont Breed');
+  const bare = '<img src="a.png" alt="x">';
+  ok(run(bare, 'Grootte', 's').startsWith('<figure class="img-s">'), 'kale img wordt ingepakt');
+  ok(T.setStyleProp(fig, T.parse(fig).children[0], 'margin-top', null).includes('class="img-auto"') && !T.setStyleProp(fig, T.parse(fig).children[0], 'margin-top', null).includes('style='), 'lege style wordt verwijderd');
+}
+
+/* ---- laagbewust afbeelding invoegen ---- */
+{
+  const figureHtml = '<figure class="img-auto"><img src="n.png" alt="n"></figure>';
+  const img = { src: 'n.png', alt: 'n', figureHtml };
+  const colBody = '<div class="row">\n  <div class="col"><p class="body">A</p></div>\n  <div class="col"><p class="body">B</p></div>\n</div>';
+  // klik op de tekst in kolom 2 → afbeelding komt in kolom 2
+  const sel = { blockIndex: 0, path: [0, 1, 0], highlight: [0, 1, 0], openItem: -1 };
+  ok(JSON.stringify(B.containerPathFor(B.htmlAt(colBody, 0), [0, 1, 0])) === '[0,1]', 'containerPathFor vindt de kolom');
+  ok(B.containerPathFor(B.htmlAt(colBody, 0), [0]) === null, 'rij zelf is geen vak');
+  const r = B.insertImageIntoSelection(colBody, sel, img);
+  const rh = r && B.htmlAt(r.body, 0);
+  ok(r && T.nodeAt(T.parse(rh), [0, 1]).children.some((c) => c.tag === 'figure'), 'afbeelding komt in de gekozen kolom');
+  ok(r && T.nodeAt(T.parse(rh), r.selection.path).tag === 'figure', 'selectie wijst naar de nieuwe figure');
+  ok(B.insertImageIntoSelection('## T\n\nTekst', null, img) === null, 'geen vak/placeholder: null (fallback)');
+  // expliciet vak (panelknop) + tekst toevoegen
+  const c1 = B.insertImageInContainer(colBody, 0, [0, 0], img);
+  ok(c1 && T.nodeAt(T.parse(B.htmlAt(c1.body, 0)), [0, 0]).children.filter((c) => c.type === 'el').length === 2, 'insertImageInContainer: kolom 1');
+  const t1 = B.appendToContainer(colBody, 0, [0, 1], '<p class="body">Nieuwe tekst</p>');
+  ok(t1 && /B<\/p><p class="body">Nieuwe tekst<\/p>/.test(B.htmlAt(t1.body, 0)), 'appendToContainer: tekst in kolom 2');
+  // rastercellen zijn ook vakken
+  const grid = '<div class="grid2">\n  <div><p>A</p></div>\n  <div><p>B</p></div>\n</div>';
+  ok(JSON.stringify(B.containerPathFor(B.htmlAt(grid, 0), [0, 1, 0])) === '[0,1]', 'rastercel is een vak');
+  // placeholders
+  const tpl = slideTemplateBody('imagetext');
+  const f = B.insertImageIntoSelection(tpl, null, { ...img, alt: 'Nieuw' });
+  ok(f && /src="n\.png"/.test(f.body) && /alt="Nieuw"/.test(f.body) && !/data-placeholder/.test(f.body) && /img-cover/.test(f.body), 'placeholder wordt gevuld met behoud van klassen');
+  // panel: kolomsecties krijgen knoppen
+  const rowDesc = P.describe(B.htmlAt(colBody, 0), T.parse(B.htmlAt(colBody, 0)).children[0]);
+  ok(rowDesc.fields.filter((x) => x.kind === 'section' && x.actions && x.actions.includes('image')).length === 2, 'beide kolomsecties hebben Afbeelding/Tekst-knoppen');
+  const colDesc = P.describe(B.htmlAt(colBody, 0), T.nodeAt(T.parse(B.htmlAt(colBody, 0)), [0, 0]));
+  ok(colDesc.fields.some((x) => x.kind === 'section' && x.actions), 'losse kolom heeft toevoegknoppen');
 }
 
 if (!process.argv.includes('--lib')) {

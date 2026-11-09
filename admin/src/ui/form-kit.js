@@ -279,11 +279,77 @@ function imageField(f, ctx) {
       const r = await ctx.pickImage(input.value);
       if (!r || !r.src) return;
       input.value = r.src;
-      ctx.apply(f, r.src, { redraw: true });
+      ctx.apply(f, r.src, { redraw: !(r.alt && f.altField) });
+      // alt uit de dialoog alleen overnemen als er nog geen alt-tekst is
+      if (r.alt && f.altField && !f.altField.value) ctx.apply(f.altField, r.alt, { redraw: true });
     });
     w.appendChild(pick);
   }
   return w;
+}
+
+/** Segmented control als veld (opties: [[waarde, label], …]). */
+function segmentedField(f, ctx) {
+  const w = wrap(f);
+  w.appendChild(segmented(f.options.map(([v, l]) => [v, l]), f.value, (v) => ctx.apply(f, v, { redraw: true })));
+  return w;
+}
+
+/** Slider + getal (%). Tijdens slepen live (zonder herteken), definitief bij `change`. */
+function rangeField(f, ctx) {
+  const w = wrap(f);
+  const row = el('div', 'pp-rangerow');
+  const range = el('input', 'pp-range');
+  range.type = 'range';
+  range.min = f.min ?? 0;
+  range.max = f.max ?? 100;
+  range.step = f.step ?? 1;
+  range.value = f.value ?? range.max;
+  const num = el('input', 'pp-input pp-input--num');
+  num.type = 'number';
+  num.min = range.min;
+  num.max = range.max;
+  num.value = range.value;
+  const unit = el('span', 'pp-unit', escapeHtml(f.unit || ''));
+  range.addEventListener('input', () => { num.value = range.value; ctx.apply(f, range.value, { redraw: false }); });
+  range.addEventListener('change', () => ctx.apply(f, range.value, { redraw: true }));
+  num.addEventListener('change', () => {
+    if (num.value === '') return;
+    const v = Math.min(Number(range.max), Math.max(Number(range.min), Number(num.value)));
+    range.value = String(v);
+    num.value = String(v);
+    ctx.apply(f, String(v), { redraw: true });
+  });
+  row.append(range, num, unit);
+  w.appendChild(row);
+  return w;
+}
+
+const FOCUS_POINTS = ['0% 0%', '50% 0%', '100% 0%', '0% 50%', '50% 50%', '100% 50%', '0% 100%', '50% 100%', '100% 100%'];
+
+/** 3×3-keuzeraster voor het focuspunt (object-position). */
+function focusField(f, ctx) {
+  const w = wrap(f);
+  const grid = el('div', 'pp-focus');
+  grid.setAttribute('role', 'radiogroup');
+  for (const pt of FOCUS_POINTS) {
+    const b = el('button', `pp-focus__pt${pt === (f.value || '50% 50%') ? ' is-active' : ''}`);
+    b.type = 'button';
+    b.title = pt;
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', pt === (f.value || '50% 50%') ? 'true' : 'false');
+    b.addEventListener('click', () => ctx.apply(f, pt, { redraw: true }));
+    grid.appendChild(b);
+  }
+  w.appendChild(grid);
+  return w;
+}
+
+function buttonField(f, ctx) {
+  const b = el('button', 'pp-btn', `<span>${escapeHtml(f.label)}</span>`);
+  b.type = 'button';
+  b.addEventListener('click', () => ctx.apply(f, true, { redraw: true }));
+  return b;
 }
 
 function chipsField(f, ctx) {
@@ -336,6 +402,29 @@ function repeaterField(f, ctx) {
   return w;
 }
 
+const SECTION_ACTIONS = {
+  image: ['image', 'Afbeelding', 'Afbeelding in dit vak plaatsen'],
+  text: ['type', 'Tekst', 'Tekstregel in dit vak toevoegen'],
+};
+
+/** Sectiekop; met `f.actions` komen er knoppen bij om iets IN dat vak (kolom/kaart) te zetten. */
+function sectionField(f, ctx) {
+  const title = el('div', `pp-section-title${f.first ? ' pp-section-title--first' : ''}`, escapeHtml(f.label));
+  if (!f.actions || !f.actions.length || !ctx.containerAction) return title;
+  const w = el('div', 'pp-section');
+  const bar = el('div', 'pp-section-actions');
+  for (const id of f.actions) {
+    const [ic, label, hint] = SECTION_ACTIONS[id] || ['plus', id, id];
+    const b = el('button', 'pp-btn pp-btn--add', `${icon('plus', 13)}${icon(ic, 13)}<span>${escapeHtml(label)}</span>`);
+    b.type = 'button';
+    b.title = `${hint} (${f.label})`;
+    b.addEventListener('click', () => ctx.containerAction(id, f.path));
+    bar.appendChild(b);
+  }
+  w.append(title, bar);
+  return w;
+}
+
 /** Render een lijst veld-specificaties in `container`. */
 export function renderFields(container, fields, ctx) {
   for (const f of fields) {
@@ -351,9 +440,13 @@ export function renderFields(container, fields, ctx) {
       case 'color': node = colorField(f, ctx); break;
       case 'hues': node = huesField(f, ctx); break;
       case 'image': node = imageField(f, ctx); break;
+      case 'segmented': node = segmentedField(f, ctx); break;
+      case 'range': node = rangeField(f, ctx); break;
+      case 'focus': node = focusField(f, ctx); break;
+      case 'button': node = buttonField(f, ctx); break;
       case 'chips': node = chipsField(f, ctx); break;
       case 'repeater': node = repeaterField(f, ctx); break;
-      case 'section': node = el('div', `pp-section-title${f.first ? ' pp-section-title--first' : ''}`, escapeHtml(f.label)); break;
+      case 'section': node = sectionField(f, ctx); break;
       default: break;
     }
     if (node) container.appendChild(node);

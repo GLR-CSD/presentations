@@ -280,6 +280,30 @@ export function swapClass(src, node, remove, add) {
 
 export const toggleFragmentHtml = (src, node, on) => setClass(src, node, 'fragment', on);
 
+/* ------------------------------------------------------------ inline style --- */
+
+const styleDecls = (style) => String(style || '').split(';').map((d) => d.trim()).filter(Boolean)
+  .map((d) => { const i = d.indexOf(':'); return i < 0 ? [d, ''] : [d.slice(0, i).trim(), d.slice(i + 1).trim()]; });
+
+/** Waarde van één CSS-declaratie in het style-attribuut (of null). */
+export function getStyleProp(node, name) {
+  const hit = styleDecls(getAttr(node, 'style')).find(([k]) => k === name);
+  return hit ? hit[1] : null;
+}
+
+/** Zet/verwijdert één declaratie; overige declaraties blijven ongemoeid. Leeg style-attribuut wordt verwijderd. */
+export function setStyleProp(src, node, name, value) {
+  const decls = styleDecls(getAttr(node, 'style'));
+  const idx = decls.findIndex(([k]) => k === name);
+  const cur = idx >= 0 ? decls[idx][1] : null;
+  if ((value == null || value === '') ? cur === null : cur === value) return src;
+  if (value == null || value === '') decls.splice(idx, 1);
+  else if (idx >= 0) decls[idx][1] = value;
+  else decls.push([name, value]);
+  if (!decls.length) return removeAttr(src, node, 'style');
+  return setAttr(src, node, 'style', decls.map(([k, v]) => `${k}:${v}`).join(';'));
+}
+
 /* --------------------------------------------------------- structure edits --- */
 
 /** Inspringing (spaties/tabs) vóór een node als die als eerste op zijn regel staat; anders null. */

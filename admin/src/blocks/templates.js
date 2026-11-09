@@ -22,6 +22,10 @@ export const SLIDE_TEMPLATES = [
   { kind: 'assertion', label: 'Assertion-Evidence', hint: 'Stelling als titel + visueel bewijs', icon: 'lede' },
   { kind: 'worked', label: 'Worked Example', hint: 'Aanpak + code stap-voor-stap', icon: 'terminal' },
   { kind: 'quiz', label: 'Begripscheck / Quiz', hint: '3 opties, juiste licht op na klik', icon: 'circle-help' },
+  { kind: 'imagetext', label: 'Afbeelding + tekst', hint: 'Afbeelding naast een korte toelichting', icon: 'image' },
+  { kind: 'imagebig', label: 'Grote afbeelding', hint: 'Titel + afbeelding die de ruimte vult', icon: 'image' },
+  { kind: 'imagegrid', label: 'Afbeeldingenraster', hint: 'Vier afbeeldingen in een 2×2-raster', icon: 'layout-grid' },
+  { kind: 'bgimage', label: 'Achtergrondafbeelding', hint: 'Beeldvullende achtergrond met titel', icon: 'hero' },
 ];
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -67,7 +71,7 @@ export function evidenceRowHtml({
     `    <p class="lede">${esc(core)}</p>`,
     '  </div>',
     '  <div class="col">',
-    '    <figure class="fig-fill">',
+    '    <figure class="fig-fill" data-placeholder>',
     `      <img src="${EVIDENCE_PLACEHOLDER}" alt="${esc(alt)}">`,
     `      <figcaption>${esc(caption)}</figcaption>`,
     '    </figure>',
@@ -223,6 +227,59 @@ export function slideTemplateBody(kind, { number = 1, footerText = 'Vak · Onder
         '## Welke uitspraak klopt?',
         '',
         quizCardsHtml(),
+        '',
+        footer,
+      ].join('\n');
+    case 'imagetext':
+      return [
+        '## Titel van de slide',
+        '',
+        '<div class="row">',
+        '  <div class="col vcenter">',
+        '    <p class="kicker">Toelichting</p>',
+        '    <p class="body">Leg kort uit wat de afbeelding laat zien. De rest vertel je.</p>',
+        '  </div>',
+        '  <div class="col">',
+        '    <figure class="fig-fill img-cover" data-placeholder>',
+        `      <img src="${EVIDENCE_PLACEHOLDER}" alt="Beschrijf hier wat de afbeelding laat zien.">`,
+        '    </figure>',
+        '  </div>',
+        '</div>',
+        '',
+        footer,
+      ].join('\n');
+    case 'imagebig':
+      return [
+        '## Titel van de slide',
+        '',
+        '<figure class="fig-fill" data-placeholder>',
+        `  <img src="${EVIDENCE_PLACEHOLDER}" alt="Beschrijf hier wat de afbeelding laat zien.">`,
+        '  <figcaption>Bron: …</figcaption>',
+        '</figure>',
+        '',
+        footer,
+      ].join('\n');
+    case 'imagegrid': {
+      const cell = `<figure class="img-cover img-r4x3 img-full" data-placeholder><img src="${EVIDENCE_PLACEHOLDER}" alt="Beschrijf de afbeelding."></figure>`;
+      return [
+        '## Titel van de slide',
+        '',
+        '<div class="grid2">',
+        ...[1, 2, 3, 4].map(() => `  ${cell}`),
+        '</div>',
+        '',
+        footer,
+      ].join('\n');
+    }
+    case 'bgimage':
+      return [
+        '<!-- .slide: class="dark" data-background-color="#111111" data-background-size="cover" data-background-opacity="0.5" -->',
+        '',
+        '<p class="kicker kicker--lime">Onderwerp</p>',
+        '',
+        '# Titel boven een achtergrondafbeelding',
+        '',
+        'Kies de afbeelding bij Slide-eigenschappen › Achtergrondafbeelding.',
         '',
         footer,
       ].join('\n');

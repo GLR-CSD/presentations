@@ -183,6 +183,24 @@ try {
   const ins = await call(client, 'insert_component_on_slide', { path: P, slide: 3, component: 'timer' });
   ok(!ins.isError, `insert_component_on_slide timer (${text(ins)})`);
 
+  // Afbeelding: invoegen als component, daarna src/grootte/bijsnijden/focus wijzigen
+  const insImg = await call(client, 'insert_component_on_slide', { path: P, slide: 3, component: 'image' });
+  ok(!insImg.isError, `insert_component_on_slide image (${text(insImg)})`);
+  const s3i = (await call(client, 'get_presentation', { path: P, slide: 3 })).structuredContent.slide;
+  const imgBlock = s3i.blocks.find((b) => b.type === 'html' && b.components.some((c) => c.id === 'media'));
+  ok(!!imgBlock, 'afbeelding-component gevonden');
+  const updImg = await call(client, 'update_slide_component', {
+    path: P, slide: 3, blockIndex: imgBlock.blockIndex,
+    fields: { 'Afbeelding (pad of URL)': 'assets/x.png', Grootte: 'm', Weergave: 'cover', Focuspunt: '0% 0%' },
+  });
+  ok(!updImg.isError, `update_slide_component afbeelding (${text(updImg)})`);
+  const diskImg = fs.readFileSync(path.join(withInput, P), 'utf8');
+  ok(/<figure class="[^"]*img-m[^"]*img-cover[^"]*"[^>]*--img-pos:0% 0%/.test(diskImg) || (diskImg.includes('img-m') && diskImg.includes('img-cover') && diskImg.includes('--img-pos:0% 0%')), 'afbeelding: grootte, bijsnijden en focus op schijf');
+  const badFocus = await call(client, 'update_slide_component', { path: P, slide: 3, blockIndex: imgBlock.blockIndex, fields: { Focuspunt: 'midden' } });
+  ok(badFocus.isError, 'ongeldig focuspunt wordt geweigerd');
+  const bg = await call(client, 'update_slide_properties', { path: P, slide: 3, attrs: { 'data-background-image': 'assets/bg.jpg', 'data-background-opacity': '0.5' } });
+  ok(!bg.isError && fs.readFileSync(path.join(withInput, P), 'utf8').includes('data-background-image="assets/bg.jpg"'), 'achtergrondafbeelding via attrs');
+
   // Component-mutatie: repeater op de kaarten-slide
   const s3 = (await call(client, 'get_presentation', { path: P, slide: 3 })).structuredContent.slide;
   const cardsBlock = s3.blocks.find((b) => b.type === 'html' && b.components.some((c) => c.id === 'cards'));

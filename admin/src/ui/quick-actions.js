@@ -1,6 +1,7 @@
 /**
  * Zwevende Quick-Action balk boven het geselecteerde onderdeel (canvas én editor).
- * Vijf directe icoonknoppen: ↑ Omhoog, ↓ Omlaag, ✨ Animatiestap, ⧉ Dupliceer, 🗑 Verwijder.
+ * Directe icoonknoppen: ↑ Omhoog, ↓ Omlaag, ✨ Animatiestap, 🖼 Afbeelding in dit vak
+ * (alleen binnen een kolom/kaart/rastercel), ⧉ Dupliceer, 🗑 Verwijder.
  */
 import { icon } from './icons.js';
 
@@ -8,6 +9,7 @@ const ACTIONS = [
   ['up', 'arrow-up', 'Omhoog', 'Verplaats dit blok één plek omhoog'],
   ['down', 'arrow-down', 'Omlaag', 'Verplaats dit blok één plek omlaag'],
   ['fragment', 'sparkles', 'Animatiestap (Fragment)', 'Toon dit blok pas na een klik tijdens de presentatie'],
+  ['image', 'image', 'Afbeelding in dit vak', 'Plaats een afbeelding in deze kolom, kaart of rastercel'],
   ['duplicate', 'copy', 'Dupliceer blok', 'Maak een kopie van dit blok'],
   ['delete', 'trash', 'Verwijder blok', 'Verwijder dit blok'],
 ];
@@ -41,8 +43,9 @@ export class QuickBar {
   }
 
   /** Toont de balk boven `rect` (viewport-coördinaten). */
-  show(rect, { fragmentOn = false, fragmentEnabled = true, canMoveUp = true, canMoveDown = true } = {}) {
+  show(rect, { fragmentOn = false, fragmentEnabled = true, canMoveUp = true, canMoveDown = true, canAddImage = false } = {}) {
     if (!rect) return this.hide();
+    this.buttons.image.hidden = !canAddImage;
     this.buttons.fragment.classList.toggle('is-active', !!fragmentOn);
     this.buttons.fragment.setAttribute('aria-pressed', fragmentOn ? 'true' : 'false');
     this.buttons.fragment.disabled = !fragmentEnabled;
