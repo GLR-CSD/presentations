@@ -48,16 +48,13 @@ Note: Laat deze slide staan terwijl studenten binnenkomen; de animatie speelt va
 
 <div class="row" style="margin-top:36px;align-items:center">
   <div class="col" style="flex:0 0 260px">
-    <div style="width:230px;height:230px;border:2px dashed #C9CBD1;background:#F4F4F6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#A0A2A8;font-family:'Space Grotesk',sans-serif;">
-      <span style="font-size:38px;line-height:1">&#128247;</span>
-      <span style="font-size:14px;text-transform:uppercase;letter-spacing:0.14em">Foto</span>
-    </div>
+    <figure class="img-auto"><img src="../../shared/img/uploads/1794218814907-melvin.png" alt="1794218814907 melvin"></figure>
   </div>
   <div class="col" style="flex:1 1 auto;text-align:left">
     <p class="kicker">Even voorstellen</p>
     <h2 class="title" style="font-size:80px;line-height:1;margin:12px 0 18px">Dhr. Loos</h2>
     <p class="body" style="font-size:23px;margin:0">Docent <strong>Creative Software Developer</strong></p>
-    <p class="body" style="font-size:19px;color:#6B6E76;max-width:600px;margin-top:8px">Grafisch Lyceum Rotterdam · deze week laat ik je zien dat code net zo creatief is als een penseel.</p>
+    <p class="body" style="font-size:19px;color:#6B6E76;margin-top:8px">Grafisch Lyceum Rotterdam · deze week laat ik je zien dat code net zo creatief is als een penseel.</p>
   </div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
@@ -162,7 +159,7 @@ Note: Fase 1/2 DIM — doeloriëntatie. Toon het contrast tussen statisch vormge
 <p class="big-q">Welke app of game opende jij vanochtend?</p>
 <p class="lede" style="font-size:26px;max-width:900px;margin-top:20px">Vertel je buur: wat was de <strong>Input</strong> (jouw actie), wat deed de <strong>Code</strong> en wat zág je als <strong>Output</strong>?</p>
 <div style="margin-top:26px">
-  <svg width="780" height="118" viewBox="0 0 780 118" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline: Input, Code, Output">
+  <svg width="100%" height="118" viewBox="0 0 780 118" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline: Input, Code, Output">
     <rect x="8" y="28" width="220" height="60" rx="6" fill="#F4F4F6" stroke="#111111" stroke-width="2"/>
     <text x="118" y="54" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="15" fill="#111111" letter-spacing="1">INPUT</text>
     <text x="118" y="75" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="13" fill="#555555">jouw muis · je toetsen</text>
@@ -318,13 +315,15 @@ Note: Fase 3/6 DIM — eerst kort modelling van zwaartekracht (elke frame een be
 
 ---
 
+<!-- .slide: data-background-image="../../shared/img/uploads/1794297750311-alexas_fotos-mJZn0eZUzh0-unsplash.jpg" data-background-size="cover" data-background-opacity="0.4" data-state="pauze" -->
+
 <p class="kicker">Even pauze · 20 minuten</p>
-<p class="big-q" style="font-size:64px">☕ Pauze</p>
-<p class="lede" style="max-width:820px">Rek je even uit. Over 20 minuten bouw je je eigen arcade-game.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">11</span></div>
 
-Note: Pauze na 110 minuten (tussen Sessie 1.2 en 1.3). Laat deze slide staan. Check voor vertrek even wie Tier 2 al werkend heeft; dat geeft je beeld van het tempo van de klas.
+# ☕ Pauze
 
+Pak even je rust. Over 20 minuten bouw je je eigen arcade-game.
+
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">15</span></div>
 ---
 
 <p class="kicker">Sessie 1.3 · kies je uitdaging</p>
