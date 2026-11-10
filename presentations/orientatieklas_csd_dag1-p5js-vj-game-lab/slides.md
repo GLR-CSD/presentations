@@ -42,7 +42,7 @@ tags: ["Oriëntatieklas", "CSD", "p5.js", "Creative Coding", "JavaScript", "Game
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">01</span></div>
 
-Note: Laat deze slide staan terwijl studenten binnenkomen; de animatie speelt vanzelf en blijft pulseren. Praat kort door het 'terminal'-blok heen als visuele hook: vandaag geen theorie-college, maar zelf aan de knoppen. Controleer dat iedereen de reader (tab 01) en de p5.js-editor open heeft en de telefoon weg is. Oriëntatieklas van 4 uur: laagdrempelig en speels.
+Note: Laat deze slide staan terwijl studenten binnenkomen; de animatie speelt vanzelf en blijft pulseren. Praat kort door het 'terminal'-blok heen als visuele hook: vandaag geen theorie-college, maar zelf aan de knoppen. Controleer dat iedereen de reader (tab 01) en de p5.js-editor open heeft en de telefoon weg is. Oriëntatieklas van 2 uur (120 min, geen pauze): laagdrempelig en speels, en strak op de klok.
 
 ---
 
@@ -59,7 +59,7 @@ Note: Laat deze slide staan terwijl studenten binnenkomen; de animatie speelt va
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
 
-Note: Stel jezelf in ±2 minuten voor. Zet een (pas)foto of ander plaatje in het fotovlak links en vervang de tekst met je eigen gegevens (voornaam, rol, een kort persoonlijk feitje). Houd het beknopt.
+Note: Stel jezelf in ±1 minuut voor. Zet een (pas)foto of ander plaatje in het fotovlak links en vervang de tekst met je eigen gegevens (voornaam, rol, een kort persoonlijk feitje). Houd het beknopt.
 
 ---
 
@@ -116,7 +116,7 @@ Note: Stel jezelf in ±2 minuten voor. Zet een (pas)foto of ander plaatje in het
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
 
 Note:
-Vooruitblik op de hele week. Laat de drie thumbnails zien en klik er één of twee live open (p5.js-editor, aframe.io, makecode) zodat studenten direct iets bewegends zien wat ze straks zélf kunnen bouwen. Rode draad: vandaag 2D tekenen, morgen 3D/VR, woensdag een fysiek apparaat. Houd het kort (±2-3 min) — het is een teaser, geen demo.
+Vooruitblik op de hele week. Laat de drie thumbnails zien; klik hooguit één link live open als er tijd is. Rode draad: vandaag 2D tekenen, morgen 3D/VR, woensdag een fysiek apparaat. Houd het op ±1 min — het is een teaser, geen demo.
 ---
 
 <p class="kicker">De module · Creative Software Developer · deze week</p>
@@ -130,7 +130,7 @@ Vooruitblik op de hele week. Laat de drie thumbnails zien en klik er één of tw
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span></div>
 
 Note:
-Module-leerdoelen voor de hele week. Lees ze voor of laat studenten ze hardop lezen, en koppel elk doel aan de dag. Zo ervaren ze het hele beroepsbeeld van een CSD: van visuele code (Dag 1) via ruimtelijk/XR (Dag 2) naar fysieke hardware (Dag 3), plus de studiekeuze-check via het Kompas. Vier doelen, geen technisch jargon.
+Module-leerdoelen voor de hele week. Lees ze voor of laat studenten ze hardop lezen, en koppel elk doel aan de dag. Zo ervaren ze het hele beroepsbeeld van een CSD: van visuele code (Dag 1) via ruimtelijk/XR (Dag 2) naar fysieke hardware (Dag 3), plus de studiekeuze-check via het Kompas. Vier doelen, geen technisch jargon. Houd het op ±1 min.
 ---
 
 <p class="kicker">Wat is een Creative Software Developer?</p>
@@ -177,22 +177,22 @@ Note: Fase 1/2 DIM — doeloriëntatie. Toon het contrast tussen statisch vormge
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">03</span></div>
 
-Note: Fase 1 DIM — voorkennis activeren. Bewust laagdrempelig: geen 'juiste' voorkennis nodig. Introduceer het Input → Code → Output denken: jouw muis/toets = input, de pagina/game = code, wat je ziet = output. Haal 3 à 4 antwoorden op en benoem telkens de link: 'dat is óók programmeren!' Houd het positief en zonder oordeel.
+Note: Fase 1 DIM — voorkennis activeren. Bewust laagdrempelig: geen 'juiste' voorkennis nodig. Introduceer het Input → Code → Output denken: jouw muis/toets = input, de pagina/game = code, wat je ziet = output. Haal 2 à 3 antwoorden op en benoem telkens de link: 'dat is óók programmeren!' Houd het positief en zonder oordeel.
 
 ---
 
-<p class="kicker">Route · 4 sessies · 220 min netto + 20 min pauze</p>
+<p class="kicker">Route · 4 sprints · 120 min</p>
 <h2 class="title title--md">Vandaag bouw je drie dingen, in vier sprints</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">1</span><div><h3>Sessie 1.1 · VJ-kaleidoscoop</h3><p>55 min · lijnen spiegelen en je eigen penselen via <code>keyPressed</code>.</p></div></div>
-  <div class="listrow"><span class="n">2</span><div><h3>Sessie 1.2 · Vuurwerk &amp; zwaartekracht</h3><p>55 min · 60 deeltjes per klik die ontploffen en stuiteren.</p></div></div>
-  <div class="listrow"><span class="n">–</span><div><h3>Pauze</h3><p>20 min · na 110 minuten werken.</p></div></div>
-  <div class="listrow"><span class="n">3</span><div><h3>Sessie 1.3 · Arcade Aim-Trainer</h3><p>55 min · scope kiezen en een game met timer bouwen.</p></div></div>
-  <div class="listrow"><span class="n">4</span><div><h3>Sessie 1.4 · Gallery Walk &amp; evaluatie</h3><p>55 min · elkaars game testen en je quests afvinken.</p></div></div>
+  <div class="listrow"><span class="n">–</span><div><h3>Start</h3><p>10 min · kennismaken en opwarmen.</p></div></div>
+  <div class="listrow"><span class="n">1</span><div><h3>Sessie 1.1 · VJ-kaleidoscoop</h3><p>35 min · lijnen spiegelen en je eigen penselen via <code>keyPressed</code>.</p></div></div>
+  <div class="listrow"><span class="n">2</span><div><h3>Sessie 1.2 · Vuurwerk &amp; zwaartekracht</h3><p>25 min · 60 deeltjes per klik die ontploffen en stuiteren.</p></div></div>
+  <div class="listrow"><span class="n">3</span><div><h3>Sessie 1.3 · Arcade Aim-Trainer</h3><p>35 min · een game met score en timer bouwen.</p></div></div>
+  <div class="listrow"><span class="n">4</span><div><h3>Sessie 1.4 · Gallery Walk &amp; afsluiting</h3><p>15 min · elkaars game testen en je quests afvinken.</p></div></div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">04</span></div>
 
-Note: Fase 2 DIM — informeer over de opzet. Elke sprint duurt 55 min en verloopt volgens dezelfde fasen (ik doe voor → jij doet met mij → jij doet alleen). Benoem dat er bewust ruimte in de sprints zit en dat niemand op de rest hoeft te wachten. Pas kloktijden aan de echte starttijd aan.
+Note: Fase 2 DIM — informeer over de opzet. Planning (120 min, geen pauze): start 0:00–0:10 · Sessie 1.1 0:10–0:45 · Sessie 1.2 0:45–1:10 · Sessie 1.3 1:10–1:45 · Sessie 1.4 1:45–2:00. Elke sprint volgt dezelfde fasen (ik doe voor → jij doet met mij → jij doet alleen), maar de instructie is kort: de meeste tijd gaat naar zelf bouwen. Benoem dat Stap A het minimum is en Stap B een bonus als je tijd hebt. Pas kloktijden aan de echte starttijd aan.
 
 ---
 
@@ -224,7 +224,7 @@ Note: Fase 2 DIM — informeer over de opzet. Elke sprint duurt 55 min en verloo
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">05</span></div>
 
-Note: Fase 3 DIM — expliciete modelling ('I do'). Demo dit live in editor.p5js.org en denk hardop: "Ik zie line(pmouseX, pmouseY, mouseX, mouseY). mouseX is de horizontale plek van mijn muis. Wil ik rechts ook een gespiegelde lijn, dan trek ik mijn muis af van de schermbreedte: width - mouseX. Ik haal de // ervoor weg en druk op Play om te testen of mijn voorspelling klopt." Maximaal 10-12 min centrale instructie.
+Note: Fase 3 DIM — expliciete modelling ('I do'). Demo dit live in editor.p5js.org en denk hardop: "Ik zie line(pmouseX, pmouseY, mouseX, mouseY). mouseX is de horizontale plek van mijn muis. Wil ik rechts ook een gespiegelde lijn, dan trek ik mijn muis af van de schermbreedte: width - mouseX. Ik haal de // ervoor weg en druk op Play om te testen of mijn voorspelling klopt." Maximaal 6-8 min centrale instructie (Sessie 1.1 = 35 min: ±7 min voordoen, ±2 min begripscheck, ±5 min samen, ±20 min zelf).
 
 ---
 
@@ -237,7 +237,7 @@ Note: Fase 3 DIM — expliciete modelling ('I do'). Demo dit live in editor.p5js
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">06</span></div>
 
-Note: Fase 4 DIM — diagnostische begripscheck (Peer Instruction). Juiste antwoord: B (2 vingers). Zonder background() wordt het scherm nooit leeggeveegd, dus teken je elk frame over het vorige heen. Beslisprotocol: >80% goed → ga door en laat één student het uitleggen; 30-80% → 90 sec tweetallen-overleg + herstemming; <30% → herinstructie: typ background(0) weg en laat de klas de fout live zien voordat je verdergaat.
+Note: Fase 4 DIM — diagnostische begripscheck (Peer Instruction). Juiste antwoord: B (2 vingers). Zonder background() wordt het scherm nooit leeggeveegd, dus teken je elk frame over het vorige heen. Beslisprotocol: >80% goed → ga door en laat één student het uitleggen; 30-80% → 60 sec tweetallen-overleg + herstemming; <30% → herinstructie: typ background(0) weg en laat de klas de fout live zien voordat je verdergaat.
 
 ---
 
@@ -282,7 +282,7 @@ Note: Fase 5 DIM — begeleide inoefening ('We do'). Laat de klas letterlijk met
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">08</span></div>
 
-Note: Fase 6 DIM — zelfstandige verwerking. De reader (tab 01) bevat de volledige Tier 1 startcode + uitklapbaar spiekbriefje. Stap A garandeert een snelle succeservaring (iedereen kan de spiegeling afmaken), Stap B daagt snelle studenten uit met keyPressed. Loop rond met didactisch coachen (verdiepende vragen, geen antwoorden voorkauwen).
+Note: Fase 6 DIM — zelfstandige verwerking. De reader (tab 01) bevat de volledige Tier 1 startcode + uitklapbaar spiekbriefje. Stap A garandeert een snelle succeservaring (iedereen kan de spiegeling afmaken), Stap B daagt snelle studenten uit met keyPressed. Loop rond met didactisch coachen (verdiepende vragen, geen antwoorden voorkauwen). Zelfstandig werken: ±20 min. Rond 0:45 door naar Sessie 1.2, ook als niet iedereen Stap B af heeft.
 
 ---
 
@@ -292,13 +292,13 @@ Note: Fase 6 DIM — zelfstandige verwerking. De reader (tab 01) bevat de volled
   <div class="listrow"><span class="n">01</span><div><h3>Eerst repareren, dan jouw draai</h3><p>Maak Stap A (Code-Fix) werkend, ga dan door naar Stap B: jouw eigen ontwerp.</p></div></div>
   <div class="listrow"><span class="n">02</span><div><h3>Samen, op fluistertoon</h3><p>Je eigen laptop; overleggen met je tafelpartner mag.</p></div></div>
   <div class="listrow"><span class="n">03</span><div><h3>Vast? Eerst Boek, dan Buur, dan Baas</h3><p><strong>Boek</strong> = het spiekbriefje in de reader · <strong>Buur</strong> = je duo · <strong>Baas</strong> = ik, de docent.</p></div></div>
-  <div class="listrow"><span class="n">04</span><div><h3>De klok telt</h3><p>±10 min voor Stap A, daarna ±20 min voor Stap B.</p></div></div>
+  <div class="listrow"><span class="n">04</span><div><h3>De klok telt</h3><p>Eerst Stap A (±8 min), daarna Stap B tot de timer afloopt. Stap B niet af? Geen probleem.</p></div></div>
   <div class="listrow"><span class="n">05</span><div><h3>Je eindigt met iets échts</h3><p>Een werkend prototype dat je meteen aan een tester kunt geven.</p></div></div>
   <div class="listrow"><span class="n">06</span><div><h3>Top = werkt én is van jou</h3><p>Start op zonder foutmeldingen, en jouw eigen keuzes zijn zichtbaar.</p></div></div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">09</span></div>
 
-Note: Fase 6 DIM — dit kader projecteer en benoem je aan het begin van élke zelfstandige sprint (1.1, 1.2 en 1.3). Benadruk de 3B-regel: bij een rode foutmelding eerst Boek/Browser (spiekbriefje of 'Kopieer code'), dan 30 sec je Buur, dan pas je hand opsteken (Baas). Dit bouwt zelfredzaamheid op.
+Note: Fase 6 DIM — dit kader bespreek je één keer uitgebreid bij Sessie 1.1 (±1 min); bij 1.2 en 1.3 verwijs je er alleen kort naar. Benadruk de 3B-regel: bij een rode foutmelding eerst Boek/Browser (spiekbriefje of 'Kopieer code'), dan 30 sec je Buur, dan pas je hand opsteken (Baas). Dit bouwt zelfredzaamheid op.
 
 ---
 
@@ -311,41 +311,7 @@ Note: Fase 6 DIM — dit kader projecteer en benoem je aan het begin van élke z
 <p class="body" style="margin-top:20px">Zwaartekracht + stuiter = het kernidee achter elk spel: <strong>beweging + krachten</strong>.</p>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">10</span></div>
 
-Note: Fase 3/6 DIM — eerst kort modelling van zwaartekracht (elke frame een beetje snelheid naar beneden, precies hoe een bal valt), dan zelfstandig. De vloer-stuiter (p.y > height - 10 met p.vy *= -0.78) is het conceptuele hoogtepunt: laat snelle studenten zelf de stuiterfactor ontdekken. Vink Quest 1.2 af in de reader.
-
----
-
-<!-- .slide: data-background-image="../../shared/img/uploads/1794297750311-alexas_fotos-mJZn0eZUzh0-unsplash.jpg" data-background-size="cover" data-background-opacity="0.4" data-state="pauze" -->
-
-<p class="kicker">Even pauze · 20 minuten</p>
-
-# ☕ Pauze
-
-Pak even je rust. Over 20 minuten bouw je je eigen arcade-game.
-
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">15</span></div>
----
-
-<p class="kicker">Sessie 1.3 · kies je uitdaging</p>
-<h2 class="title title--md">Scope-Keuze · welk einde bouw jij?</h2>
-<div class="row" style="margin-top:14px">
-  <div class="col" style="flex:1 1 50%">
-    <div class="defbox" style="min-height:160px">
-      <span class="k">Scope A · Festival VJ-Deck</span>
-      <p>Bouw je kaleidoscoop + vuurwerk uit tot één live VJ-instrument met meerdere penselen.</p>
-    </div>
-  </div>
-  <div class="col" style="flex:1 1 50%">
-    <div class="defbox" style="min-height:160px">
-      <span class="k">Scope B · Arcade Aim-Trainer met Timer</span>
-      <p>Een klikbaar doelwit met score én een krimpend doelwit tegen de klok.</p>
-    </div>
-  </div>
-</div>
-<p class="body" style="margin-top:18px;max-width:940px">Vertel je buur welke je kiest en <strong>waarom</strong> — zo oefen je met onderbouwen (dit telt mee voor je beoordeling).</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">12</span></div>
-
-Note: Kerntaak P1-K1 (plannen) — de student kiest én onderbouwt één haalbare scope voor de middagsprint. Laat duo's 60 seconden hun keuze uitspreken. Beide scopes eindigen in dezelfde Tier 3-techniek; het verschil zit in accent (VJ-deck vs game). Moedig eigen keuzes aan.
+Note: Fase 3/6 DIM — Sessie 1.2 = 25 min: max 3 min modelling van zwaartekracht (elke frame een beetje snelheid naar beneden, precies hoe een bal valt), dan ±22 min zelfstandig. De vloer-stuiter (p.y > height - 10 met p.vy *= -0.78) is het conceptuele hoogtepunt: laat snelle studenten zelf de stuiterfactor ontdekken. Vink Quest 1.2 af in de reader.
 
 ---
 
@@ -355,23 +321,23 @@ Note: Kerntaak P1-K1 (plannen) — de student kiest én onderbouwt één haalbar
   <div class="listrow"><span class="n">A</span><div><h3>Stap A · Code-Fix (<code>TODO 1–3</code>)</h3><p>Klikbaar doelwit via <code>dist(mouseX, mouseY, doelX, doelY)</code> + live score.</p></div></div>
   <div class="listrow"><span class="n">B</span><div><h3>Stap B · Design-Briefing (<code>TODO 4</code>)</h3><p>30s countdown (<code>frameCount % 60</code>) én een krimpend doelwit: <code>doelStraal *= 0.94</code>. Herstart met <code>R</code>.</p></div></div>
 </div>
-<p class="body" style="margin-top:20px">Test je game goed — straks laat je hem aan <strong>drie</strong> klasgenoten zien.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">13</span></div>
+<p class="body" style="margin-top:20px">Test je game goed — straks laat je hem aan <strong>twee</strong> klasgenoten zien.</p>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">11</span></div>
 
-Note: Fase 6 DIM — zelfstandige verwerking met WHHTUK + 3B. De timer + krimpend doelwit is de Stap B-uitdaging; de volledige code staat in het spiekbriefje onder Tier 3 in de reader. Differentieer: wie de timer af heeft, voegt een krimpend doelwit toe of kiest voor het VJ-Deck (Scope A). Vink Quest 1.3 af.
+Note: Fase 6 DIM — Sessie 1.3 = 35 min: ±3 min uitleg, ±32 min zelfstandig met WHHTUK + 3B. De timer + krimpend doelwit is de Stap B-uitdaging; de volledige code staat in het spiekbriefje onder Tier 3 in de reader. Differentieer: wie alles af heeft, mag kaleidoscoop + vuurwerk uitbouwen tot een eigen VJ-deck. Vink Quest 1.3 af. Stop om 1:45 voor de Gallery Walk.
 
 ---
 
 <p class="kicker">Sessie 1.4 · Arcade Gallery Walk</p>
-<h2 class="title title--md">Laat je game testen door drie klasgenoten</h2>
+<h2 class="title title--md">Laat je game testen door twee klasgenoten</h2>
 <div class="rows">
-  <div class="listrow"><span class="n">01</span><div><h3>Vertel kort wat je hebt gebouwd</h3><p>Welke scope en wat heb je zelf toegevoegd?</p></div></div>
-  <div class="listrow"><span class="n">02</span><div><h3>Laat drie testers spelen</h3><p>Ze noteren: speelt het, en wat kan beter?</p></div></div>
+  <div class="listrow"><span class="n">01</span><div><h3>Vertel kort wat je hebt gebouwd</h3><p>Wat werkt er en wat heb je zelf toegevoegd?</p></div></div>
+  <div class="listrow"><span class="n">02</span><div><h3>Laat twee testers spelen</h3><p>Ze noteren: speelt het, en wat kan beter?</p></div></div>
   <div class="listrow"><span class="n">03</span><div><h3>Geef terug: één compliment + één tip</h3><p>Bij elke game die jij test: één progressie + één discrepantie.</p></div></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">14</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">12</span></div>
 
-Note: Fase 7 DIM — evaluatie + kerntaak P4-K1 (testen). Laat de klas opstaan en langs 3 schermen lopen. Elke tester geeft één compliment (progressie) en één verbeterpunt (discrepantie). Haal daarna 2 mooie vondsten klassikaal naar voren en koppel ze aan de leerdoelen van de sessies.
+Note: Fase 7 DIM — evaluatie + kerntaak P4-K1 (testen). ±10 min. Laat de klas opstaan en langs 2 schermen lopen (±4 min per scherm). Elke tester geeft één compliment (progressie) en één verbeterpunt (discrepantie). Haal daarna 1 mooie vondst klassikaal naar voren.
 
 ---
 
@@ -382,10 +348,10 @@ Note: Fase 7 DIM — evaluatie + kerntaak P4-K1 (testen). Laat de klas opstaan e
   <li><strong>Quest 1.2</strong> — 60 deeltjes per klik met zwaartekracht én vloer-stuiter.</li>
   <li><strong>Quest 1.3</strong> — aim-trainer met timer én krimpend doelwit, getest in de Gallery Walk.</li>
 </ul>
-<p class="body" style="margin-top:16px;max-width:940px"><strong>Voldoende</strong> = Stap A overal af · <strong>Goed</strong> = ook Stap B (jouw eigen ontwerpkeuzes) werkt. Nog niet af? Geen stress — de sprint had ruimte.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">15</span></div>
+<p class="body" style="margin-top:16px;max-width:940px"><strong>Voldoende</strong> = Stap A overal af · <strong>Goed</strong> = ook Stap B (jouw eigen ontwerpkeuzes) werkt. Nog niet af? Geen stress — in twee uur is dat heel normaal.</p>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">13</span></div>
 
-Note: Fase 7 DIM + formatieve OVG-check. Laat studenten zelf hun voortgang afvinken in de reader. Valschema: Onvoldoende = code start niet / geen eigen aanpassingen; Voldoende = Stap A (Code-Fix) werkend; Goed = Stap A + Stap B (Design-Briefing) zichtbaar. Dit is géén cijfer, maar bewijs van eigen kunnen. Peil met een stemronde wie welke tier haalde.
+Note: Fase 7 DIM + formatieve OVG-check. Laat studenten zelf hun voortgang afvinken in de reader. Valschema: Onvoldoende = code start niet / geen eigen aanpassingen; Voldoende = Stap A (Code-Fix) werkend; Goed = Stap A + Stap B (Design-Briefing) zichtbaar. Dit is géén cijfer, maar bewijs van eigen kunnen. Peil met een snelle handopsteek-ronde wie welke tier haalde (±2 min).
 
 ---
 
@@ -396,6 +362,6 @@ Note: Fase 7 DIM + formatieve OVG-check. Laat studenten zelf hun voortgang afvin
   <div class="listrow"><span class="n">02</span><div><h3>Vul je Studiekeuze-Kompas in</h3><p>Open tab 04 in de reader en vink aan waar jij energie van kreeg.</p></div></div>
   <div class="listrow"><span class="n">03</span><div><h3>Morgen · Dag 2 · stap een wereld binnen</h3><p>Bouw een 3D-wereld met A-Frame en wandel er zelf doorheen met de Meta Quest 2.</p></div></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">16</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 1 · p5.js</span><span class="num">14</span></div>
 
-Note: Fase 7 DIM — terugblik + transfer. Vat samen, laat studenten het Studiekeuze-Kompas invullen en geef een teaser voor Dag 2 (WebVR + Quest 2). Sluit af: dit was écht programmeren — en jullie hebben het zojuist zelf gedaan. Morgen voegen we de derde dimensie toe.
+Note: Fase 7 DIM — terugblik + transfer (±3 min). Vat samen, laat studenten het Studiekeuze-Kompas invullen en geef een teaser voor Dag 2 (WebVR + Quest 2). Sluit af: dit was écht programmeren — en jullie hebben het zojuist zelf gedaan. Morgen voegen we de derde dimensie toe.
