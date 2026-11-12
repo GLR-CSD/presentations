@@ -12,7 +12,7 @@ tags: ["Beroeps 2", "Oplevering Project", "Stop de Ontkoking", "GitHub", "Plesk"
 <div class="bar" style="margin-top:28px"></div>
 <p class="kicker kicker--lime">Beroeps 2 · 2026-2027</p>
 <h1 class="title" style="color:#fff;font-size:72px">Oplevering Project</h1>
-<p class="lede" style="color:#EDEDED;font-size:27px;max-width:1000px">Release Day voor 'Stop de Ontkoking': livegang op Plesk, definitieve merge naar de main branch en oplevering via een professionele screencapture.</p>
+<p class="lede" style="color:#EDEDED;font-size:27px;max-width:1000px">Release Day voor 'Stop de Ontkoking'</p>
 <div class="footer"><span>Beroeps 2 · Oplevering Project</span><span class="num">01</span></div>
 
 Note:
@@ -171,7 +171,7 @@ Kader het professionele gedrag (authentiek leren): zonder goedkeuring van de opd
 <div class="cards">
   <div class="glr-card"><span class="k">B1-K1-W2 & B1-K2-W2</span><h3>Projectplan & Documentatie</h3><p>Volledigheid van het Projectplan in Markdown (PvE, MoSCoW, FO, GO, ERD/Datadictionary) en herleidbare keuzes in GitHub Projects en PR's.</p></div>
   <div class="glr-card"><span class="k">B1-K1-W3</span><h3>Productkwaliteit & Klanteisen</h3><p>Aansprekende Gen Z UI/UX, responsive weergave en een werkende applicatie + database op Plesk volgens jullie afgestemde MoSCoW-scope.</p></div>
-  <div class="glr-card glr-card--accent"><span class="k">B1-K1-W1 & Fase 5</span><h3>Individuele Bijdrage & Vervolg</h3><p>Individuele beoordeling op basis van de video en GitHub Insights. Volgende week volgt Fase 5: peer-testen (Testrapport) en individuele reflectie.</p></div>
+  <div class="glr-card glr-card--accent"><span class="k">B1-K1-W1 & Fase 5</span><h3>Individuele Bijdrage & Vervolg</h3><p>Individuele beoordeling op basis van de video en GitHub. Volgende week volgt Fase 5: peer-testen (Testrapport) en individuele reflectie.</p></div>
 </div>
 
 <div class="footer"><span>Beroeps 2 · Oplevering Project</span><span class="num">09</span></div>
