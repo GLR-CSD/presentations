@@ -69,14 +69,12 @@ Dit zijn de harde gatekeepers voor Fase 4. Als een onderdeel alleen op een featu
   <div class="col">
     <div class="terminal-window">
       <div class="terminal-window__bar"><span class="dot"></span><span class="dot"></span><span class="dot dot--lime"></span><span class="title">README.md</span></div>
-      <pre><code># Platform: KookGenZ
+      <pre><code class="language-markdown">&#35; Platform: KookGenZ
 Team: Naam 1 (12345), Naam 2 (23456), Naam 3 (34567)
-
-## Live Omgeving (Plesk)
+&#35;&#35; Live Omgeving (Plesk)
 https://kookgenz.jouwdomein.glr.nl
-
-## Projectdocumentatie & Database
-- Projectplan & MoSCoW: `/docs/projectplan.md`
+&#35;&#35; Projectdocumentatie &amp; Database
+- Projectplan &amp; MoSCoW: `/docs/projectplan.md`
 - Database export: `/database/kookgenz_dump.sql`</code></pre>
     </div>
   </div>
