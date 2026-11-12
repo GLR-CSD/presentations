@@ -25,7 +25,7 @@ Heet alle projectgroepen welkom bij de eindoplevering (Fase 4) van het project '
 ## De ochtend bestaat uit een code freeze, live deployment en video-opname
 
 <div class="rows">
-  <div class="listrow"><span class="n">01</span><div><h3>09:15 – 10:15 · Instructie, Code Freeze & Plesk Deployment</h3><p>Plenaire briefing, laatste Pull Requests mergen naar <code>main</code> en de applicatie + database live zetten op Plesk (10:15 – 10:30 pauze).</p></div></div>
+  <div class="listrow"><span class="n">01</span><div><h3>09:15 – 10:15 · Instructie, Code Freeze & Plesk Deployment</h3><p>Laatste Pull Requests mergen naar <code>main</code> en de applicatie + database live zetten op Plesk (10:15 – 10:30 pauze).</p></div></div>
   <div class="listrow"><span class="n">02</span><div><h3>10:30 – 11:00 · Opdrachtgever Spreekuur & Scripten</h3><p>Spoor A bereidt het opnamescript en de tabbladen voor. Spoor B dient bij de docent een onderbouwd uitstelverzoek in met het GitHub Projects-bord.</p></div></div>
   <div class="listrow"><span class="n">03</span><div><h3>11:00 – 12:30 · Opnemen Screencapture, Laatste Sprint & Inleveren</h3><p>Opnemen van de screencapture (max. 6 min) of wegwerken van afgesproken issues. Om 12:15 uur plenaire stand-up en controle in MS Teams.</p></div></div>
 </div>
