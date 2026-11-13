@@ -380,20 +380,6 @@ Note: Fase 7 DIM + formatieve OVG-check (±5 min). Neem de 20 micro:bits en 20 U
 
 ---
 
-<p class="kicker">Afsluiting · reader tab 04 · GLR Kompas</p>
-<h2 class="title title--md">Welke rol paste deze week het best bij jou?</h2>
-<div class="cards">
-  <div class="glr-card"><span class="k">Rol A</span><h3>Vormgeving, 3D, animatie</h3><p>Je richtte het liefst de sfeer, de kleuren en de 3D-werelden in.</p></div>
-  <div class="glr-card"><span class="k">Rol B</span><h3>AV, podium, mediamanagement</h3><p>Beleven, testen, kraken en regisseren gaf je de meeste energie.</p></div>
-  <div class="glr-card glr-card--accent"><span class="k">Rol C</span><h3>Creative Software Developer</h3><p>Je dook graag onder de motorkap om het echt te laten werken.</p></div>
-</div>
-<p class="body" style="margin-top:16px;font-size:21px">Vink jouw rol aan op <strong>tab 04</strong> en lees je GLR-toekomstbericht.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">20</span></div>
-
-Note: Fase 7 DIM — terugblik en studiekeuze (±5 min). Studenten openen Tab 04 (04 // GLR Kompas) en vinken de rol aan die hen deze week het meest aansprak; de reader toont dan een persoonlijk toekomstbericht. Elke keuze is goed: het doel van de oriëntatieklas is ontdekken wat bij je past. Vraag 2–3 studenten welke rol ze kozen en welk moment van de week dat bepaalde.
-
----
-
 <p class="kicker">Wat neem je mee</p>
 <h2 class="title title--md">Vormgever, filmmaker of developer: op het GLR maak je het samen</h2>
 <div class="rows">
