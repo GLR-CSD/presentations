@@ -91,15 +91,15 @@ Note: Fase 2 DIM — doeloriëntatie (±1 min). Vier doelen, twee voor de lunch 
 <h2 class="title title--md">Eerst software kraken, dan hardware bouwen</h2>
 <div class="rows rows--tight">
   <div class="listrow"><span class="n">A</span><div><h3>10:30 · De HTML Kluis-Kraker</h3><p>Vind de 5 verborgen cijfers met Inspecteren.</p></div></div>
-  <div class="listrow"><span class="n">A</span><div><h3>11:15 · Dino Console Hack of Gandalf AI</h3><p>Kies je eigen bonus-challenge.</p></div></div>
+  <div class="listrow"><span class="n">B</span><div><h3>11:15 · Eerste start met de micro:bit</h3><p>Kennismaken en je eerste code op het bordje.</p></div></div>
   <div class="listrow"><span class="n">A</span><div><h3>11:45 · De € 4.000,- Bug-Bounty Jacht</h3><p>Breek de ticketshop op 8 manieren.</p></div></div>
   <div class="listrow"><span class="n">–</span><div><h3>12:30 · lunchpauze</h3><p>30 min.</p></div></div>
-  <div class="listrow"><span class="n">B</span><div><h3>13:00 · Micro:bit Studio in 3 stappen</h3><p>Beginnercursussen → spellen → Micro-Chat en radiospellen.</p></div></div>
+  <div class="listrow"><span class="n">B</span><div><h3>13:00 · Micro:bit Studio verder in 3 stappen</h3><p>Beginnercursussen → spellen → Micro-Chat en radiospellen.</p></div></div>
   <div class="listrow"><span class="n">★</span><div><h3>14:45 · Inleveren en GLR Kompas</h3><p>Einde om 15:00.</p></div></div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">03</span></div>
 
-Note: Fase 2 DIM — informeer over de opzet (±1 min). Volledige planning: 10:30–11:15 Kluis-Kraker · 11:15–11:45 Dino Hack of Gandalf · 11:45–12:30 Bug-Bounty · 12:30–13:00 lunch (leg om 12:55 per duo-tafel een micro:bit + USB-kabel klaar) · 13:00–13:30 Stap 1 · 13:30–14:05 Stap 2 · 14:05–14:20 Stap 3A Micro-Chat · 14:20–14:45 Stap 3B radiospellen · 14:45–15:00 inname en Kompas.
+Note: Fase 2 DIM — informeer over de opzet (±1 min). Volledige planning: 10:30–11:15 Kluis-Kraker · 11:15–11:45 eerste start micro:bit (leg om 11:10 per duo-tafel een micro:bit + USB-kabel klaar) · 11:45–12:30 Bug-Bounty · 12:30–13:00 lunch (bordjes blijven liggen) · 13:00–13:30 Stap 1 (verder) · 13:30–14:05 Stap 2 · 14:05–14:20 Stap 3A Micro-Chat · 14:20–14:45 Stap 3B radiospellen · 14:45–15:00 inname en Kompas.
 
 ---
 
@@ -147,7 +147,7 @@ Note: Fase 3 DIM — modelling (±3 min). Doe het live voor op een willekeurige 
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">05</span></div>
 
-Note: Fase 6 DIM — zelfstandig in duo's (±40 min). Oplossing (niet tonen): 73942. Cijfer 1 = 7 (HTML-commentaar of attribuut data-geheim-cijfer-1), cijfer 2 = 3 (witte tekst selecteren met de muis), cijfer 3 = 9 (zwarte div #blackShield in Inspecteren verwijderen met Delete), cijfer 4 = 4 (het woord disabled weghalen bij de knop en klikken), cijfer 5 = 2 (uitkomst van (20 / 4) - 3). Loop rond en geef alleen richting ("op welk blokje heb je al geïnspecteerd?"), geen antwoorden. Vast? Eerst Boek (de aanwijzingskaart), dan Buur, dan Baas. Snelle duo's helpen een ander duo met één hint, of beginnen alvast aan de bonus van 11:15. Rond 11:05 de begripscheck op de volgende slide.
+Note: Fase 6 DIM — zelfstandig in duo's (±40 min). Oplossing (niet tonen): 73942. Cijfer 1 = 7 (HTML-commentaar of attribuut data-geheim-cijfer-1), cijfer 2 = 3 (witte tekst selecteren met de muis), cijfer 3 = 9 (zwarte div #blackShield in Inspecteren verwijderen met Delete), cijfer 4 = 4 (het woord disabled weghalen bij de knop en klikken), cijfer 5 = 2 (uitkomst van (20 / 4) - 3). Loop rond en geef alleen richting ("op welk blokje heb je al geïnspecteerd?"), geen antwoorden. Vast? Eerst Boek (de aanwijzingskaart), dan Buur, dan Baas. Snelle duo's helpen een ander duo met één hint. Rond 11:05 de begripscheck op de volgende slide.
 
 ---
 
@@ -164,25 +164,39 @@ Note: Fase 4 DIM — diagnostische begripscheck (±3 min, rond 11:05). Juist: B 
 
 ---
 
-<p class="kicker">Deel A · bonus · kies er één · 11:15–11:45</p>
-<h2 class="title title--md">Een game of een AI: allebei kun je om de tuin leiden</h2>
-<div class="row" style="margin-top:10px;align-items:flex-start">
-<div class="col code-sm" style="flex:1 1 55%">
-<div class="defbox" style="margin-bottom:10px"><span class="k">Optie A · Dino Console Hack · chromedino.com</span><p style="font-size:21px">Inspecteren → tabblad <strong>Console</strong> → typ een regel en druk op Enter.</p></div>
-
-```js
-Runner.instance_.gameOver = function(){}
-Runner.instance_.setSpeed(100)
-```
-
-</div>
-<div class="col" style="flex:1 1 45%">
-<div class="defbox"><span class="k">Optie B · Gandalf AI Jailbreak · gandalf.lakera.ai</span><p style="font-size:21px">Een AI-bewaker kent een geheim wachtwoord en mag het niet verklappen. Bedenk een slimme vraag waarmee hij het tóch prijsgeeft. Elk level is hij strenger.</p></div>
-</div>
+<p class="kicker">Deel B · 11:15 · maak kennis</p>
+<h2 class="title title--md">De micro:bit is een complete computer die in je hand past</h2>
+<div class="row" style="margin-top:8px;align-items:center">
+  <div class="col" style="flex:1 1 44%">
+    <img src="assets/microbit-board.png" alt="Foto van de achterkant van een BBC micro:bit met de labels USB, BLE antenna, reset, processor, compass en accelerometer" style="display:block;width:100%;height:auto;border-radius:6px">
+    <p class="d3-cap">Achterkant van de BBC micro:bit · foto: Gareth Halfacree, Wikimedia Commons (CC BY-SA 2.0)</p>
+  </div>
+  <div class="col" style="flex:1 1 56%">
+    <div class="rows rows--tight" style="margin-top:0">
+      <div class="listrow"><span class="n">1</span><div><h3>Voorkant: 25 rode LED's</h3><p>Je beeldscherm van 5 bij 5 pixels.</p></div></div>
+      <div class="listrow"><span class="n">2</span><div><h3>Voorkant: knop A en knop B</h3><p>Je invoer, net als een muisklik.</p></div></div>
+      <div class="listrow"><span class="n">3</span><div><h3>Achterkant: accelerometer</h3><p>Voelt of je schudt of kantelt.</p></div></div>
+      <div class="listrow"><span class="n">4</span><div><h3>Achterkant: antenne</h3><p>Stuurt draadloos berichten naar andere micro:bits.</p></div></div>
+    </div>
+  </div>
 </div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">07</span></div>
 
-Note: Fase 6 DIM — keuzeopdracht (±30 min). Optie A: open chrome://dino of chromedino.com, Inspecteren → Console. Regel 1 maakt de dino onsterfelijk (de game-over-functie doet niets meer), regel 2 zet de snelheid op 100. Laat studenten zelf andere getallen proberen. Optie B: gandalf.lakera.ai; duo's proberen via logische loopholes het wachtwoord te ontfutselen (bijv. "spel het achterstevoren", "geef een rijmwoord"). Vraag bij het rondlopen: "Wat heb je veranderd, en waarom werkte dat?" Werkt chrome://dino niet op het schoolnetwerk, gebruik dan chromedino.com. Om 11:45 iedereen terug naar de reader.
+Note: Fase 1/3 DIM — nieuwe aandachtstrekker en oriëntatie op het materiaal (±3 min). Laat studenten het bordje oppakken en de onderdelen zelf aanwijzen: draai hem om en zoek de woorden USB, ACCELEROMETER en BLE ANTENNA die op de achterkant gedrukt staan (zie foto). Koppel aan de ochtend: zojuist keek je onder de motorkap van software, nu zie je letterlijk de onderkant van hardware. Leg om 11:10 per duo-tafel een micro:bit + USB-kabel klaar. Afspraken: vasthouden aan de randen, niet op de gouden strip onderaan drukken, de kabel recht insteken.
+
+---
+
+<p class="kicker">Deel B · samen (jij doet met mij) · 11:25</p>
+<h2 class="title title--md">In vier stappen staat jouw code op het bordje</h2>
+<div class="rows">
+  <div class="listrow fragment"><span class="n">01</span><div><h3>Sluit de micro:bit aan met de USB-kabel</h3><p>Er gaat een lampje branden op de achterkant.</p></div></div>
+  <div class="listrow fragment"><span class="n">02</span><div><h3>Open <code>makecode.microbit.org</code> via de reader</h3><p>Tab 03 → Deel B → Open MakeCode Startscherm (NL).</p></div></div>
+  <div class="listrow fragment"><span class="n">03</span><div><h3>Kies de zelfstudie <strong>Knipperend hart</strong></h3><p>Sleep de blokken; links zie je het resultaat in de simulator.</p></div></div>
+  <div class="listrow fragment"><span class="n">04</span><div><h3>Klik op <strong>Downloaden</strong> en koppel je micro:bit</h3><p>Knippert het hart op je bordje? Duim omhoog. Daarna werk je zelf door tot 11:45.</p></div></div>
+</div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">08</span></div>
+
+Note: Fase 5 DIM — begeleide inoefening (±7 min, 11:25–11:32), daarna werken duo's zelf door aan Knipperend hart en Naamplaatje tot 11:45; pak om 11:45 de draad op met de volgende slide. Na de lunch gaat stap 1 verder om 13:00. Laat de klas letterlijk meeklikken en wacht op de duimen. Downloaden: in Chrome vraagt MakeCode de eerste keer om het apparaat te koppelen (kies "BBC micro:bit" in het lijstje); daarna staat de code met één klik op het bordje. Lukt koppelen niet, dan wordt er een .hex-bestand gedownload: sleep dat in de Finder naar de schijf MICROBIT. Test dit vóór de les op één school-iMac. Werkt de USB helemaal niet, dan kan een duo verder in de simulator links in beeld. De editor staat in het Nederlands via ?lang=nl.
 
 ---
 
@@ -202,7 +216,7 @@ if (lengte > 140) {
 <div class="defbox fragment"><span class="k">Bug · edge-case</span><p>Een <strong>bug</strong> is een fout in de code. Een <strong>edge-case</strong> is een randgeval waar de maker niet aan dacht: precies op de grens, nul, negatief of belachelijk groot.</p></div>
 </div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">08</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">09</span></div>
 
 Note: Fase 4/5 DIM — korte gezamenlijke denkvraag (±3 min). Laat duo's 30 seconden overleggen en vraag dan een antwoord. Juist: iemand van precies 140 cm, want > betekent "groter dan" en niet "groter dan of gelijk aan" (>=). Klap dan de definitie aan. Dit is exact het denkpatroon dat ze nodig hebben voor de ticketshop (bug #3), zonder dat je die weggeeft. Kernzin: een tester vraagt zich niet af "werkt het?", maar "hoe krijg ik het kapot?"
 
@@ -224,7 +238,7 @@ Note: Fase 4/5 DIM — korte gezamenlijke denkvraag (±3 min). Laat duo's 30 sec
     <p class="d3-cap">Reader · tab 03 · Deel A · scorebord en ticketshop</p>
   </div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">09</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">10</span></div>
 
 Note: Fase 6 DIM — zelfstandig in duo's (±35 min). Oplossingen (niet tonen; ook via Shift + Alt + D): 1) negatief aantal tickets, bijv. -5; 2) drie keer of vaker op de kortingsknop klikken; 3) leeftijd precies 18; 4) onmogelijke leeftijd, onder 0 of boven 130; 5) naam leeg laten; 6) precies 0 tickets; 7) meer dan 500 tickets; 8) het half-doorzichtige knopje [DEV TEST: GRATIS VIP BYPASS] rechtsboven in de shop. De hints staan al in de bug-vakjes van het scorebord. Loop rond met de vraag: "Welke invoer heb je nog niet geprobeerd?" Duo's die alle 8 hebben: laat ze per bug in één zin opschrijven hoe de developer het had moeten voorkomen. Om 12:25 stoppen voor de oogst.
 
@@ -237,7 +251,7 @@ Note: Fase 6 DIM — zelfstandig in duo's (±35 min). Oplossingen (niet tonen; o
   <div class="listrow fragment"><span class="n">02</span><div><h3>Wat kost zo'n fout een echt festival?</h3><p>Gratis tickets, een te volle zaal, geld terug voor niets.</p></div></div>
   <div class="listrow fragment"><span class="n">03</span><div><h3>Bedrijven betalen hier echt voor</h3><p>Bij een bug-bounty krijg je geld als je een fout netjes meldt in plaats van misbruikt.</p></div></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">10</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">11</span></div>
 
 Note: Fase 7 DIM — nabespreking (±5 min). Vraag eerst uit de klas en klap daarna de punten aan. Vraag per genoemde bug: "Hoe had de developer dit kunnen voorkomen?" (controleren of het getal groter dan 0 is, >= gebruiken, de testknop weghalen voor de livegang). Benoem de rol: dit is wat een tester of QA-engineer doet, en ook een AV- of mediamanager moet zo kunnen denken bij een online kaartverkoop. Studenten vinken het Hacker Lab-deel van Quest 3.1 af in de reader.
 
@@ -246,8 +260,8 @@ Note: Fase 7 DIM — nabespreking (±5 min). Vraag eerst uit de klas en klap daa
 <!-- .slide: class="dark" data-background-color="#111111" -->
 
 <p class="kicker kicker--lime">Lunchpauze · 12:30 – 13:00</p>
-<h2 class="title" style="color:#fff;font-size:72px;line-height:1;margin-top:12px">Na de lunch ligt er iets voor je klaar.</h2>
-<p class="lede" style="color:#EDEDED;font-size:24px;margin-top:12px">Om <strong style="color:#A6E22E">13:00</strong> starten we met Deel B: de micro:bit. Zelfde duo, zelfde plek.</p>
+<h2 class="title" style="color:#fff;font-size:72px;line-height:1;margin-top:12px">Na de lunch bouw je verder met je micro:bit.</h2>
+<p class="lede" style="color:#EDEDED;font-size:24px;margin-top:12px">Om <strong style="color:#A6E22E">13:00</strong> gaan we verder met Deel B. Zelfde duo, zelfde plek, je bordje ligt klaar.</p>
 <div class="timer" data-timer="30:00" role="group" aria-label="Timer 30 minuten lunchpauze" style="margin-top:8px;transform:scale(.78);transform-origin:top center">
   <div class="t-dial">
     <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -258,59 +272,23 @@ Note: Fase 7 DIM — nabespreking (±5 min). Vraag eerst uit de klas en klap daa
   </div>
   <div class="t-btns"><button class="t-btn t-start" type="button">Start</button><button class="t-btn t-reset" type="button">Reset</button></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">11</span></div>
-
-Note: Lunchpauze 12:30–13:00. Start de timer. Leg in de laatste 5 minuten (12:55) op elke duo-tafel een BBC micro:bit + USB-kabel klaar: dat geeft een cadeautjes-gevoel als ze binnenlopen. Tel de sets (20 micro:bits, 20 kabels) zodat je bij de inname weet wat er terug moet komen.
-
----
-
-<p class="kicker">Deel B · 13:00 · maak kennis</p>
-<h2 class="title title--md">De micro:bit is een complete computer die in je hand past</h2>
-<div class="row" style="margin-top:8px;align-items:center">
-  <div class="col" style="flex:1 1 44%">
-    <img src="assets/microbit-board.png" alt="Foto van de achterkant van een BBC micro:bit met de labels USB, BLE antenna, reset, processor, compass en accelerometer" style="display:block;width:100%;height:auto;border-radius:6px">
-    <p class="d3-cap">Achterkant van de BBC micro:bit · foto: Gareth Halfacree, Wikimedia Commons (CC BY-SA 2.0)</p>
-  </div>
-  <div class="col" style="flex:1 1 56%">
-    <div class="rows rows--tight" style="margin-top:0">
-      <div class="listrow"><span class="n">1</span><div><h3>Voorkant: 25 rode LED's</h3><p>Je beeldscherm van 5 bij 5 pixels.</p></div></div>
-      <div class="listrow"><span class="n">2</span><div><h3>Voorkant: knop A en knop B</h3><p>Je invoer, net als een muisklik.</p></div></div>
-      <div class="listrow"><span class="n">3</span><div><h3>Achterkant: accelerometer</h3><p>Voelt of je schudt of kantelt.</p></div></div>
-      <div class="listrow"><span class="n">4</span><div><h3>Achterkant: antenne</h3><p>Stuurt draadloos berichten naar andere micro:bits.</p></div></div>
-    </div>
-  </div>
-</div>
 <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">12</span></div>
 
-Note: Fase 1/3 DIM — nieuwe aandachtstrekker en oriëntatie op het materiaal (±3 min). Laat studenten het bordje oppakken en de onderdelen zelf aanwijzen: draai hem om en zoek de woorden USB, ACCELEROMETER en BLE ANTENNA die op de achterkant gedrukt staan (zie foto). Koppel aan de ochtend: vanochtend keek je onder de motorkap van software, nu zie je letterlijk de onderkant van hardware. Afspraken: vasthouden aan de randen, niet op de gouden strip onderaan drukken, de kabel recht insteken.
+Note: Lunchpauze 12:30–13:00. Start de timer. Laat de micro:bits op de tafels liggen (kabel los). Tel de sets (20 micro:bits, 20 kabels) zodat je bij de inname weet wat er terug moet komen.
 
 ---
 
-<p class="kicker">Deel B · samen (jij doet met mij) · 13:05</p>
-<h2 class="title title--md">In vier stappen staat jouw code op het bordje</h2>
-<div class="rows">
-  <div class="listrow fragment"><span class="n">01</span><div><h3>Sluit de micro:bit aan met de USB-kabel</h3><p>Er gaat een lampje branden op de achterkant.</p></div></div>
-  <div class="listrow fragment"><span class="n">02</span><div><h3>Open <code>makecode.microbit.org</code> via de reader</h3><p>Tab 03 → Deel B → Open MakeCode Startscherm (NL).</p></div></div>
-  <div class="listrow fragment"><span class="n">03</span><div><h3>Kies de zelfstudie <strong>Knipperend hart</strong></h3><p>Sleep de blokken; links zie je het resultaat in de simulator.</p></div></div>
-  <div class="listrow fragment"><span class="n">04</span><div><h3>Klik op <strong>Downloaden</strong> en koppel je micro:bit</h3><p>Knippert het hart op je bordje? Duim omhoog.</p></div></div>
-</div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">13</span></div>
-
-Note: Fase 5 DIM — begeleide inoefening (±7 min). Laat de klas letterlijk meeklikken en wacht op de duimen. Downloaden: in Chrome vraagt MakeCode de eerste keer om het apparaat te koppelen (kies "BBC micro:bit" in het lijstje); daarna staat de code met één klik op het bordje. Lukt koppelen niet, dan wordt er een .hex-bestand gedownload: sleep dat in de Finder naar de schijf MICROBIT. Test dit vóór de les op één school-iMac. Werkt de USB helemaal niet, dan kan een duo verder in de simulator links in beeld. De editor staat in het Nederlands via ?lang=nl.
-
----
-
-<p class="kicker">Deel B · stap 1 · 13:10–13:30 · beginnercursussen</p>
+<p class="kicker">Deel B · stap 1 · 13:00–13:30 · beginnercursussen</p>
 <h2 class="title title--md">Eerst leer je de drie bouwstenen: scherm, knoppen en schudden</h2>
 <div class="cards">
   <div class="glr-card"><img class="d3-thumb" src="assets/knipperend-hart.png" alt="MakeCode-illustratie bij de zelfstudie Knipperend hart"><span class="k">Scherm</span><h3>Knipperend hart</h3><p>Tekenen op de LED's en eindeloos herhalen.</p></div>
   <div class="glr-card"><img class="d3-thumb" src="assets/smiley-knoppen.png" alt="MakeCode-illustratie bij de zelfstudie Smiley-knoppen"><span class="k">Knoppen</span><h3>Smiley-knoppen</h3><p>Knop A is blij, knop B is verdrietig.</p></div>
   <div class="glr-card"><img class="d3-thumb" src="assets/dobbelsteen.png" alt="MakeCode-illustratie bij de zelfstudie Dobbelsteen"><span class="k">Schudden</span><h3>Dobbelsteen</h3><p>Schud en krijg een willekeurig getal.</p></div>
 </div>
-<p class="body" style="margin-top:16px;font-size:21px">Twee cursussen werkend op je bordje? Door naar stap 2. Al eens gedaan? Begin meteen bij stap 2.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">14</span></div>
+<p class="body" style="margin-top:16px;font-size:21px">Twee cursussen werkend (Knipperend hart telt al)? Door naar stap 2. Al eens gedaan? Begin meteen bij stap 2.</p>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">13</span></div>
 
-Note: Fase 6 DIM — zelfstandig in duo's, Stap 1 (tot 13:30). Te vinden in de rij "Zelfstudies" op het MakeCode-startscherm (ook Naamplaatje hoort erbij). Kernbegrippen: LED-matrix en de forever-lus, event-input via knop A en B, bewegingssensor (on shake) + willekeurig getal. Doorstroomregel: wie 2 beginnercursussen werkend heeft (of ze al kende) gaat door naar Stap 2. Laat duo's om de beurt slepen en downloaden. In de reader: tab 03 → Deel B → knop "Stap 1". Illustraties: Microsoft MakeCode.
+Note: Fase 6 DIM — zelfstandig in duo's, Stap 1 (tot 13:30). Ze zijn om 11:15 al begonnen met Knipperend hart; laat ze verder gaan waar ze bleven. Te vinden in de rij "Zelfstudies" op het MakeCode-startscherm (ook Naamplaatje hoort erbij). Kernbegrippen: LED-matrix en de forever-lus, event-input via knop A en B, bewegingssensor (on shake) + willekeurig getal. Doorstroomregel: wie 2 beginnercursussen werkend heeft (of ze al kende) gaat door naar Stap 2. Laat duo's om de beurt slepen en downloaden. In de reader: tab 03 → Deel B → knop "Stap 1". Illustraties: Microsoft MakeCode.
 
 ---
 
@@ -322,7 +300,7 @@ Note: Fase 6 DIM — zelfstandig in duo's, Stap 1 (tot 13:30). Te vinden in de r
   <div class="glr-card"><img class="d3-thumb" src="assets/7-seconden.png" alt="MakeCode-illustratie bij het spel 7 seconden"><span class="k">Solo of duel</span><h3>7 seconden</h3><p>Wie heeft de beste interne klok?</p></div>
 </div>
 <p class="body" style="margin-top:16px;font-size:21px">Vast? Eerst <strong>Boek</strong> (de zelfstudie), dan <strong>Buur</strong>, dan <strong>Baas</strong>.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">15</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">14</span></div>
 
 Note: Fase 6 DIM — zelfstandig in duo's, Stap 2 (±35 min). Rij "Spellen" op het MakeCode-startscherm. Steen, papier, schaar gebruikt on shake, kies willekeurig 1 tot 3 en als/anders; laat duo's daarna een best-of-5 toernooitje spelen tegen de tafelbuur. Hete aardappel: de micro:bit telt af en wordt fysiek doorgegeven. 7 seconden: druk precies na 7 seconden opnieuw. Voor het doorgeven en schudden moet het bordje los van de iMac: kan alleen met een batterijhouder; zonder batterij blijft de kabel erin en wordt er voorzichtig geschud. Rond 13:55 de begripscheck op de volgende slide.
 
@@ -335,7 +313,7 @@ Note: Fase 6 DIM — zelfstandig in duo's, Stap 2 (±35 min). Rij "Spellen" op h
   <div class="listrow"><span class="n">2</span><div><h3>B · Ja, elk bordje kiest zelf een willekeurig getal</h3></div></div>
   <div class="listrow"><span class="n">3</span><div><h3>C · Nee, na steen komt altijd papier</h3></div></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">16</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">15</span></div>
 
 Note: Fase 4 DIM — begripscheck (±3 min, rond 13:55). Juist: B (2 vingers). Elk bordje voert zijn eigen programma uit en kiest zelf een willekeurig getal van 1 tot 3; ze weten niets van elkaar. Beslisprotocol: >80% goed → één student laat het uitleggen; 30–80% → 60 sec overleg + herstemming; <30% → laat twee studenten tien keer schudden en turven. Dit is de brug naar Stap 3: "Ze weten nu niets van elkaar. Hoe zou je ze wél met elkaar kunnen laten praten?"
 
@@ -358,7 +336,7 @@ Note: Fase 4 DIM — begripscheck (±3 min, rond 13:55). Juist: B (2 vingers). E
     <p class="d3-cap" style="color:#BBB">Zelfstudie Micro-Chat (Glimlachen sturen)</p>
   </div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">17</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">16</span></div>
 
 Note: Fase 3/5 DIM — korte instructie, daarna doen (±15 min). Stop iedereen om 14:05, ook wie nog in een spel zit: de radiospellen zijn meteen complex als je de radio-blokken niet kent, daarom doet iedereen eerst Micro-Chat. Te vinden in de rij "Zelfstudies" op MakeCode of via de knop "START STAP 3A" in de reader (makecode.microbit.org/projects/micro-chat). Leg de walkie-talkie-metafoor uit: groep = frequentie. Laat elk duo-paar een eigen groepsnummer kiezen (tafelnummer), anders ontvangt iedereen alles door elkaar. In de simulator verschijnt vanzelf een tweede virtuele micro:bit zodra je een radio-blok gebruikt. Gelukt = een smiley van de ene micro:bit verschijnt op de andere.
 
@@ -371,7 +349,7 @@ Note: Fase 3/5 DIM — korte instructie, daarna doen (±15 min). Stop iedereen o
   <div class="glr-card"><img class="d3-thumb" src="assets/rps-teams.png" alt="MakeCode-illustratie bij het radiospel Steen, papier, schaar Teams"><span class="k">Radiospel</span><h3>Steen, papier, schaar Teams</h3><p>De hele tafel speelt mee en ziet hoeveel spelers elk team heeft.</p></div>
   <div class="glr-card glr-card--accent"><span class="k">Nog niet zover?</span><h3>Maak eerst Micro-Chat af</h3><p>Stuur daarna je eigen icoon of een woord naar je buur. Dat telt ook.</p></div>
 </div>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">18</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">17</span></div>
 
 Note: Fase 6 DIM — zelfstandig in duo's, Stap 3B (±20 min). Rij "Radiospellen" op het MakeCode-startscherm; links ook in de reader onder Stap 3. Pas starten nadat Micro-Chat tussen twee echte micro:bits werkt. Multi-dobbelsteen: makecode.microbit.org/projects/multi-dice. RPS Teams: makecode.microbit.org/projects/rps-teams. Ook Hete aardappel via radio (Tele-potato) is een optie. Let op de groepsnummers: twee duo's die samen spelen zetten dezelfde groep. In de reader staat een bonus-spiekbriefje met de Micro-Chat-code voor wie vastloopt. Illustraties: Microsoft MakeCode.
 
@@ -382,7 +360,7 @@ Note: Fase 6 DIM — zelfstandig in duo's, Stap 3B (±20 min). Rij "Radiospellen
 <p class="kicker kicker--lime">14:40 · klas-finale</p>
 <h1 class="title" style="color:#fff;font-size:96px;line-height:0.95;margin-top:30px">Iedereen naar <span class="glr-glow" style="color:#A6E22E">groep 99</span></h1>
 <p class="lede" style="color:#EDEDED;font-size:28px;max-width:900px;margin-top:22px">Zet je Micro-Chat op <span class="d3-block">radio stel groep in op 99</span> en download opnieuw. Eén druk op knop A, en de hele klas licht op.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">19</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">18</span></div>
 
 Note: Optionele klas-finale (±5 min, 14:40). Iedereen opent zijn Micro-Chat-project, verandert het groepsnummer in 99 en downloadt opnieuw. Tel af: één student drukt op knop A en alle bordjes in het lokaal tonen het bericht. Laat daarna iedereen tegelijk drukken voor de chaos-versie. Benoem wat ze zien: zo werkt elk draadloos netwerk, iedereen op hetzelfde kanaal hoort alles. Loopt de tijd uit, sla deze slide dan over en ga naar de inname.
 
@@ -396,7 +374,7 @@ Note: Optionele klas-finale (±5 min, 14:40). Iedereen opent zijn Micro-Chat-pro
   <li><strong>Quest 3.3</strong> — eerst Micro-Chat, daarna een radiospel met een ander bordje.</li>
 </ul>
 <p class="body" style="margin-top:16px;max-width:940px"><strong>Eerst inleveren:</strong> kabel los, micro:bit en kabel per tafel terug in de bak. Daarna vink je af in de reader.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">20</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">19</span></div>
 
 Note: Fase 7 DIM + formatieve OVG-check (±5 min). Neem de 20 micro:bits en 20 USB-kabels gestructureerd in: per tafel laten brengen en zelf tellen voordat iemand verder gaat. Daarna vinken studenten zelf de quests af in de reader (tab 03 → Deel B → Jouw Quests voor Dag 3). Geen cijfer, wel bewijs van eigen kunnen. Snelle handopsteek per quest.
 
@@ -410,7 +388,7 @@ Note: Fase 7 DIM + formatieve OVG-check (±5 min). Neem de 20 micro:bits en 20 U
   <div class="glr-card glr-card--accent"><span class="k">Rol C</span><h3>Creative Software Developer</h3><p>Je dook graag onder de motorkap om het echt te laten werken.</p></div>
 </div>
 <p class="body" style="margin-top:16px;font-size:21px">Vink jouw rol aan op <strong>tab 04</strong> en lees je GLR-toekomstbericht.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">21</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">20</span></div>
 
 Note: Fase 7 DIM — terugblik en studiekeuze (±5 min). Studenten openen Tab 04 (04 // GLR Kompas) en vinken de rol aan die hen deze week het meest aansprak; de reader toont dan een persoonlijk toekomstbericht. Elke keuze is goed: het doel van de oriëntatieklas is ontdekken wat bij je past. Vraag 2–3 studenten welke rol ze kozen en welk moment van de week dat bepaalde.
 
@@ -424,6 +402,6 @@ Note: Fase 7 DIM — terugblik en studiekeuze (±5 min). Studenten openen Tab 04
   <div class="listrow fragment"><span class="n">03</span><div><h3>Dag 3 · je keek onder de motorkap</h3><p>Broncode, bugs en een computer in je hand.</p></div></div>
 </div>
 <p class="body fragment" style="margin-top:16px">Welke opleiding je ook kiest: je weet nu wat een developer in jouw team kan.</p>
-<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">22</span></div>
+<div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">21</span></div>
 
 Note: Fase 7 DIM — transfer en positieve afsluiting (tot 15:00). Kernboodschap voor de studenten die een andere GLR-opleiding kiezen: later werk je in projecten samen met developers, en nu weet je hoe zij denken (kijk onder de buitenkant, probeer het kapot te krijgen, bouw het in kleine stappen). Voor wie Rol C aanvinkte: nodig uit om na afloop even te blijven voor vragen over de opleiding CSD. Bedank de klas en sluit af.
