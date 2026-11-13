@@ -405,3 +405,19 @@ Note: Fase 7 DIM — terugblik en studiekeuze (±5 min). Studenten openen Tab 04
 <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">21</span></div>
 
 Note: Fase 7 DIM — transfer en positieve afsluiting (tot 15:00). Kernboodschap voor de studenten die een andere GLR-opleiding kiezen: later werk je in projecten samen met developers, en nu weet je hoe zij denken (kijk onder de buitenkant, probeer het kapot te krijgen, bouw het in kleine stappen). Voor wie Rol C aanvinkte: nodig uit om na afloop even te blijven voor vragen over de opleiding CSD. Bedank de klas en sluit af.
+
+---
+
+<!-- .slide: class="bleed dark" data-background-color="#111111" -->
+
+<img class="bleed-img" src="assets/spookhuis-kelder.jpg" alt="" aria-hidden="true">
+<div class="bleed-overlay bleed-overlay--soft"></div>
+<div class="bleed-content">
+  <p class="kicker kicker--lime">14:00 · we gaan naar beneden</p>
+  <h1 class="title" style="color:#fff;font-size:100px;line-height:0.95;margin-top:60px">Durf jij het<br><span class="glr-glow" style="color:#A6E22E">spookhuis</span> in?</h1>
+  <p class="lede" style="color:#fff;font-size:30px;max-width:640px;margin-top:26px">Om <strong style="color:#A6E22E">14:00</strong> lopen we samen naar de <strong style="color:#A6E22E">PET-studio in de kelder</strong>. Tas mee, micro:bit blijft hier.</p>
+  <p style="margin:auto 0 0;font-size:12px;color:#AAA">Foto: “The Basement”, Falcon® Photography, Wikimedia Commons (CC BY-SA 2.0)</p>
+  <div class="footer"><span>CSD Oriëntatieklas · Dag 3 · Developer Mindset</span><span class="num">22</span></div>
+</div>
+
+Note: Om 14:00 gaat de hele klas naar de PET-studio in de kelder voor het spookhuis. Zet deze slide een paar minuten van tevoren op het scherm. Neem vóór vertrek de micro:bits en USB-kabels in (tel 20 + 20) en laat de quests en het GLR Kompas afvinken, of doe dat na terugkomst. Loop als groep naar beneden.
