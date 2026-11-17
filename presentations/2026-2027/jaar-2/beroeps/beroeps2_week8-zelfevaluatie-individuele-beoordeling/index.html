@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 8: Individuele beoordeling — GLR CSD</title>
+<meta name="author" content="GLR CSD">
+
+<!-- Automatisch gegenereerd door scripts/build-index.js. Laadt de inhoud uit
+     slides.md met de reveal.js markdown-plugin en de gedeelde GLR-huisstijl. -->
+
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/reveal.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="../../../../../shared/css/glr-theme.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/chalkboard/style.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/customcontrols/style.css">
+<style>
+  /* Presentatiespecifieke bouwstenen (niet in het gedeelde thema). */
+  :root{--track-a:#A6E22E;--track-b:#4DA3FF;--alert:#FF8A75;--alert-bg:#2A1714}
+  .dark .defbox{background:#1C1C1C}
+  .dark .defbox .k{color:var(--lime)}
+  .reveal .slides section.dark{font-size:26px}
+  .dark .listrow h3{font-size:28px}
+  .reveal .dark .listrow p{font-size:23px}
+
+  /* Waarschuwing */
+  .alert{background:var(--alert-bg);border-left:14px solid var(--alert);border-radius:6px;padding:22px 30px}
+  .alert .k{display:block;font-family:'Space Grotesk',sans-serif;font-size:16px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--alert);margin-bottom:6px}
+  .reveal .alert p{font-size:30px;line-height:1.25;color:#fff;font-weight:600}
+  .txt-alert{color:var(--alert)!important}
+  .txt-a{color:var(--track-a)!important}
+  .txt-b{color:var(--track-b)!important}
+
+  /* Grote statistiek */
+  .stat{display:flex;align-items:baseline;gap:28px;margin-top:10px}
+  .stat .big{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:150px;line-height:1;color:var(--alert)}
+  .reveal .stat p{font-size:30px;color:#E4E4E4;line-height:1.25}
+
+  /* Twee kolommen: gehaald / niet gehaald en Spoor A / Spoor B */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:26px}
+  .panel{background:#1C1C1C;border-top:10px solid var(--track-a);border-radius:6px;padding:26px 30px}
+  .panel .k{display:block;font-family:'Space Grotesk',sans-serif;font-size:17px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--track-a);margin-bottom:10px}
+  .panel h3{font-size:34px;line-height:1.15;color:#fff;margin-bottom:12px}
+  .reveal .panel p{font-size:23px;line-height:1.35;color:#D6D6D6}
+  .panel ol{margin:6px 0 10px 1.2em;padding:0}
+  .panel li{font-size:23px;line-height:1.35;color:#E4E4E4;margin-bottom:6px}
+  .panel--b{border-top-color:var(--track-b)}
+  .panel--b .k{color:var(--track-b)}
+  .panel--alert{border-top-color:var(--alert)}
+  .panel--alert .k{color:var(--alert)}
+  .panel strong{color:#fff}
+
+  /* Kop met spoorkleur */
+  .dark .kicker.txt-b{color:var(--track-b)}
+  .bar--b{background:var(--track-b)}
+  .dark .listrow .n.txt-b{color:var(--track-b)}
+  .dark .listrow .n.txt-alert{color:var(--alert)}
+
+  /* Tijdlijn beoordelingsprotocol (5 minuten) */
+  .timeline{display:flex;height:54px;border-radius:6px;overflow:hidden;margin-top:24px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px}
+  .timeline span{display:flex;align-items:center;justify-content:center;color:#111}
+  .timeline .s1{flex:2.5;background:var(--track-a)}
+  .timeline .s2{flex:1;background:#E4E4E4}
+  .timeline .s3{flex:1.5;background:var(--track-b)}
+
+  /* Terminal op donkere slide */
+  .dark .terminal-window{background:#0A0A0A;border:1px solid #333;margin-top:0}
+  .dark .terminal-window pre code{background:#0A0A0A;font-size:20px;line-height:1.45;white-space:pre}
+  .step1 .listrow{padding-top:8px}
+  .reveal .step1 .listrow h3{font-size:26px}
+  .reveal .step1 .listrow p{font-size:21px}
+  .step1 + *{margin:0}
+  section .row .timer{transform:scale(.85);transform-origin:center}
+</style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+    <section
+      data-markdown="slides.md"
+      data-separator="\n---\n\n"
+      data-separator-vertical="\n--\n\n"
+      data-separator-notes="^Note:"
+      data-charset="utf-8"></section>
+  </div>
+</div>
+
+<script src="../../../../../shared/vendor/reveal/reveal.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/markdown/markdown.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/highlight/highlight.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/notes/notes.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/search/search.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/zoom/zoom.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/math/math.js"></script>
+<script src="../../../../../shared/vendor/chalkboard/plugin.js"></script>
+<script src="../../../../../shared/vendor/customcontrols/plugin.js"></script>
+<script src="../../../../../shared/js/glr-plugins.js"></script>
+
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0,
+    display: 'flex',
+    center: false,
+    minScale: 0.2,
+    maxScale: 1.6,
+    hash: true,
+    progress: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: false,
+    transition: 'slide',
+    backgroundTransition: 'fade',
+    katex: { local: '../../../../../shared/vendor/katex' },
+    chalkboard: {},
+    customcontrols: {
+      collapseIcon: '▾',
+      expandIcon: '▴',
+      controls: [
+        { icon: '🖊️', title: 'Notitie-canvas (C)', action: 'RevealChalkboard.toggleNotesCanvas()' },
+        { icon: '🖍️', title: 'Chalkboard (B)', action: 'RevealChalkboard.toggleChalkboard()' }
+      ]
+    },
+    plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealSearch, RevealZoom, RevealMath.KaTeX, RevealChalkboard, RevealCustomControls],
+    markdown: { smartypants: true }
+  }).then(function () {
+    GLRPlugins.initAll();
+  });
+</script>
+
+</body>
+</html>
