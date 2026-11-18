@@ -54,13 +54,13 @@ Loop deze afspraken kort en helder door. Benadruk waarom telefoons in de tas bli
     </ul>
   </div>
   <div class="col">
-    <div class="timer" data-timer="115:00" role="group" aria-label="Timer 115 minuten">
+    <div class="timer" data-timer="55:00" role="group" aria-label="Timer 55 minuten">
       <div class="t-dial">
         <svg viewBox="0 0 120 120" aria-hidden="true">
           <circle class="t-track" cx="60" cy="60" r="54"></circle>
           <circle class="t-prog" cx="60" cy="60" r="54"></circle>
         </svg>
-        <div class="t-face"><span class="t-time">115:00</span><span class="t-label">Eindtijd 12:30</span></div>
+        <div class="t-face"><span class="t-time">55:00</span><span class="t-label">Eindtijd 12:30</span></div>
       </div>
       <div class="t-btns"><button class="t-btn t-start" type="button">Start</button><button class="t-btn t-reset" type="button">Reset</button></div>
     </div>
