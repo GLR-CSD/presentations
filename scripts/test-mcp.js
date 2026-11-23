@@ -114,8 +114,8 @@ const { client, transport } = await connect(withInput);
 try {
   // Catalogus
   const tools = (await client.listTools()).tools.map((t) => t.name);
-  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status', 'add_media_file', 'list_media', 'list_github_decks', 'move_presentation_on_github'];
-  ok(tools.length === 19 && wantedTools.every((t) => tools.includes(t)), `19 tools aanwezig (${tools.length})`);
+  const wantedTools = ['list_input_documents', 'read_input_document', 'list_presentations', 'get_presentation', 'create_presentation', 'move_presentation', 'add_slide', 'update_slide_component', 'insert_component_on_slide', 'update_slide_properties', 'manage_slides', 'analyze_presentation_pedagogy', 'apply_pedagogical_fix', 'publish_deck_to_github', 'check_github_build_status', 'add_media_file', 'list_media', 'list_github_decks', 'move_presentation_on_github', 'clone_presentation', 'clone_presentation_on_github'];
+  ok(tools.length === 21 && wantedTools.every((t) => tools.includes(t)), `21 tools aanwezig (${tools.length})`);
   const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
   ok(resources.join() === ['glr://components/catalog', 'glr://decks/manifest', 'glr://input/files', 'glr://media/library', 'glr://pedagogy/guidelines'].join(), `5 resources (${resources})`);
   const prompts = (await client.listPrompts()).prompts.map((p) => p.name).sort();
@@ -180,6 +180,19 @@ try {
   ok((await call(client, 'move_presentation', { path: 'presentations/botst', folder: NEW })).isError, 'verplaatsen naar bestaande map geweigerd');
   ok((await call(client, 'move_presentation', { path: 'presentations/botst', folder: 'presentations/../buiten' })).isError, 'traversal geweigerd');
   ok((await call(client, 'move_presentation', { path: 'presentations/botst' })).isError, 'zonder afleidbare map: expliciete folder vereist');
+  // Klonen: origineel intact, kopie met assets, nieuwe frontmatter, juiste prefix; botsing en traversal geweigerd.
+  const origMd = fs.readFileSync(path.join(withInput, NEW, 'slides.md'), 'utf8');
+  const cl = await call(client, 'clone_presentation', { path: `${NEW}/slides.md`, slug: 'design1_flat-jan', auteur: 'Jan', leerjaar: 2 });
+  const CLONE = 'presentations/2026-2027/jaar-2/design/design1_flat-jan';
+  ok(!cl.isError && cl.structuredContent.path === `${CLONE}/slides.md`, `clone afgeleid uit cohort/leerjaar/slug (${text(cl).slice(0, 80)})`);
+  ok(fs.readFileSync(path.join(withInput, NEW, 'slides.md'), 'utf8') === origMd && fs.existsSync(path.join(withInput, NEW, 'assets/a.txt')), 'origineel ongewijzigd na clone');
+  ok(fs.existsSync(path.join(withInput, CLONE, 'assets/a.txt')), 'clone bevat assets');
+  const cloneFm = parseDeck(fs.readFileSync(path.join(withInput, CLONE, 'slides.md'), 'utf8')).frontmatter.toObject();
+  ok(cloneFm.auteur === 'Jan' && cloneFm.title === 'Flat (kopie)' && cloneFm.gekloond_van === `${NEW}/slides.md`, 'clone-frontmatter: auteur, titel, gekloond_van');
+  ok(fs.readFileSync(path.join(withInput, CLONE, 'index.html'), 'utf8').includes('"../../../../../shared/'), 'clone: shell-prefix passend bij nieuwe diepte');
+  ok((await call(client, 'clone_presentation', { path: `${NEW}/slides.md`, slug: 'design1_flat-jan', auteur: 'Jan', leerjaar: 2 })).isError, 'clone naar bestaande map geweigerd');
+  ok((await call(client, 'clone_presentation', { path: `${NEW}/slides.md`, slug: 'Slecht Slug', auteur: 'Jan' })).isError, 'clone met ongeldige slug geweigerd');
+  ok((await call(client, 'clone_presentation', { path: `${NEW}/slides.md`, slug: 'x', auteur: 'Jan', folder: 'presentations/../buiten' })).isError, 'clone: traversal geweigerd');
   ok(parseDeck(fs.readFileSync(path.join(withInput, 'presentations/2026-2027/jaar-1/minor-immersive-design/webxr_werk/slides.md'), 'utf8')).slides.length === 4, 'standup = agile (4 slides)');
   const own = await call(client, 'create_presentation', { title: 'Eigen AI', prefix: 'custom', markdown: 'Hier je deck:\n```markdown\n<!-- frontmatter\ntitle: "Eigen AI"\nleerjaar: 1\n-->\n\n## Een\n\n---\n\n## Twee\n```' });
   ok(!own.isError && own.structuredContent.slides === 2, 'create_presentation met eigen (gefencede) markdown');
@@ -341,6 +354,8 @@ try {
   ok(lgd.isError && text(lgd).includes('GITHUB_TOKEN'), 'list_github_decks zonder token = heldere fout');
   const mgm = await call(client, 'move_presentation_on_github', { path: P, folder: 'presentations/2026-2027/jaar-1/design/design1_verplaatst' });
   ok(mgm.isError && text(mgm).includes('GITHUB_TOKEN'), 'move_presentation_on_github zonder token = heldere fout');
+  const cgm = await call(client, 'clone_presentation_on_github', { path: P, slug: 'design1_kopie', auteur: 'Jan' });
+  ok(cgm.isError && text(cgm).includes('GITHUB_TOKEN'), 'clone_presentation_on_github zonder token = heldere fout');
 
   const stderr = transport.stderr ? await new Promise((res) => { let b = ''; transport.stderr.on('data', (d) => { b += d; }); setTimeout(() => res(b), 50); }) : '';
   ok(!stderr.includes('Error:'), 'geen onverwachte serverfouten op stderr');
@@ -366,4 +381,4 @@ try {
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failures) { console.error(`\n${failures} fout(en).`); process.exit(1); }
-console.log(`✔ MCP: 19 tools, 5 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);
+console.log(`✔ MCP: 21 tools, 5 resources, 4 prompts — end-to-end geslaagd (${checks} controles)`);

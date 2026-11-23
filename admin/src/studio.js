@@ -32,6 +32,8 @@ import { AuthGate } from './ui/auth-gate.js';
 import { openModal } from './ui/modal.js';
 import { openPresentationsBrowser as browsePresentations } from './ui/presentations-browser.js';
 import { openNewDeckWizard as showNewDeckWizard } from './ui/new-deck-wizard.js';
+import { openCloneDeckDialog } from './ui/clone-deck-dialog.js';
+import { cloneMarkdown } from './state/clone.js';
 import { openImageDialog as showImageDialog } from './ui/image-dialog.js';
 import { escapeHtml, slugify, SUBJECT_PREFIXES, deckFolder } from './ui/util.js';
 import { deckDepth, rewriteShellPrefix } from '../../scripts/lib/rewrite-prefix.js';
@@ -73,6 +75,7 @@ export class Studio {
       openBtnIcon: document.getElementById('open-btn-icon'),
       openBtnChev: document.getElementById('open-btn-chev'),
       newDeckBtn: document.getElementById('new-deck-btn'),
+      cloneDeckBtn: document.getElementById('clone-deck-btn'),
       saveBtn: document.getElementById('save-btn'),
       downloadBtn: document.getElementById('download-btn'),
       accountBtn: document.getElementById('account-btn'),
@@ -140,6 +143,7 @@ export class Studio {
     if (this.el.redoBtn) this.el.redoBtn.innerHTML = icon('redo-2', 17);
     if (this.el.aiBtn) this.el.aiBtn.innerHTML = `${icon('sparkles', 15)}<span>AI Assistent</span>`;
     if (this.el.newDeckBtn) this.el.newDeckBtn.innerHTML = `${icon('file-plus', 15)}<span>Nieuwe Presentatie</span>`;
+    if (this.el.cloneDeckBtn) this.el.cloneDeckBtn.innerHTML = `${icon('copy', 15)}<span>Kopie maken</span>`;
     if (this.el.saveBtn) this.el.saveBtn.innerHTML = `${icon('save', 15)}<span>Opslaan</span>`;
     if (this.el.standaloneBtn) this.el.standaloneBtn.innerHTML = icon('external-link', 16);
     if (this.el.presentBtn) this.el.presentBtn.innerHTML = `${icon('play', 15)}<span>Presenteer</span><kbd>F5</kbd>`;
@@ -316,6 +320,7 @@ export class Studio {
 
     if (this.el.openBtn) this.el.openBtn.addEventListener('click', () => this.openPresentationsBrowser());
     if (this.el.newDeckBtn) this.el.newDeckBtn.addEventListener('click', () => this.openNewDeckWizard());
+    if (this.el.cloneDeckBtn) this.el.cloneDeckBtn.addEventListener('click', () => this.cloneDeck());
     if (this.el.aiBtn) this.el.aiBtn.addEventListener('click', () => this.openAiAssistant());
     if (this.el.undoBtn) this.el.undoBtn.addEventListener('click', () => this.undo());
     if (this.el.redoBtn) this.el.redoBtn.addEventListener('click', () => this.redo());
@@ -776,6 +781,7 @@ export class Studio {
       },
       locationInfo: () => this.locationInfo(),
       moveDeck: () => this.moveDeckToTarget(),
+      cloneDeck: () => this.cloneDeck(),
       addFooter: () => this.addFooter(),
       applyCoach: (r) => this.applyCoach(r),
       restoreCoach: (snap) => this.restoreCoach(snap),
@@ -1158,6 +1164,59 @@ export class Studio {
       this.preview.setBaseUrl(base); this.sorter.baseUrl = base; setAssetBase(base);
       this.panel.render();
       toast(`Verplaatst naar ${info.target}`);
+      this.deployPoller.start({ commitSha, liveUrl: gh.pagesUrl(newPath) });
+    } catch (err) {
+      toast(gh.describeGitHubError ? gh.describeGitHubError(err) : err.message, true);
+    }
+  }
+
+  /**
+   * Maakt een eigen kopie van het open deck (map + assets) in één commit op main.
+   * Het origineel wordt niet aangeraakt; de Studio schakelt daarna naar de kopie.
+   * Niet-opgeslagen wijzigingen in de editor gaan mee in de kopie.
+   */
+  cloneDeck() {
+    const meta = this.state.deckMeta;
+    const fm = this.state.deck && this.state.deck.frontmatter;
+    if (!meta || !meta.path) return toast('Open eerst een presentatie om te kopiëren.', true);
+    if (meta.source === 'new' || meta.source === 'ai') return toast('Sla de presentatie eerst op; daarna kun je er een kopie van maken.', true);
+    if (!(this.auth.mode === 'github' && this.auth.token)) return toast('Kopiëren kan alleen in GitHub-modus (log in met GitHub).', true);
+    const sourceDir = meta.path.replace(/\/[^/]*$/, '');
+    const sourceSlug = sourceDir.split('/').pop();
+    openCloneDeckDialog({
+      manifest: this.manifest,
+      source: {
+        dir: sourceDir,
+        slug: sourceSlug,
+        title: (fm && fm.get('title')) || sourceSlug,
+        cohort: fm && fm.get('cohort'),
+        leerjaar: fm && fm.get('leerjaar'),
+        periode: fm && fm.get('periode'),
+      },
+      onSubmit: (data) => this.performClone(data, sourceDir, sourceSlug),
+    });
+  }
+
+  async performClone(data, sourceDir, sourceSlug) {
+    const newPath = `${data.dir}/slides.md`;
+    const markdown = cloneMarkdown(this.deckMarkdown(), { ...data, clonedFrom: `${sourceDir}/slides.md` });
+    const depth = deckDepth(newPath);
+    try {
+      await gh.connect(this.auth.token);
+      const commitSha = await gh.cloneDeck(
+        `feat: kopie van ${sourceSlug} als ${data.slug} via GLR Slide Studio`,
+        sourceDir,
+        data.dir,
+        (rel, text) => (/\.html$/i.test(rel) ? rewriteShellPrefix(text, depth) : null),
+        { slidesContent: markdown },
+      );
+      this.loadDeck(parseDeck(markdown), { source: 'github', path: newPath });
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.set('deck', newPath);
+        window.history.replaceState(null, '', u);
+      } catch { /* noop */ }
+      toast(`Kopie gemaakt: ${data.dir}. Je bewerkt nu je eigen versie.`);
       this.deployPoller.start({ commitSha, liveUrl: gh.pagesUrl(newPath) });
     } catch (err) {
       toast(gh.describeGitHubError ? gh.describeGitHubError(err) : err.message, true);

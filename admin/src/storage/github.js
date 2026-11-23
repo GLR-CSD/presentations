@@ -178,7 +178,21 @@ export async function commitFiles(message, files, opts = {}) {
  * @param {{ slidesContent?: string }} [extra] actuele (mogelijk onopgeslagen) slides.md
  * @returns {Promise<string>} commitSha
  */
-export async function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opts = {}) {
+export function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opts = {}) {
+  return copyOrMoveDeck(message, fromDir, toDir, rewrite, extra, opts, false);
+}
+
+/**
+ * Kopieert een hele deck-map naar een nieuwe map in één atomaire commit; het
+ * origineel blijft ongemoeid. Zelfde parameters als `moveDeck`
+ * (`extra.slidesContent` = slides.md van de kopie).
+ * @returns {Promise<string>} commitSha
+ */
+export function cloneDeck(message, fromDir, toDir, rewrite, extra = {}, opts = {}) {
+  return copyOrMoveDeck(message, fromDir, toDir, rewrite, extra, opts, true);
+}
+
+async function copyOrMoveDeck(message, fromDir, toDir, rewrite, extra, opts, keepSource) {
   const { owner, repo, branch } = { ...DEFAULT_REPO, ...opts };
   const api = client();
   fromDir = fromDir.replace(/\/+$/, '');
@@ -187,7 +201,7 @@ export async function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opt
 
   const buildEntries = async (baseCommit) => {
     const full = await api.rest.git.getTree({ owner, repo, tree_sha: baseCommit.tree.sha, recursive: 'true' });
-    if (full.data.truncated) throw new Error('De repo-boom is te groot om veilig te verplaatsen.');
+    if (full.data.truncated) throw new Error('De repo-boom is te groot om veilig te verplaatsen of te kopiëren.');
     const files = full.data.tree.filter((t) => t.type === 'blob');
     if (files.some((t) => t.path.startsWith(`${toDir}/`))) throw new Error(`Doelmap bestaat al: ${toDir}`);
     const mine = files.filter((t) => t.path.startsWith(`${fromDir}/`));
@@ -207,7 +221,7 @@ export async function moveDeck(message, fromDir, toDir, rewrite, extra = {}, opt
       }
       if (text != null) sha = (await api.rest.git.createBlob({ owner, repo, content: text, encoding: 'utf-8' })).data.sha;
       entries.push({ path: `${toDir}/${rel}`, mode: f.mode || '100644', type: 'blob', sha });
-      entries.push({ path: f.path, mode: f.mode || '100644', type: 'blob', sha: null });
+      if (!keepSource) entries.push({ path: f.path, mode: f.mode || '100644', type: 'blob', sha: null });
     }
     return entries;
   };
