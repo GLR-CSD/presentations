@@ -86,6 +86,33 @@ export class Workspace {
     return `${target}/slides.md`;
   }
 
+  /**
+   * Kopieert de hele deck-map (slides.md, index.html, assets/...) naar `toDir`,
+   * herschrijft de `../`-prefix van de shells en schrijft `slidesContent` als slides.md.
+   * Het origineel blijft ongemoeid. Geeft het nieuwe slides.md-pad terug.
+   */
+  cloneDeck(input, toDir, slidesContent) {
+    const fromRel = this.deckRel(input);
+    const fromDir = path.posix.dirname(fromRel);
+    const target = path.posix.dirname(this.deckRel(toDir));
+    if (fromDir === 'presentations' || target === 'presentations') throw new Error('Kies een doelmap met een vak, niet direct onder presentations/.');
+    if (target === fromDir) throw new Error(`De kopie moet een andere map krijgen dan ${fromDir}.`);
+    if (target.startsWith(`${fromDir}/`)) throw new Error('Het doel mag niet binnen het deck zelf liggen.');
+    if (this.exists(target)) throw new Error(`Doelmap bestaat al: ${target}.`);
+    fs.mkdirSync(path.dirname(this.abs(target)), { recursive: true });
+    fs.cpSync(this.abs(fromDir), this.abs(target), { recursive: true });
+    const depth = deckDepth(`${target}/slides.md`);
+    for (const e of fs.readdirSync(this.abs(target))) {
+      if (!/\.html$/i.test(e)) continue;
+      const f = path.join(this.abs(target), e);
+      const html = fs.readFileSync(f, 'utf8');
+      const next = rewriteShellPrefix(html, depth);
+      if (next !== html) fs.writeFileSync(f, next);
+    }
+    if (slidesContent != null) fs.writeFileSync(this.abs(`${target}/slides.md`), slidesContent);
+    return `${target}/slides.md`;
+  }
+
   /** Alle decks onder presentations/ (slides.md, of .md met frontmatter). */
   scanDecks() {
     const out = [];

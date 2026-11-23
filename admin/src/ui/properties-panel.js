@@ -435,6 +435,12 @@ export class PropertiesPanel {
       root.appendChild(d);
       return;
     }
+    const cloneBtn = h('button', 'studio-btn', `${icon('copy', 14)}<span>Kopie maken</span>`);
+    cloneBtn.type = 'button';
+    cloneBtn.title = 'Maak een eigen kopie; het origineel blijft ongewijzigd';
+    cloneBtn.addEventListener('click', () => this.api.cloneDeck());
+    d.appendChild(h('p', 'insp-help', 'Wil je deze presentatie aanpassen zonder het origineel te overschrijven? Maak eerst een kopie.'));
+    d.appendChild(cloneBtn);
     const loc = h('div', 'pp-location');
     const refreshLoc = () => {
       loc.textContent = '';

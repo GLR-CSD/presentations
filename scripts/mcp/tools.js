@@ -1,4 +1,4 @@
-/** De 19 MCP-tools van de GLR Slide Studio. */
+/** De 21 MCP-tools van de GLR Slide Studio. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { BLOCKS, nodeFor } from '../../admin/src/blocks/registry.js';
 import { htmlBlock } from '../../admin/src/blocks/snippets.js';
 import { SLIDE_TEMPLATES, slideTemplateBody, deckFooterText } from '../../admin/src/blocks/templates.js';
 import { parseDeck, serializeSlideAttrs } from '../../admin/src/state/deck.js';
+import { cloneMarkdown } from '../../admin/src/state/clone.js';
 import { buildDeckMarkdown, resolveFrameworkId, FRAMEWORK_INPUTS } from '../../admin/src/pedagogy/frameworks.js';
 import { classifySlide, deckBalance, headingOf } from '../../admin/src/pedagogy/phases.js';
 import { analyzeSlide } from '../../admin/src/pedagogy/coach.js';
@@ -45,6 +46,32 @@ export function githubConfig() {
 }
 
 const NO_TOKEN = 'Er is geen GitHub-token ingesteld. Zet de omgevingsvariabele GITHUB_TOKEN (fine-grained token voor GLR-CSD/presentations met Contents: read & write, optioneel Actions: read) in de MCP-configuratie en herstart de app. Je kunt de presentatie ondertussen wel lokaal bewerken; publiceren kan ook via de Studio (Opslaan).';
+
+const cloneSchema = {
+  path: deckPath,
+  slug: z.string().describe('Mapnaam van de kopie, bv. beroeps2_week8-jan. Kleine letters, cijfers, _ en -.'),
+  auteur: z.string().describe('Naam van de auteur van de kopie (komt in de frontmatter).'),
+  title: z.string().optional().describe('Titel van de kopie. Standaard: "<titel> (kopie)".'),
+  cohort: z.string().optional(), leerjaar: z.number().int().min(1).max(3).optional(), periode: z.number().int().min(1).max(4).optional(),
+  folder: z.string().optional().describe('Doelmap van de kopie. Standaard afgeleid uit cohort, leerjaar en slug.'),
+};
+
+/** Bepaalt doelmap + nieuwe slides.md-bron voor een kloon. */
+function planClone(a, rel, source, deck) {
+  if (!SLUG_RE.test(a.slug)) throw new Error('Ongeldige slug: alleen kleine letters, cijfers, _ en - (begin met letter of cijfer).');
+  const fm = deck.frontmatter ? deck.frontmatter.toObject() : {};
+  const meta = {
+    title: a.title || `${fm.title || path.posix.basename(path.posix.dirname(rel))} (kopie)`,
+    auteur: a.auteur,
+    cohort: a.cohort || fm.cohort,
+    leerjaar: a.leerjaar ?? fm.leerjaar,
+    periode: a.periode ?? fm.periode,
+    clonedFrom: rel,
+  };
+  const dir = a.folder || deckFolder({ cohort: meta.cohort, leerjaar: meta.leerjaar, slug: a.slug })
+    || `${path.posix.dirname(path.posix.dirname(rel))}/${a.slug}`;
+  return { dir, markdown: cloneMarkdown(source, meta) };
+}
 
 export function registerTools(server, ws) {
   const input = new InputDocs(ws);
@@ -149,6 +176,17 @@ export function registerTools(server, ws) {
       const to = ws.moveDeck(rel, target);
       return ok(`Verplaatst: ${rel} → ${to}\nDe live-URL en PDF-naam zijn veranderd.`, { from: rel, path: to });
     } catch (e) { return fail(e.message); }
+  });
+
+  reg('clone_presentation', {
+    title: 'Presentatie klonen',
+    description: 'Maakt een eigen kopie van een deck (hele map incl. assets) onder een nieuwe slug, met nieuwe auteur/titel in de frontmatter en `gekloond_van` als verwijzing. Het origineel blijft ongewijzigd. Zonder `folder` wordt de doelmap afgeleid uit cohort, leerjaar en slug.',
+    inputSchema: cloneSchema,
+  }, async (a) => {
+    const { rel, source, deck } = ws.loadDeck(a.path);
+    const plan = planClone(a, rel, source, deck);
+    const to = ws.cloneDeck(rel, plan.dir, plan.markdown);
+    return ok(`Gekloond: ${rel} → ${to}\nHet origineel is ongewijzigd.`, { from: rel, path: to });
   });
 
   /* 6 */ reg('add_slide', {
@@ -552,6 +590,37 @@ export function registerTools(server, ws) {
       `Op GitHub verplaatst: ${fromDir} → ${toDir} (commit ${commitSha.slice(0, 7)}).\n`
       + `Nieuwe live URL (zodra de build klaar is): ${url}\n`
       + `Let op: de live-URL en PDF-naam zijn veranderd. Werk je lokale kopie bij met move_presentation (folder "${toDir}").`,
+      { from: fromDir, dir: toDir, path: `${toDir}/slides.md`, commitSha, url },
+    );
+  });
+
+  reg('clone_presentation_on_github', {
+    title: 'Presentatie op GitHub klonen',
+    description: 'Kopieert een deck op GitHub in één atomaire commit (main) naar een nieuwe map met nieuwe slug/auteur; het origineel blijft ongewijzigd. De kopie wordt gemaakt van de lokale versie van het deck (zoals bij move_presentation_on_github). Vereist GITHUB_TOKEN.',
+    inputSchema: { ...cloneSchema, message: z.string().optional() },
+  }, async (a) => {
+    const { token, opts } = githubConfig();
+    if (!token) return fail(NO_TOKEN);
+    const { rel, source, deck } = ws.loadDeck(a.path);
+    const fromDir = path.posix.dirname(rel);
+    const plan = planClone(a, rel, source, deck);
+    const toDir = path.posix.dirname(ws.deckRel(plan.dir));
+    if (toDir === 'presentations') return fail('Kies een doelmap met een vak, niet direct onder presentations/.');
+    if (toDir === fromDir) return fail('De kopie moet een andere map krijgen dan het origineel.');
+    if (toDir.startsWith(`${fromDir}/`)) return fail('Het doel mag niet binnen het deck zelf liggen.');
+    await gh.connect(token);
+    const depth = deckDepth(`${toDir}/x`);
+    const commitSha = await gh.cloneDeck(
+      a.message || `feat: kopie van ${path.posix.basename(fromDir)} als ${path.posix.basename(toDir)} via GLR MCP`,
+      fromDir,
+      toDir,
+      (rp, text) => (/\.html$/i.test(rp) ? rewriteShellPrefix(text, depth) : null),
+      { slidesContent: plan.markdown },
+      opts,
+    );
+    const url = gh.pagesUrl(`${toDir}/slides.md`, opts);
+    return ok(
+      `Op GitHub gekloond: ${fromDir} → ${toDir} (commit ${commitSha.slice(0, 7)}).\nHet origineel is ongewijzigd.\nLive URL (zodra de build klaar is): ${url}`,
       { from: fromDir, dir: toDir, path: `${toDir}/slides.md`, commitSha, url },
     );
   });

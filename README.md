@@ -84,6 +84,16 @@ Open daarna een presentatie via de server, bijvoorbeeld
 > inbegrepen, `../`-prefix in `index.html` wordt herschreven). Lokaal kan dat met
 > de MCP-tool `move_presentation`. Let op: de live-URL en PDF-naam veranderen.
 
+> **Een presentatie klonen.** Wil een collega jouw deck aanpassen zonder jouw
+> werk te overschrijven? Open het deck in de Studio en klik op **Kopie maken**
+> (of gebruik *Lesgegevens → Kopie maken*). In de dialoog vul je titel, auteur,
+> mapnaam (standaard `<slug>-<naam>`), cohort, leerjaar en periode in. De hele
+> map (`slides.md`, `index.html`, assets) wordt in één commit op `main` naar een
+> eigen map gekopieerd; het origineel blijft ongewijzigd en de Studio schakelt
+> naar de kopie. Niet-opgeslagen wijzigingen gaan mee. De kopie krijgt
+> `gekloond_van: …` in de frontmatter. Vereist GitHub-modus. Lokaal/MCP:
+> `clone_presentation` en `clone_presentation_on_github`.
+
 > **Markdown-scheidingstekens & frontmatter.** De wrapper splitst `slides.md`
 > met `data-separator="\n---\n\n"` en `data-separator-vertical="\n--\n\n"`.
 > Horizontale (`---`) en verticale (`--`) scheiders hebben dus **steeds een lege
@@ -244,10 +254,10 @@ AI-assistent-modal bevat kopieerbare configuraties.
 |---|---|
 | Resources | `glr://decks/manifest`, `glr://input/files`, `glr://media/library`, `glr://components/catalog`, `glr://pedagogy/guidelines` |
 | Tools (invoer) | `list_input_documents`, `read_input_document` (md, txt, html, **pptx**, **pdf**) — alleen lokaal; online volgt een melding om de tekst in de chat te plakken |
-| Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `move_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
+| Tools (decks) | `list_presentations`, `get_presentation`, `create_presentation`, `move_presentation`, `clone_presentation`, `add_slide`, `update_slide_component` (velden, herhalers zoals kaarten/stappen, html, markdown), `insert_component_on_slide`, `update_slide_properties`, `manage_slides` |
 | Tools (media) | `add_media_file` — neemt een **foto of video** op (lokaal bestand via `source` of download via `url`) in de `assets/`-map van het deck (standaard) of gedeeld in `shared/img/uploads/` / `shared/video/`; geeft het repo-pad, het pad voor `slides.md` en een kant-en-klaar HTML-snippet terug. `list_media` toont alle bestaande afbeeldingen en video's (met deck-relatieve paden) |
 | Tools (didactiek) | `analyze_presentation_pedagogy`, `apply_pedagogical_fix` |
-| Tools (GitHub) | `publish_deck_to_github` (atomaire commit van `slides.md` + `index.html` **plus de mediabestanden uit de deck-map** + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status`, `list_github_decks` (decks op GitHub; optioneel met metadata), `move_presentation_on_github` (verplaatst een deck op GitHub in één atomaire commit) |
+| Tools (GitHub) | `publish_deck_to_github` (atomaire commit van `slides.md` + `index.html` **plus de mediabestanden uit de deck-map** + live-URL; bouwen duurt nog ~45-90 s), `check_github_build_status`, `list_github_decks` (decks op GitHub; optioneel met metadata), `move_presentation_on_github` (verplaatst een deck op GitHub in één atomaire commit), `clone_presentation_on_github` (kopieert een deck naar een eigen map; origineel blijft ongewijzigd) |
 | Prompts | `van-input-naar-presentatie`, `maak-theorieles-gagne`, `maak-werkles-standup`, `didactische-les-review` |
 
 Foto's en video's zet je in `slides.md` met een pad als `assets/foto.jpg` (deck-eigen) of
