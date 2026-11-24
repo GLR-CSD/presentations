@@ -54,11 +54,9 @@ for (const deck of decks) {
   // --allow-file-access-from-files: Markdown-decks laden `slides.md` via XHR,
   // wat Chromium op file:// anders blokkeert (resultaat: lege PDF).
   const chromeArg = '--chrome-arg=--allow-file-access-from-files';
-  // ?showNotes=true laat reveal.js de sprekernotities in de slides renderen.
-  // DeckTape behoudt de query alleen als de invoer een volledige URL is (anders
-  // wordt de '?' als bestandsnaam gezien), vandaar de expliciete file://-URL's.
-  const localUrl = `${pathToFileURL(path.join(deck, 'index.html')).href}?showNotes=true`;
-  const dockerUrl = `file:///slides/${relPath}/index.html?showNotes=true`;
+  // Zonder ?showNotes=true: de PDF bevat alleen de slides, geen sprekernotities.
+  const localUrl = pathToFileURL(path.join(deck, 'index.html')).href;
+  const dockerUrl = `file:///slides/${relPath}/index.html`;
   // DeckTape draait intern als non-root `node` (UID 1000). Draai de container als
   // de host-gebruiker en geef Chromium een schrijfbare HOME, anders kan de
   // container niet in de gemounte map schrijven (EACCES: permission denied).
