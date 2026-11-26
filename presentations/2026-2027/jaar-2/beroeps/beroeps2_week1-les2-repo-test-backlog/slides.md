@@ -85,7 +85,7 @@ Note: Alleen voor de inhaalgroep aan de voorste tafel (minuut 00–15); de rest 
 </div>
 
 <div class="checkpoint">
-  <div class="cp-k">Checkpoint 1<b>Min 65</b></div>
+  <div class="cp-k">Checkpoint 1<b>10:15</b></div>
   <p>Repo live, <code>CODEOWNERS</code> en <code>TEAM.md</code> gepusht naar GitHub, en <code>localhost:8000</code> draait aan tafel.</p>
 </div>
 
@@ -102,7 +102,7 @@ Note: Minuut 15–25: korte demo (10 min) van Use this template, toegang geven (
 <div class="pause">
   <div>
     <div class="big">15 min<br><span>pauze</span></div>
-    <p class="restart">Herstart stipt op <b>minuut 80</b></p>
+    <p class="restart">Herstart stipt op <b>10:30</b></p>
     <div class="defbox"><span class="k">Tussenstand</span><p>Nog geen vinkje voor Checkpoint 1? Vraag direct hulp, zodat alles draait vóór Blok 2.</p></div>
   </div>
   <div class="timer timer--lg" data-timer="15:00" role="group" aria-label="Timer 15 minuten">
@@ -138,7 +138,7 @@ Note: Minuut 65–80. Kijk vóór de pauze op het voortgangsbord (slide 7) welke
 <div class="wf"><span>Werkwijze</span><span><code>/docs/testrapport.md</code></span><i>→</i><span>feature branch</span><i>→</i><span>Pull Request</span><i>→</i><span>review via <code>CODEOWNERS</code></span></div>
 
 <div class="checkpoint">
-  <div class="cp-k">Checkpoint 2<b>Min 130</b></div>
+  <div class="cp-k">Checkpoint 2<b>11:45</b></div>
   <p>Minimaal 2 volledige testobservaties staan via een goedgekeurde PR op <code>main</code> in <code>/docs/testrapport.md</code>.</p>
 </div>
 
@@ -173,7 +173,7 @@ Note: Minuut 80–130, PROCES2. Teams wisselen proefpersonen uit met een andere 
 </div>
 
 <div class="checkpoint">
-  <div class="cp-k">Checkpoint 3 · Exit<b>Min 170 – 180</b></div>
+  <div class="cp-k">Checkpoint 3 · Exit<b>12:30</b></div>
   <p>Project Board gevuld met alle Must-haves + eigenaren voor Week 2, en Checkpoints 1, 2 en 3 afgetekend op het klasbord.</p>
 </div>
 
