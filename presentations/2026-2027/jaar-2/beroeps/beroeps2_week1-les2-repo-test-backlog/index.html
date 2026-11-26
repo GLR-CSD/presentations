@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 1 · Les 2: repo, testronde 1 en backlog — GLR CSD</title>
+<meta name="author" content="GLR CSD">
+
+<!-- Automatisch gegenereerd door scripts/build-index.js. Laadt de inhoud uit
+     slides.md met de reveal.js markdown-plugin en de gedeelde GLR-huisstijl. -->
+
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/reveal.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/reveal/plugin/highlight/monokai.css">
+<link rel="stylesheet" href="../../../../../shared/css/glr-theme.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/chalkboard/style.css">
+<link rel="stylesheet" href="../../../../../shared/vendor/customcontrols/style.css">
+<style>
+  /* Presentatiespecifieke bouwstenen (niet in het gedeelde thema). */
+
+  /* GLR-groen en hoekige vormen voor dit deck */
+  :root{--lime:#84D000;--green:#76B800}
+  .reveal :is(.glr-card,.defbox,.callout,.opcard,.pill,.bar,.t-btn,.terminal-window,code){border-radius:0}
+  .reveal .t-prog{stroke-linecap:butt}
+  .reveal h2{margin-bottom:0}
+  .dark .footer{color:#8A8A8A}
+
+  /* Melding bovenaan (slide 1) */
+  .alert-bar{background:var(--lime);color:var(--ink);padding:12px 26px;margin-top:14px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;line-height:1.15;letter-spacing:-.01em}
+
+  /* Kolomkaarten met kop */
+  .lane{background:#1C1C1C;border-top:8px solid var(--lime);padding:14px 22px;flex:1;display:flex;flex-direction:column}
+  .lane--muted{border-top-color:#555}
+  .lane .k{font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-bottom:6px}
+  .lane h3{font-size:26px;color:#fff;margin-bottom:12px}
+  .lane ol{margin:0;padding-left:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px}
+  .lane ol li{counter-increment:s;position:relative;padding-left:40px;font-size:19px;line-height:1.3;color:#E4E4E4}
+  .lane ol li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;background:var(--lime);color:var(--ink);
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center}
+  .lane p{font-size:19px;line-height:1.35;color:#E4E4E4}
+  .roles{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .roles span{font-size:15px;font-weight:700;padding:3px 9px;border:2px solid var(--lime);color:var(--lime)}
+  .row--lanes{gap:18px;margin-top:18px;flex:1;min-height:0}
+  .row--lanes .timer{gap:12px}
+  .row--lanes .t-dial{width:96px}
+  .row--lanes .t-btn{padding:6px 14px;font-size:14px}
+  .lane--muted .timer{flex:none;margin-top:auto;flex-direction:row;justify-content:flex-start;gap:20px}
+  .lane--muted .t-btns{flex-direction:column;gap:8px}
+  .row--lanes .t-time{font-size:25px}
+  .row--lanes .t-label{font-size:10px}
+
+  /* Aftekenbalk (slide 1) */
+  .signoff{display:grid;grid-template-columns:auto 1fr 1fr 1fr;margin-top:16px;border:2px solid var(--lime)}
+  .signoff>div{padding:8px 16px;font-size:18px;line-height:1.25;color:#fff;border-left:2px solid var(--lime)}
+  .signoff>div:first-child{border-left:0;background:var(--lime);color:var(--ink);font-family:'Space Grotesk',sans-serif;
+    font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center}
+  .signoff b{display:block;font-family:'Space Grotesk',sans-serif;color:var(--lime);font-size:20px}
+
+  /* Checkpoint-kader (werkslides) */
+  .checkpoint{display:grid;grid-template-columns:240px 1fr;background:var(--ink);color:#fff;margin-top:auto;border-left:12px solid var(--lime)}
+  .checkpoint .cp-k{padding:14px 18px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--lime);font-size:16px;
+    letter-spacing:.08em;text-transform:uppercase;line-height:1.25;border-right:2px solid #333;display:flex;flex-direction:column;justify-content:center}
+  .checkpoint .cp-k b{display:block;font-size:28px;white-space:nowrap;letter-spacing:-.01em;color:#fff;text-transform:none}
+  .checkpoint p{padding:14px 22px;font-size:21px;line-height:1.35;color:#fff;margin:0;align-self:center}
+  .checkpoint code{background:#2A2A2A;color:var(--lime)}
+  .checkpoint+.footer{margin-top:14px}
+
+  /* Projectcases (slide 2) */
+  .case-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:22px}
+  .case{background:var(--subtle);border-top:8px solid var(--ink);padding:18px 16px;display:flex;flex-direction:column;min-height:380px}
+  .case .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:40px;line-height:1;color:var(--green-dk)}
+  .case h3{font-size:23px;line-height:1.1;margin:10px 0 10px}
+  .case .track{align-self:flex-start;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;background:var(--ink);color:#fff;margin-bottom:12px}
+  .case p{font-size:19px;line-height:1.3;color:var(--ink-soft)}
+  .case .stack{margin-top:auto;padding-top:12px;font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+  .case--basis{border-top-color:#B5B5B5}
+  .case--midden{border-top-color:var(--green)}
+  .case--hard{border-top-color:var(--ink)}
+  .case--klant{background:var(--ink)}
+  .case--klant h3{color:#fff}
+  .case--klant p{color:#D6D6D6}
+  .case--klant .n{color:var(--lime)}
+  .case--klant .track{background:var(--lime);color:var(--ink)}
+  .case--klant .stack{color:#A1A1AA}
+  .case .flag{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--lime);margin-top:-4px;margin-bottom:10px}
+
+  /* Stappenplan (slide 3) */
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:16px;background:var(--subtle);padding:22px 20px;align-items:start}
+  .step .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;width:44px;height:44px;background:var(--ink);color:var(--lime);
+    display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:24px;margin-bottom:4px}
+  .step p{font-size:19px;line-height:1.35;color:var(--ink-soft)}
+  .step code,.rule code,.wf code{font-size:.92em}
+  .step strong{color:var(--ink)}
+
+  /* Pauze (slide 4) */
+  .pause{display:grid;grid-template-columns:1fr 300px;gap:40px;align-items:center;flex:1;min-height:0;margin-top:10px}
+  .big{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:120px;line-height:.95;letter-spacing:-.03em;color:#fff}
+  .big span{color:var(--lime)}
+  .restart{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;color:#fff;margin-top:18px}
+  .restart b{background:var(--lime);color:var(--ink);padding:0 10px}
+  .reveal .pause .defbox{background:#1C1C1C;margin-top:30px}
+  .reveal .pause .defbox p{font-size:22px}
+
+  /* Gouden regels (slide 5) */
+  .goal{font-size:22px;line-height:1.35;color:var(--ink-soft);margin-top:12px;max-width:1120px}
+  .goal strong{color:var(--ink)}
+  .rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+  .rule{background:var(--subtle);border-top:8px solid var(--lime);padding:16px 18px}
+  .rule .k{display:block;font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green-dk);margin-bottom:6px}
+  .rule h3{font-size:22px;line-height:1.15;margin-bottom:6px}
+  .reveal .rule p{font-size:18px;line-height:1.3;color:var(--ink-soft)}
+  .wf{display:flex;align-items:center;gap:0;margin-top:14px;font-size:18px}
+  .wf>span{padding:9px 14px;border:2px solid var(--ink);margin-left:-2px;background:#fff;white-space:nowrap}
+  .wf>span:first-child{margin-left:0;background:var(--ink);color:var(--lime);font-family:'Space Grotesk',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+  .wf>i{font-style:normal;font-weight:700;padding:0 8px;color:var(--green-dk)}
+
+  /* Backlog (slide 6) */
+  .kanban{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;border:2px solid var(--ink)}
+  .kanban span{padding:10px 8px;text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;border-left:2px solid var(--ink)}
+  .kanban span:first-child{border-left:0}
+  .kanban span:last-child{background:var(--lime)}
+  .sub-k{font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green-dk);font-weight:700}
+  .reveal .bl .check li{font-size:19px}
+  .issue{background:#fff;border:2px solid var(--ink);margin-top:10px}
+  .issue-head{background:var(--ink);color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:14px;
+    font-family:'Space Grotesk',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+  .issue-head .lbl{background:var(--lime);color:var(--ink);padding:2px 8px;font-weight:700}
+  .issue-t{padding:12px 16px 4px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;line-height:1.2}
+  .issue-ac{padding:4px 16px 14px;font-size:17px;line-height:1.4;color:var(--ink-soft)}
+  .issue-ac b{color:var(--ink)}
+  .issue-ac .k{display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--green-dk);font-weight:700;margin:6px 0 4px}
+
+  /* Voortgangsbord (slide 7) */
+  .board{width:100%;border-collapse:collapse;margin-top:12px;table-layout:fixed;border:3px solid var(--ink)}
+  .reveal .board th{background:var(--ink);color:var(--lime);font-family:'Space Grotesk',sans-serif;font-size:15px;line-height:1.2;
+    letter-spacing:.03em;text-align:left;padding:8px 12px;border:2px solid var(--ink);vertical-align:bottom;font-weight:700}
+  .reveal .board th small{display:block;color:#fff;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .reveal .board td{height:44px;padding:0 12px;border:2px solid var(--ink);font-size:20px;background:#fff}
+  .reveal .board tr:nth-child(even) td{background:var(--subtle)}
+  .reveal .board tr td:first-child{font-family:'Space Grotesk',sans-serif;font-weight:700;background:var(--lime);color:var(--ink)}
+  .board col.c-g{width:120px}
+  .board col.c-p{width:250px}
+</style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+    <section
+      data-markdown="slides.md"
+      data-separator="\n---\n\n"
+      data-separator-vertical="\n--\n\n"
+      data-separator-notes="^Note:"
+      data-charset="utf-8"></section>
+  </div>
+</div>
+
+<script src="../../../../../shared/vendor/reveal/reveal.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/markdown/markdown.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/highlight/highlight.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/notes/notes.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/search/search.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/zoom/zoom.js"></script>
+<script src="../../../../../shared/vendor/reveal/plugin/math/math.js"></script>
+<script src="../../../../../shared/vendor/chalkboard/plugin.js"></script>
+<script src="../../../../../shared/vendor/customcontrols/plugin.js"></script>
+<script src="../../../../../shared/js/glr-plugins.js"></script>
+
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0,
+    display: 'flex',
+    center: false,
+    minScale: 0.2,
+    maxScale: 1.6,
+    hash: true,
+    progress: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: false,
+    transition: 'slide',
+    backgroundTransition: 'fade',
+    katex: { local: '../../../../../shared/vendor/katex' },
+    chalkboard: {},
+    customcontrols: {
+      collapseIcon: '▾',
+      expandIcon: '▴',
+      controls: [
+        { icon: '🖊️', title: 'Notitie-canvas (C)', action: 'RevealChalkboard.toggleNotesCanvas()' },
+        { icon: '🖍️', title: 'Chalkboard (B)', action: 'RevealChalkboard.toggleChalkboard()' }
+      ]
+    },
+    plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealSearch, RevealZoom, RevealMath.KaTeX, RevealChalkboard, RevealCustomControls],
+    markdown: { smartypants: true }
+  }).then(function () {
+    GLRPlugins.initAll();
+  });
+</script>
+
+</body>
+</html>
