@@ -303,8 +303,7 @@ Elke presentatie laadt naast de standaardplugins ook:
   het (chalk)bord, `C` voor de notitie-canvas en `Del` om te wissen. De knoppen
   staan linksonder.
 
-De PDF-export draait met `?showNotes=true`, zodat de sprekersnotities in de PDF
-terechtkomen. Op de portaalpagina opent de knop **Presentatie** in een nieuw
+De PDF-export bevat alleen de slides, zonder sprekersnotities. Op de portaalpagina opent de knop **Presentatie** in een nieuw
 tabblad en staat een korte uitleg met een link naar de reveal.js-documentatie.
 
 ## Deployment (CI/CD)

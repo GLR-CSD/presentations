@@ -84,7 +84,7 @@ function render(rel) {
   if (typeof process.getuid === 'function') a.push('--user', `${process.getuid()}:${process.getgid()}`, '-e', 'HOME=/tmp');
   a.push('-v', `${distDir}:/slides`, DECKTAPE_IMAGE,
     '--chrome-arg=--allow-file-access-from-files', '--size', EXPORT_SIZE,
-    `file:///slides/${relPath}/index.html?showNotes=true`, `/slides/${relPath}/presentation.pdf`);
+    `file:///slides/${relPath}/index.html`, `/slides/${relPath}/presentation.pdf`);
   return new Promise((resolve) => {
     const p = spawn('docker', a, { cwd: path.join(distPresentationsRoot, rel), stdio: 'inherit' });
     p.on('error', () => resolve(false));
